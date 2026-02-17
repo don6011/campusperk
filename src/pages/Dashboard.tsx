@@ -27,6 +27,7 @@ import {
   Lock,
   BellRing,
   BarChart3,
+  Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -88,7 +89,7 @@ function getStatusBadge(deal: Deal) {
           <Shield className="h-2.5 w-2.5" /> Verified
         </Badge>
       </TooltipTrigger>
-      <TooltipContent>Verified by CampusPerk</TooltipContent>
+      <TooltipContent>Verified student deal via .edu or partner validation.</TooltipContent>
     </Tooltip>
   );
 }
@@ -163,11 +164,21 @@ function DealCard({ deal, index, compact, featured: isFeatured }: { deal: Deal; 
                 <Clock className="h-3 w-3" /> {timeAgo(deal.lastCheckedAt)}
               </span>
             )}
-            <Link to={`/out/${deal.id}`}>
-              <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10 text-xs gap-1 h-7 ml-auto">
-                View Deal <ExternalLink className="h-3 w-3" />
-              </Button>
-            </Link>
+            <div className="flex items-center gap-1 ml-auto">
+              {deal.affiliateLinkUrl && (
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-3 w-3 text-muted-foreground/50" />
+                  </TooltipTrigger>
+                  <TooltipContent className="max-w-[200px] text-[11px]">CampusPerk may earn commissions from purchases.</TooltipContent>
+                </Tooltip>
+              )}
+              <Link to={`/out/${deal.id}`}>
+                <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10 text-xs gap-1 h-7">
+                  View Deal <ExternalLink className="h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -295,7 +306,12 @@ export default function Dashboard() {
                           <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                             {deal.discountValue}
                           </span>
-                          <Badge className={`text-[10px] font-semibold gap-1 ${days <= 3 ? "bg-destructive/15 text-destructive border-destructive/30" : "bg-gold/15 text-gold border-gold/30"}`}>
+                          <Badge className={`text-[10px] font-semibold gap-1 ${
+                            days < 3 ? "bg-destructive/15 text-destructive border-destructive/30" :
+                            days <= 7 ? "bg-[hsl(25_95%_53%)]/15 text-[hsl(25_95%_53%)] border-[hsl(25_95%_53%)]/30" :
+                            days <= 14 ? "bg-gold/15 text-gold border-gold/30" :
+                            "bg-accent/15 text-accent border-accent/30"
+                          }`}>
                             <Clock className="h-2.5 w-2.5" />
                             {days <= 0 ? "Ending today" : days === 1 ? "Ends tomorrow" : `Ends in ${days}d`}
                           </Badge>
@@ -481,10 +497,13 @@ export default function Dashboard() {
                   <span>{item.text}</span>
                 </div>
               ))}
+              <p className="text-[10px] text-muted-foreground italic">Most students upgrade for unlimited alerts.</p>
               <Link to="/pricing">
-                <Button size="sm" className="w-full mt-3 bg-gold/20 text-gold hover:bg-gold/30 hover:shadow-[0_0_20px_-2px_hsl(45_93%_56%/0.35)] border border-gold/30 text-xs gap-1 font-semibold transition-all duration-300">
-                  <Crown className="h-3.5 w-3.5" /> Upgrade Now
-                </Button>
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button size="sm" className="w-full mt-1 bg-gold/20 text-gold hover:bg-gold/30 hover:shadow-[0_0_24px_-2px_hsl(45_93%_56%/0.4)] border border-gold/30 text-xs gap-1 font-semibold transition-all duration-300 animate-pulse-glow">
+                    <Crown className="h-3.5 w-3.5" /> Upgrade Now
+                  </Button>
+                </motion.div>
               </Link>
             </CardContent>
           </Card>
