@@ -258,6 +258,39 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_audit_log: {
+        Row: {
+          admin_id: string
+          created_at: string
+          id: string
+          new_status: boolean
+          previous_status: boolean
+          reason: string
+          user_id: string
+          verification_method: Database["public"]["Enums"]["verification_method"]
+        }
+        Insert: {
+          admin_id: string
+          created_at?: string
+          id?: string
+          new_status: boolean
+          previous_status: boolean
+          reason: string
+          user_id: string
+          verification_method?: Database["public"]["Enums"]["verification_method"]
+        }
+        Update: {
+          admin_id?: string
+          created_at?: string
+          id?: string
+          new_status?: boolean
+          previous_status?: boolean
+          reason?: string
+          user_id?: string
+          verification_method?: Database["public"]["Enums"]["verification_method"]
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -276,6 +309,7 @@ export type Database = {
       deal_status: "active" | "expired" | "coming_soon"
       discount_type: "percentage" | "fixed" | "free_trial" | "bogo" | "other"
       submission_status: "pending" | "approved" | "rejected"
+      verification_method: "edu" | "manual" | "partner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -407,6 +441,7 @@ export const Constants = {
       deal_status: ["active", "expired", "coming_soon"],
       discount_type: ["percentage", "fixed", "free_trial", "bogo", "other"],
       submission_status: ["pending", "approved", "rejected"],
+      verification_method: ["edu", "manual", "partner"],
     },
   },
 } as const
