@@ -14,6 +14,113 @@ export type Database = {
   }
   public: {
     Tables: {
+      affiliate_clicks: {
+        Row: {
+          clicked_at: string
+          country: string | null
+          deal_id: string
+          device_type: string | null
+          flag_reason: string | null
+          flagged: boolean | null
+          id: string
+          ip_hint: string | null
+          is_premium_user: boolean | null
+          is_verified_student: boolean | null
+          referrer: string | null
+          user_id: string | null
+        }
+        Insert: {
+          clicked_at?: string
+          country?: string | null
+          deal_id: string
+          device_type?: string | null
+          flag_reason?: string | null
+          flagged?: boolean | null
+          id?: string
+          ip_hint?: string | null
+          is_premium_user?: boolean | null
+          is_verified_student?: boolean | null
+          referrer?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          clicked_at?: string
+          country?: string | null
+          deal_id?: string
+          device_type?: string | null
+          flag_reason?: string | null
+          flagged?: boolean | null
+          id?: string
+          ip_hint?: string | null
+          is_premium_user?: boolean | null
+          is_verified_student?: boolean | null
+          referrer?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_clicks_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_conversions: {
+        Row: {
+          click_id: string | null
+          commission_earned: number | null
+          conversion_date: string | null
+          created_at: string
+          deal_id: string
+          id: string
+          network: string | null
+          notes: string | null
+          order_value: number | null
+          status: Database["public"]["Enums"]["conversion_status"]
+        }
+        Insert: {
+          click_id?: string | null
+          commission_earned?: number | null
+          conversion_date?: string | null
+          created_at?: string
+          deal_id: string
+          id?: string
+          network?: string | null
+          notes?: string | null
+          order_value?: number | null
+          status?: Database["public"]["Enums"]["conversion_status"]
+        }
+        Update: {
+          click_id?: string | null
+          commission_earned?: number | null
+          conversion_date?: string | null
+          created_at?: string
+          deal_id?: string
+          id?: string
+          network?: string | null
+          notes?: string | null
+          order_value?: number | null
+          status?: Database["public"]["Enums"]["conversion_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_conversions_click_id_fkey"
+            columns: ["click_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_clicks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_conversions_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       alert_subscriptions: {
         Row: {
           alert_type: string
@@ -421,6 +528,7 @@ export type Database = {
     }
     Enums: {
       app_role: "user" | "premium_user" | "admin"
+      conversion_status: "pending" | "confirmed" | "paid"
       deal_status: "active" | "expired" | "coming_soon"
       discount_type: "percentage" | "fixed" | "free_trial" | "bogo" | "other"
       submission_status: "pending" | "approved" | "rejected"
@@ -553,6 +661,7 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["user", "premium_user", "admin"],
+      conversion_status: ["pending", "confirmed", "paid"],
       deal_status: ["active", "expired", "coming_soon"],
       discount_type: ["percentage", "fixed", "free_trial", "bogo", "other"],
       submission_status: ["pending", "approved", "rejected"],
