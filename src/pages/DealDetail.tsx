@@ -297,6 +297,20 @@ export default function DealDetail() {
                 </div>
               </div>
 
+              {/* Terms & Conditions */}
+              <div className="mt-4 p-4 rounded-xl bg-secondary/40 border border-border">
+                <h4 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
+                  <Info className="h-3.5 w-3.5 text-muted-foreground" /> Terms & Conditions
+                </h4>
+                <ul className="space-y-1.5 text-xs text-muted-foreground list-disc list-inside">
+                  <li>Offer valid for verified students only</li>
+                  <li>Cannot be combined with other promotions</li>
+                  <li>Subject to availability and merchant terms</li>
+                  {deal.expiresAt && <li>Expires on {new Date(deal.expiresAt).toLocaleDateString()}</li>}
+                  <li>CampusPerk is not responsible for merchant fulfillment</li>
+                </ul>
+              </div>
+
               <Separator className="my-6" />
 
               {/* CTA */}
