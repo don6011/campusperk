@@ -11,6 +11,7 @@ import {
   Users,
   Menu,
   X,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -83,9 +84,19 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(true)}>
             <Menu className="h-5 w-5" />
           </Button>
-          <h1 className="font-display text-lg font-semibold truncate">
-            {navItems.find((n) => location.pathname.startsWith(n.href))?.label || "Admin"}
-          </h1>
+          <nav className="flex items-center gap-1 text-sm truncate">
+            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+              Dashboard
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+            <Link to="/admin/deals" className="text-muted-foreground hover:text-foreground transition-colors">
+              Admin
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />
+            <span className="font-semibold text-foreground truncate">
+              {navItems.find((n) => location.pathname.startsWith(n.href))?.label || "Admin"}
+            </span>
+          </nav>
         </header>
         <main className="flex-1 p-4 lg:p-6 overflow-auto">{children}</main>
       </div>
