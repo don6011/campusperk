@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   LayoutDashboard,
@@ -16,6 +17,7 @@ import {
   LogOut,
   User,
   Send,
+  Shield,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -40,11 +42,26 @@ const navItems = [
   { title: "Account Settings", url: "/settings", icon: Settings },
 ];
 
+const adminItems = [
+  { title: "Admin Portal", url: "/admin/deals", icon: LayoutDashboard },
+];
+
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
-  const { profile, signOut } = useAuth();
+  const { profile, user, signOut } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin")
+      .then(({ data }) => setIsAdmin(!!(data && data.length > 0)));
+  }, [user]);
 
   const handleLogout = async () => {
     await signOut();
@@ -86,6 +103,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </Link>
             );
           })}
+
+          {/* Admin section */}
+          {isAdmin && (
+            <>
+              <div className="my-2 mx-3 border-t border-border" />
+              {sidebarOpen && (
+                <div className="px-3 py-1 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Admin</div>
+              )}
+              <Link
+                to="/admin/deals"
+                className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+                  location.pathname.startsWith("/admin")
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                }`}
+              >
+                <Shield className="h-4.5 w-4.5 shrink-0" />
+                {sidebarOpen && <span>Admin Portal</span>}
+              </Link>
+            </>
+          )}
         </nav>
 
         {/* Upgrade CTA */}
