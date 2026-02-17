@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ExternalLink, ArrowLeft, Loader2, Shield } from "lucide-react";
+import { ExternalLink, ArrowLeft, Loader2, Shield, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -17,6 +17,7 @@ const OutboundRedirect = () => {
   const [countdown, setCountdown] = useState(3);
   const [clickLogged, setClickLogged] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
+  const [blocked, setBlocked] = useState<string | null>(null);
 
   // Fetch deal from Supabase
   useEffect(() => {
@@ -32,13 +33,43 @@ const OutboundRedirect = () => {
         return;
       }
       setDeal(data);
+
+      // Block expired or needs_review deals
+      if (data.status === "expired") {
+        setBlocked("expired");
+        setLoading(false);
+        return;
+      }
+
       setLoading(false);
     })();
   }, [dealId]);
 
-  // Log click + countdown
+  // Log blocked attempt
   useEffect(() => {
-    if (!deal || clickLogged) return;
+    if (!blocked || !deal || clickLogged) return;
+    const ua = navigator.userAgent;
+    let deviceType = "desktop";
+    if (/Mobile|Android|iPhone/i.test(ua)) deviceType = "mobile";
+    else if (/Tablet|iPad/i.test(ua)) deviceType = "tablet";
+
+    (async () => {
+      await supabase.from("affiliate_clicks").insert({
+        deal_id: deal.id,
+        user_id: user?.id || null,
+        device_type: deviceType,
+        referrer: document.referrer || null,
+        is_verified_student: profile?.student_verified || false,
+        is_premium_user: profile?.premium_status || false,
+        blocked_reason: blocked,
+      } as any);
+      setClickLogged(true);
+    })();
+  }, [blocked, deal, clickLogged, user, profile]);
+
+  // Log click + countdown (only for non-blocked deals)
+  useEffect(() => {
+    if (!deal || clickLogged || blocked) return;
 
     // Detect device type
     const ua = navigator.userAgent;
@@ -70,17 +101,17 @@ const OutboundRedirect = () => {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [deal, clickLogged, user, profile]);
+  }, [deal, clickLogged, user, profile, blocked]);
 
-  // Auto-redirect when countdown reaches 0
+  // Auto-redirect when countdown reaches 0 (only non-blocked)
   useEffect(() => {
-    if (countdown === 0 && deal) {
+    if (countdown === 0 && deal && !blocked) {
       const url = deal.affiliate_link_url || deal.direct_link_url;
       if (url) {
         window.location.href = url;
       }
     }
-  }, [countdown, deal]);
+  }, [countdown, deal, blocked]);
 
   if (loading) {
     return (
@@ -104,7 +135,7 @@ const OutboundRedirect = () => {
     );
   }
 
-  if (deal.status === "expired") {
+  if (blocked) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <motion.div
@@ -112,8 +143,13 @@ const OutboundRedirect = () => {
           animate={{ opacity: 1, scale: 1 }}
           className="max-w-md w-full rounded-2xl border border-destructive/30 bg-card p-8 text-center"
         >
-          <h1 className="font-display text-2xl font-bold mb-2">Deal Expired</h1>
-          <p className="text-muted-foreground mb-6">This deal is no longer available.</p>
+          <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-4" />
+          <h1 className="font-display text-2xl font-bold mb-2">Deal Currently Unavailable</h1>
+          <p className="text-muted-foreground mb-6">
+            {blocked === "expired"
+              ? "This deal has expired and is no longer available."
+              : "This deal is currently under review and temporarily unavailable."}
+          </p>
           <Button asChild variant="outline">
             <Link to="/explore"><ArrowLeft className="h-4 w-4 mr-2" /> Browse Active Deals</Link>
           </Button>

@@ -16,6 +16,7 @@ export type Database = {
     Tables: {
       affiliate_clicks: {
         Row: {
+          blocked_reason: string | null
           clicked_at: string
           country: string | null
           deal_id: string
@@ -30,6 +31,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          blocked_reason?: string | null
           clicked_at?: string
           country?: string | null
           deal_id: string
@@ -44,6 +46,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          blocked_reason?: string | null
           clicked_at?: string
           country?: string | null
           deal_id?: string
@@ -192,16 +195,21 @@ export type Database = {
           direct_link_url: string | null
           discount_type: Database["public"]["Enums"]["discount_type"]
           discount_value: string | null
+          early_access: boolean
           expires_at: string | null
           featured: boolean
           id: string
           last_checked_at: string | null
           requires_edu_email: boolean
+          sponsor_end_at: string | null
+          sponsor_start_at: string | null
+          sponsor_tier: number | null
           sponsored: boolean
           status: Database["public"]["Enums"]["deal_status"]
           store_id: string
           title: string
           updated_at: string
+          visibility: string
         }
         Insert: {
           affiliate_link_url?: string | null
@@ -213,16 +221,21 @@ export type Database = {
           direct_link_url?: string | null
           discount_type?: Database["public"]["Enums"]["discount_type"]
           discount_value?: string | null
+          early_access?: boolean
           expires_at?: string | null
           featured?: boolean
           id?: string
           last_checked_at?: string | null
           requires_edu_email?: boolean
+          sponsor_end_at?: string | null
+          sponsor_start_at?: string | null
+          sponsor_tier?: number | null
           sponsored?: boolean
           status?: Database["public"]["Enums"]["deal_status"]
           store_id: string
           title: string
           updated_at?: string
+          visibility?: string
         }
         Update: {
           affiliate_link_url?: string | null
@@ -234,16 +247,21 @@ export type Database = {
           direct_link_url?: string | null
           discount_type?: Database["public"]["Enums"]["discount_type"]
           discount_value?: string | null
+          early_access?: boolean
           expires_at?: string | null
           featured?: boolean
           id?: string
           last_checked_at?: string | null
           requires_edu_email?: boolean
+          sponsor_end_at?: string | null
+          sponsor_start_at?: string | null
+          sponsor_tier?: number | null
           sponsored?: boolean
           status?: Database["public"]["Enums"]["deal_status"]
           store_id?: string
           title?: string
           updated_at?: string
+          visibility?: string
         }
         Relationships: [
           {
