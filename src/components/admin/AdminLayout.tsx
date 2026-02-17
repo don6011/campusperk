@@ -8,6 +8,7 @@ import {
   Inbox,
   ScanSearch,
   BarChart3,
+  Users,
   Menu,
   X,
 } from "lucide-react";
@@ -16,6 +17,7 @@ import { Button } from "@/components/ui/button";
 const navItems = [
   { label: "Deals Manager", href: "/admin/deals", icon: Tag },
   { label: "Submissions", href: "/admin/submissions", icon: Inbox },
+  { label: "Users", href: "/admin/users", icon: Users },
   { label: "Scans", href: "/admin/scans", icon: ScanSearch },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
 ];
