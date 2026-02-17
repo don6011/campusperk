@@ -119,8 +119,9 @@ function DealCard({ deal, index, compact, featured: isFeatured }: { deal: Deal; 
       whileHover={{ y: -4, transition: { duration: 0.2 } }}
       className="h-full"
     >
-      <Card className={`group relative overflow-hidden border-border bg-card hover:border-primary/30 transition-all duration-300 hover:shadow-[var(--shadow-glow)] h-full ${isFeatured ? "ring-1 ring-primary/20 shadow-[0_0_24px_-6px_hsl(217_91%_60%/0.25)]" : ""}`}>
-        <CardContent className={compact ? "p-4" : "p-5"}>
+      <Card className={`group relative overflow-hidden border-border bg-card hover:border-primary/30 transition-all duration-300 h-full ${isFeatured ? "ring-1 ring-primary/30 border-primary/20 shadow-[0_0_30px_-4px_hsl(217_91%_60%/0.3)] hover:shadow-[0_0_40px_-4px_hsl(217_91%_60%/0.4)]" : "hover:shadow-[var(--shadow-glow)]"}`}>
+        {isFeatured && <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />}
+        <CardContent className={`relative z-10 ${compact ? "p-4" : "p-6"}`}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
@@ -150,13 +151,14 @@ function DealCard({ deal, index, compact, featured: isFeatured }: { deal: Deal; 
           </div>
 
           {!compact && (
-            <p className="mt-2 text-xs text-muted-foreground line-clamp-2">{deal.description}</p>
+            <p className="mt-3 text-xs text-muted-foreground line-clamp-2 leading-relaxed">{deal.description}</p>
           )}
 
-          <div className="mt-3 flex items-center justify-between">
+          <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/50">
             {!compact && (
-              <span className={`text-[11px] flex items-center gap-1 ${freshnessColor(deal.lastCheckedAt)}`}>
-                <Clock className="h-3 w-3" /> Checked {timeAgo(deal.lastCheckedAt)}
+              <span className={`text-[11px] flex items-center gap-1.5 font-medium ${freshnessColor(deal.lastCheckedAt)}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${freshnessColor(deal.lastCheckedAt).replace('text-', 'bg-')}`} />
+                <Clock className="h-3 w-3" /> {timeAgo(deal.lastCheckedAt)}
               </span>
             )}
             <Link to={`/out/${deal.id}`}>
@@ -210,7 +212,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-8 max-w-7xl mx-auto">
+      <div className="space-y-10 max-w-7xl mx-auto">
         {/* Welcome */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
           <h1 className="font-display text-2xl font-bold text-foreground">Welcome back, Alex 👋</h1>
@@ -448,8 +450,9 @@ export default function Dashboard() {
           </Card>
 
           {/* Premium Upsell */}
-          <Card className="border-border bg-card relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-to-br from-gold/5 to-transparent pointer-events-none" />
+          <Card className="border-gold/20 bg-card relative overflow-hidden shadow-[0_0_30px_-8px_hsl(45_93%_56%/0.15)]">
+            <div className="absolute inset-0 bg-gradient-to-br from-gold/8 via-gold/3 to-transparent pointer-events-none" />
+            <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-gold/5 blur-3xl pointer-events-none" />
             <CardHeader className="pb-2 relative z-10">
               <CardTitle className="text-sm font-semibold flex items-center gap-2 text-gold">
                 <Crown className="h-4 w-4" /> Upgrade to Premium
@@ -462,13 +465,15 @@ export default function Dashboard() {
                 { icon: Bell, text: "Unlimited alerts" },
                 { icon: TrendingUp, text: "Price drop tracking" },
               ].map((item) => (
-                <div key={item.text} className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <item.icon className="h-3.5 w-3.5 text-gold" />
+                <div key={item.text} className="flex items-center gap-2.5 text-xs text-foreground/80">
+                  <div className="h-5 w-5 rounded-md bg-gold/10 flex items-center justify-center">
+                    <item.icon className="h-3 w-3 text-gold" />
+                  </div>
                   <span>{item.text}</span>
                 </div>
               ))}
               <Link to="/pricing">
-                <Button size="sm" className="w-full mt-2 bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 text-xs gap-1">
+                <Button size="sm" className="w-full mt-3 bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 text-xs gap-1 font-semibold">
                   <Crown className="h-3.5 w-3.5" /> Upgrade Now
                 </Button>
               </Link>
