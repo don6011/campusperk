@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ExternalLink, ArrowLeft, Loader2, Shield, AlertTriangle } from "lucide-react";
+import { ExternalLink, ArrowLeft, Loader2, Shield, AlertTriangle, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -34,9 +34,16 @@ const OutboundRedirect = () => {
       }
       setDeal(data);
 
-      // Block expired or needs_review deals
+      // Block expired deals
       if (data.status === "expired") {
         setBlocked("expired");
+        setLoading(false);
+        return;
+      }
+
+      // Block premium deals for free users
+      if (data.visibility === "premium" && !profile?.premium_status) {
+        setBlocked("premium_gated");
         setLoading(false);
         return;
       }
@@ -136,24 +143,44 @@ const OutboundRedirect = () => {
   }
 
   if (blocked) {
+    const isPremiumBlock = blocked === "premium_gated";
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="max-w-md w-full rounded-2xl border border-destructive/30 bg-card p-8 text-center"
+          className={`max-w-md w-full rounded-2xl border ${isPremiumBlock ? "border-gold/30" : "border-destructive/30"} bg-card p-8 text-center`}
         >
-          <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-4" />
-          <h1 className="font-display text-2xl font-bold mb-2">Deal Currently Unavailable</h1>
-          <p className="text-muted-foreground mb-6">
-            {blocked === "expired"
-              ? "This deal has expired and is no longer available."
-              : "This deal is currently under review and temporarily unavailable."}
-          </p>
-          <Button asChild variant="outline">
-            <Link to="/explore"><ArrowLeft className="h-4 w-4 mr-2" /> Browse Active Deals</Link>
-          </Button>
+          {isPremiumBlock ? (
+            <>
+              <Crown className="h-10 w-10 text-gold mx-auto mb-4" />
+              <h1 className="font-display text-2xl font-bold mb-2">Premium Deal</h1>
+              <p className="text-muted-foreground mb-6">
+                This deal is exclusive to Premium members. Upgrade to unlock access.
+              </p>
+              <Button className="w-full bg-gold hover:bg-gold/90 text-background font-semibold h-11 gap-2 mb-3" onClick={() => setShowUpgrade(true)}>
+                <Crown className="h-4 w-4" /> Upgrade to Premium
+              </Button>
+              <Button asChild variant="outline">
+                <Link to="/explore"><ArrowLeft className="h-4 w-4 mr-2" /> Browse Free Deals</Link>
+              </Button>
+            </>
+          ) : (
+            <>
+              <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-4" />
+              <h1 className="font-display text-2xl font-bold mb-2">Deal Currently Unavailable</h1>
+              <p className="text-muted-foreground mb-6">
+                {blocked === "expired"
+                  ? "This deal has expired and is no longer available."
+                  : "This deal is currently under review and temporarily unavailable."}
+              </p>
+              <Button asChild variant="outline">
+                <Link to="/explore"><ArrowLeft className="h-4 w-4 mr-2" /> Browse Active Deals</Link>
+              </Button>
+            </>
+          )}
         </motion.div>
+        <UpgradeModal open={showUpgrade} onOpenChange={setShowUpgrade} />
       </div>
     );
   }
