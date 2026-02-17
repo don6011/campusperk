@@ -207,6 +207,20 @@ export default function Dashboard() {
     },
   });
 
+  // Fetch user's affiliate clicks (deals redeemed)
+  const { data: userClicks = [] } = useQuery({
+    queryKey: ["dashboard-user-clicks", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("affiliate_clicks")
+        .select("deal_id, clicked_at")
+        .eq("user_id", user!.id)
+        .order("clicked_at", { ascending: false });
+      return data || [];
+    },
+  });
+
   // Fetch category deal counts
   const { data: categoryCounts = {} } = useQuery({
     queryKey: ["dashboard-category-counts"],
@@ -217,6 +231,44 @@ export default function Dashboard() {
       return counts;
     },
   });
+
+  // ── Student Savings Engine ──
+  const uniqueDealsRedeemed = new Set(userClicks.map((c) => c.deal_id));
+  const dealsRedeemed = uniqueDealsRedeemed.size;
+
+  // Category-based average prices for savings estimation
+  const AVG_PRICES: Record<string, number> = {
+    Software: 120, Subscriptions: 30, Tech: 350, Clothing: 85,
+    Food: 25, Learning: 60, Entertainment: 20, Fitness: 50, Travel: 200, Other: 50,
+  };
+
+  // Calculate estimated savings per redeemed deal
+  const savingsData = deals
+    .filter((d) => uniqueDealsRedeemed.has(d.id))
+    .map((d) => {
+      const category = d.category ?? "Other";
+      const avgPrice = AVG_PRICES[category] ?? 50;
+      const discountStr = d.discount_value ?? "";
+      let savingsAmount = 0;
+
+      // Parse discount value
+      const pctMatch = discountStr.match(/(\d+)\s*%/);
+      const fixedMatch = discountStr.match(/\$\s*([\d.]+)/);
+      if (pctMatch) {
+        savingsAmount = avgPrice * (parseInt(pctMatch[1]) / 100);
+      } else if (fixedMatch) {
+        savingsAmount = parseFloat(fixedMatch[1]);
+      } else if (/free/i.test(discountStr)) {
+        savingsAmount = avgPrice;
+      } else {
+        savingsAmount = avgPrice * 0.15; // fallback 15%
+      }
+
+      return { dealId: d.id, title: d.title, storeName: d.stores?.name ?? "Unknown", category, savingsAmount };
+    });
+
+  const lifetimeSavings = savingsData.reduce((s, d) => s + d.savingsAmount, 0);
+  const topSavingsDeals = [...savingsData].sort((a, b) => b.savingsAmount - a.savingsAmount).slice(0, 3);
 
   const favIds = new Set(favorites.map((f) => f.deal_id));
 
@@ -254,11 +306,12 @@ export default function Dashboard() {
         </motion.div>
 
         {/* Stats Row */}
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { label: "Active Deals", value: deals.length, icon: Tag, color: "text-primary" },
-            { label: "Your Favorites", value: favIds.size, icon: Heart, color: "text-destructive" },
-            { label: "Verified Brands", value: verifiedBrands, icon: Shield, color: "text-gold" },
+            { label: "Active Deals", value: `${deals.length}`, icon: Tag, color: "text-primary" },
+            { label: "Deals Redeemed", value: `${dealsRedeemed}`, icon: ShoppingBag, color: "text-accent" },
+            { label: "Savings Unlocked", value: `$${lifetimeSavings.toFixed(0)}`, icon: DollarSign, color: "text-accent" },
+            { label: "Your Favorites", value: `${favIds.size}`, icon: Heart, color: "text-destructive" },
           ].map((stat) => (
             <Card key={stat.label} className="border-border bg-card">
               <CardContent className="flex items-center gap-4 p-5">
@@ -273,6 +326,94 @@ export default function Dashboard() {
             </Card>
           ))}
         </motion.div>
+
+        {/* Student Savings Summary */}
+        {user && (
+          <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={2}>
+            <Card className="border-accent/20 bg-card relative overflow-hidden shadow-[0_0_30px_-8px_hsl(142_71%_45%/0.15)]">
+              <div className="absolute inset-0 bg-gradient-to-br from-accent/8 via-accent/3 to-transparent pointer-events-none" />
+              <CardHeader className="pb-2 relative z-10">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-accent">
+                  <TrendingUp className="h-4 w-4" /> Your Savings Dashboard
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                  {/* Lifetime Savings */}
+                  <div className="text-center sm:text-left">
+                    <div className="font-display text-3xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+                      ${lifetimeSavings.toFixed(2)}
+                    </div>
+                    <div className="text-xs text-muted-foreground mt-1">Estimated Lifetime Savings</div>
+                  </div>
+
+                  {/* Deals Redeemed */}
+                  <div className="text-center sm:text-left">
+                    <div className="font-display text-3xl font-bold text-foreground">{dealsRedeemed}</div>
+                    <div className="text-xs text-muted-foreground mt-1">Deals Redeemed</div>
+                    {dealsRedeemed > 0 && (
+                      <div className="text-[11px] text-muted-foreground mt-0.5">
+                        Avg savings: ${dealsRedeemed > 0 ? (lifetimeSavings / dealsRedeemed).toFixed(2) : "0"} per deal
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Top Savings */}
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-2">Top Savings</div>
+                    {topSavingsDeals.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {topSavingsDeals.map((d) => (
+                          <div key={d.dealId} className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-medium text-foreground truncate">{d.storeName}</span>
+                            <span className="text-xs font-semibold text-accent shrink-0">${d.savingsAmount.toFixed(0)}</span>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">Click "Go to Offer" on deals to start tracking savings!</p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Savings progress bar */}
+                {dealsRedeemed > 0 && (
+                  <div className="mt-4 pt-4 border-t border-accent/10">
+                    <div className="flex items-center justify-between text-xs mb-1.5">
+                      <span className="text-muted-foreground">Savings milestone</span>
+                      <span className="font-semibold text-foreground">
+                        ${lifetimeSavings.toFixed(0)} / ${lifetimeSavings < 100 ? "100" : lifetimeSavings < 500 ? "500" : lifetimeSavings < 1000 ? "1,000" : "5,000"}
+                      </span>
+                    </div>
+                    <div className="w-full h-2.5 rounded-full bg-secondary overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full bg-gradient-to-r from-accent to-primary"
+                        initial={{ width: 0 }}
+                        animate={{
+                          width: `${Math.min(
+                            (lifetimeSavings / (lifetimeSavings < 100 ? 100 : lifetimeSavings < 500 ? 500 : lifetimeSavings < 1000 ? 1000 : 5000)) * 100,
+                            100
+                          )}%`,
+                        }}
+                        transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
+                      />
+                    </div>
+                    <div className="flex items-center gap-1 mt-1.5 text-[11px] text-muted-foreground">
+                      <Sparkles className="h-3 w-3 text-accent" />
+                      {lifetimeSavings < 100
+                        ? `$${(100 - lifetimeSavings).toFixed(0)} more to reach $100 milestone!`
+                        : lifetimeSavings < 500
+                        ? `$${(500 - lifetimeSavings).toFixed(0)} more to reach $500 milestone!`
+                        : lifetimeSavings < 1000
+                        ? `$${(1000 - lifetimeSavings).toFixed(0)} more to reach $1,000 milestone!`
+                        : "🎉 Amazing saver! You've unlocked the $1,000+ tier!"}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </motion.section>
+        )}
 
         {/* Featured Deals */}
         {featuredDeals.length > 0 && (
