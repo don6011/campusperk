@@ -199,6 +199,7 @@ export default function AffiliateAnalytics() {
 
   const days = getDaysFromRange(dateRange);
   const since = new Date(Date.now() - days * 86400000).toISOString();
+  const prevSince = new Date(Date.now() - days * 2 * 86400000).toISOString();
 
   // ── Data fetching ──
 
@@ -227,6 +228,20 @@ export default function AffiliateAnalytics() {
     },
   });
 
+  // Previous period clicks for comparison
+  const { data: prevClicks = [] } = useQuery({
+    queryKey: ["analytics-prev-clicks", dateRange],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("affiliate_clicks")
+        .select("id, deal_id, is_premium_user")
+        .gte("clicked_at", prevSince)
+        .lt("clicked_at", since);
+      if (error) throw error;
+      return data;
+    },
+  });
+
   const { data: conversions = [] } = useQuery({
     queryKey: ["analytics-conversions", dateRange],
     queryFn: async () => {
@@ -235,6 +250,20 @@ export default function AffiliateAnalytics() {
         .select("*")
         .gte("created_at", since)
         .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Previous period conversions for comparison
+  const { data: prevConversions = [] } = useQuery({
+    queryKey: ["analytics-prev-conversions", dateRange],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("affiliate_conversions")
+        .select("id, commission_earned")
+        .gte("created_at", prevSince)
+        .lt("created_at", since);
       if (error) throw error;
       return data;
     },
@@ -338,22 +367,49 @@ export default function AffiliateAnalytics() {
   const avgConvRate = totalClicks > 0 ? ((totalConversions / totalClicks) * 100).toFixed(1) : "0";
   const avgEpc = totalClicks > 0 ? (totalRevenue / totalClicks).toFixed(2) : "0.00";
 
+  // ── Period-over-period comparison ──
+  const prevTotalClicks = prevClicks.length;
+  const prevTotalConversions = prevConversions.length;
+  const prevTotalRevenue = prevConversions.reduce((s, c) => s + (c.commission_earned ?? 0), 0);
+  const prevConvRate = prevTotalClicks > 0 ? (prevTotalConversions / prevTotalClicks) * 100 : 0;
+
+  function pctChange(current: number, previous: number): number {
+    if (previous === 0) return current > 0 ? 100 : 0;
+    return parseFloat(((current - previous) / previous * 100).toFixed(1));
+  }
+
+  const clicksChange = pctChange(totalClicks, prevTotalClicks);
+  const conversionsChange = pctChange(totalConversions, prevTotalConversions);
+  const revenueChange = pctChange(totalRevenue, prevTotalRevenue);
+  const convRateChange = pctChange(parseFloat(avgConvRate), prevConvRate);
+
   // Store breakdown
   const storeMap = new Map<string, number>();
   dealPerf.forEach((d) => storeMap.set(d.storeName, (storeMap.get(d.storeName) ?? 0) + d.clicks));
   const storeAnalytics = Array.from(storeMap.entries()).map(([name, clicks]) => ({ name, clicks })).sort((a, b) => b.clicks - a.clicks);
 
+  // Revenue by category
+  const categoryRevMap = new Map<string, { clicks: number; revenue: number; conversions: number }>();
+  dealPerf.forEach((d) => {
+    const cat = d.category ?? "Other";
+    const prev = categoryRevMap.get(cat) ?? { clicks: 0, revenue: 0, conversions: 0 };
+    categoryRevMap.set(cat, { clicks: prev.clicks + d.clicks, revenue: prev.revenue + d.totalRevenue, conversions: prev.conversions + d.conversions });
+  });
+  const categoryRevenue = Array.from(categoryRevMap.entries())
+    .map(([name, v]) => ({ name, ...v }))
+    .sort((a, b) => b.revenue - a.revenue);
+
   // Daily clicks (aggregate)
-  const dailyMap = new Map<string, { clicks: number; revenue: number }>();
+  const dailyMap = new Map<string, { clicks: number; revenue: number; conversions: number }>();
   clicks.forEach((c) => {
     const day = new Date(c.clicked_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    const prev = dailyMap.get(day) ?? { clicks: 0, revenue: 0 };
-    dailyMap.set(day, { clicks: prev.clicks + 1, revenue: prev.revenue });
+    const prev = dailyMap.get(day) ?? { clicks: 0, revenue: 0, conversions: 0 };
+    dailyMap.set(day, { clicks: prev.clicks + 1, revenue: prev.revenue, conversions: prev.conversions });
   });
   conversions.forEach((c) => {
     const day = new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    const prev = dailyMap.get(day) ?? { clicks: 0, revenue: 0 };
-    dailyMap.set(day, { clicks: prev.clicks, revenue: prev.revenue + (c.commission_earned ?? 0) });
+    const prev = dailyMap.get(day) ?? { clicks: 0, revenue: 0, conversions: 0 };
+    dailyMap.set(day, { clicks: prev.clicks, revenue: prev.revenue + (c.commission_earned ?? 0), conversions: prev.conversions + 1 });
   });
   const dailyClicks = Array.from(dailyMap.entries()).map(([date, v]) => ({ date, ...v }));
 
@@ -376,6 +432,16 @@ export default function AffiliateAnalytics() {
   // Premium insights
   const totalPremiumClicks = clicks.filter((c) => c.is_premium_user).length;
   const totalFreeClicks = totalClicks - totalPremiumClicks;
+  const prevPremiumClicks = prevClicks.filter((c) => c.is_premium_user).length;
+
+  // Premium revenue: revenue from deals clicked by premium users
+  const premiumDealIds = new Set<string>();
+  clicks.filter((c) => c.is_premium_user).forEach((c) => premiumDealIds.add(c.deal_id));
+  const premiumRevenue = dealPerf.filter((d) => premiumDealIds.has(d.dealId)).reduce((s, d) => s + d.totalRevenue, 0);
+  const freeRevenue = totalRevenue - premiumRevenue;
+
+  // Conversion funnel
+  const uniqueDealsClicked = new Set(clicks.map((c) => c.deal_id)).size;
 
   // Underperforming
   const underperformingDeals = dealPerf.filter((d) => {
@@ -450,55 +516,192 @@ export default function AffiliateAnalytics() {
           </div>
         </div>
 
-        {/* KPI Cards */}
+        {/* KPI Cards with period-over-period */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          <KPICard title="Total Clicks" value={totalClicks.toLocaleString()} icon={MousePointerClick} />
-          <KPICard title="Conversions" value={totalConversions.toLocaleString()} icon={TrendingUp} />
+          <KPICard title="Total Clicks" value={totalClicks.toLocaleString()} change={clicksChange} icon={MousePointerClick} />
+          <KPICard title="Conversions" value={totalConversions.toLocaleString()} change={conversionsChange} icon={TrendingUp} />
           <KPICard
             title={hasEstimates ? "Est. Revenue" : "Revenue"}
             value={totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            change={revenueChange}
             icon={DollarSign}
             prefix="$"
             estimated={hasEstimates}
           />
-          <KPICard title="Conv. Rate" value={`${avgConvRate}%`} icon={Store} />
+          <KPICard title="Conv. Rate" value={`${avgConvRate}%`} change={convRateChange} icon={Store} />
           <KPICard title="Avg EPC" value={`$${avgEpc}`} icon={Activity} />
         </div>
 
-        {/* Premium vs Free insight */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {/* Conversion Funnel + Premium Revenue Gating */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          {/* Conversion Funnel */}
           <Card className="border-border bg-card">
-            <CardContent className="p-5">
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Premium vs Free Clicks</div>
-              <div className="flex items-end gap-4">
-                <div>
-                  <div className="text-xl font-bold text-foreground">{totalPremiumClicks}</div>
-                  <div className="text-xs text-muted-foreground">Premium users</div>
-                </div>
-                <div>
-                  <div className="text-xl font-bold text-foreground">{totalFreeClicks}</div>
-                  <div className="text-xs text-muted-foreground">Free users</div>
-                </div>
-              </div>
-              {totalClicks > 0 && (
-                <div className="w-full h-2 rounded-full bg-secondary overflow-hidden mt-3">
-                  <div className="h-full rounded-full bg-primary" style={{ width: `${(totalPremiumClicks / totalClicks) * 100}%` }} />
-                </div>
-              )}
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <TrendingUp className="h-4 w-4 text-primary" /> Conversion Funnel
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-3">
+              {[
+                { label: "Deals Available", value: deals.length, color: "bg-muted-foreground" },
+                { label: "Deals Clicked", value: uniqueDealsClicked, color: "bg-primary" },
+                { label: "Total Clicks", value: totalClicks, color: "bg-primary" },
+                { label: "Conversions", value: totalConversions, color: "bg-accent" },
+              ].map((step, i, arr) => {
+                const maxVal = arr[0].value || 1;
+                const pct = Math.max((step.value / maxVal) * 100, 4);
+                return (
+                  <div key={step.label}>
+                    <div className="flex justify-between text-xs mb-1">
+                      <span className="text-muted-foreground">{step.label}</span>
+                      <span className="font-semibold">{step.value.toLocaleString()}</span>
+                    </div>
+                    <div className="w-full h-3 rounded-full bg-secondary overflow-hidden">
+                      <div className={`h-full rounded-full ${step.color} transition-all`} style={{ width: `${pct}%` }} />
+                    </div>
+                    {i > 0 && i < arr.length && arr[i - 1].value > 0 && (
+                      <div className="text-[10px] text-muted-foreground mt-0.5">
+                        {((step.value / arr[i - 1].value) * 100).toFixed(1)}% from previous step
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </CardContent>
           </Card>
+
+          {/* Premium Revenue Gating Insight */}
           <Card className="border-border bg-card">
-            <CardContent className="p-5">
-              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Fraud Detection</div>
-              <div className="flex items-end gap-4">
-                <div>
-                  <div className="text-xl font-bold text-foreground">{flaggedClicks}</div>
-                  <div className="text-xs text-muted-foreground">Flagged clicks</div>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-accent" /> Premium Revenue Insight
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-primary/10 p-3">
+                  <div className="text-lg font-bold text-foreground">${premiumRevenue.toFixed(2)}</div>
+                  <div className="text-[11px] text-muted-foreground">Premium revenue</div>
                 </div>
-                <div>
-                  <div className="text-xl font-bold text-foreground">{totalClicks > 0 ? ((flaggedClicks / totalClicks) * 100).toFixed(1) : "0"}%</div>
-                  <div className="text-xs text-muted-foreground">Flag rate</div>
+                <div className="rounded-lg bg-secondary p-3">
+                  <div className="text-lg font-bold text-foreground">${freeRevenue.toFixed(2)}</div>
+                  <div className="text-[11px] text-muted-foreground">Free user revenue</div>
                 </div>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Premium clicks</span>
+                  <span className="font-medium">{totalPremiumClicks} ({totalClicks > 0 ? ((totalPremiumClicks / totalClicks) * 100).toFixed(1) : 0}%)</span>
+                </div>
+                <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${totalClicks > 0 ? (totalPremiumClicks / totalClicks) * 100 : 0}%` }} />
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Free clicks</span>
+                  <span className="font-medium">{totalFreeClicks} ({totalClicks > 0 ? ((totalFreeClicks / totalClicks) * 100).toFixed(1) : 0}%)</span>
+                </div>
+              </div>
+              {totalPremiumClicks > 0 && totalFreeClicks > 0 && (
+                <div className="text-xs text-muted-foreground border-t border-border pt-2">
+                  Premium EPC: <span className="font-semibold text-foreground">${totalPremiumClicks > 0 ? (premiumRevenue / totalPremiumClicks).toFixed(3) : "0.000"}</span>
+                  {" · "}Free EPC: <span className="font-semibold text-foreground">${totalFreeClicks > 0 ? (freeRevenue / totalFreeClicks).toFixed(3) : "0.000"}</span>
+                </div>
+              )}
+              <div className={`flex items-center gap-1 text-xs font-medium ${pctChange(totalPremiumClicks, prevPremiumClicks) >= 0 ? "text-accent" : "text-destructive"}`}>
+                {pctChange(totalPremiumClicks, prevPremiumClicks) >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+                {Math.abs(pctChange(totalPremiumClicks, prevPremiumClicks))}% premium clicks vs prev period
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Fraud + Flagged */}
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-destructive" /> Fraud Detection
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-lg bg-destructive/10 p-3">
+                  <div className="text-lg font-bold text-foreground">{flaggedClicks}</div>
+                  <div className="text-[11px] text-muted-foreground">Flagged clicks</div>
+                </div>
+                <div className="rounded-lg bg-secondary p-3">
+                  <div className="text-lg font-bold text-foreground">{totalClicks > 0 ? ((flaggedClicks / totalClicks) * 100).toFixed(1) : "0"}%</div>
+                  <div className="text-[11px] text-muted-foreground">Flag rate</div>
+                </div>
+              </div>
+              <div className="text-xs text-muted-foreground">
+                {flaggedClicks === 0
+                  ? "No suspicious activity detected in this period."
+                  : `${flaggedClicks} click${flaggedClicks !== 1 ? "s" : ""} flagged for review. Check for rapid repeats, VPN/proxy patterns, or bot behavior.`}
+              </div>
+              <div className="space-y-1.5">
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Verified students</span>
+                  <span className="font-medium">{clicks.filter((c) => c.is_verified_student).length}</span>
+                </div>
+                <div className="flex justify-between text-xs">
+                  <span className="text-muted-foreground">Non-verified</span>
+                  <span className="font-medium">{clicks.filter((c) => !c.is_verified_student).length}</span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Revenue by Category */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold">Revenue by Category</CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => exportCSV(categoryRevenue.map((c) => ({ Category: c.name, Revenue: c.revenue.toFixed(2), Clicks: c.clicks, Conversions: c.conversions })), "revenue-by-category")}>
+                <Download className="h-3.5 w-3.5" /> Export
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="h-[280px]">
+                {categoryRevenue.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-sm text-muted-foreground">No data</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={categoryRevenue.slice(0, 8)}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="name" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                      <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                      <Bar dataKey="revenue" name="Revenue ($)" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="clicks" name="Clicks" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Category Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="space-y-2">
+                {categoryRevenue.map((cat, i) => (
+                  <div key={cat.name} className="flex items-center justify-between gap-3 py-1.5 border-b border-border last:border-0">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="h-2.5 w-2.5 rounded-full shrink-0" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
+                      <span className="text-sm font-medium truncate">{cat.name}</span>
+                    </div>
+                    <div className="flex items-center gap-4 shrink-0 text-xs">
+                      <span className="text-muted-foreground">{cat.clicks} clicks</span>
+                      <span className="text-muted-foreground">{cat.conversions} conv</span>
+                      <span className="font-semibold text-accent">${cat.revenue.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ))}
+                {categoryRevenue.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No category data</p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -588,7 +791,7 @@ export default function AffiliateAnalytics() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <Card className="border-border bg-card">
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold">Daily Clicks & Revenue</CardTitle>
+              <CardTitle className="text-sm font-semibold">Daily Clicks, Conversions & Revenue</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="h-[280px]">
@@ -603,6 +806,7 @@ export default function AffiliateAnalytics() {
                       <YAxis yAxisId="right" orientation="right" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
                       <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
                       <Line yAxisId="left" type="monotone" dataKey="clicks" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                      <Line yAxisId="left" type="monotone" dataKey="conversions" stroke="hsl(var(--gold))" strokeWidth={2} dot={false} />
                       <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} strokeDasharray="5 5" />
                     </LineChart>
                   </ResponsiveContainer>
@@ -610,6 +814,7 @@ export default function AffiliateAnalytics() {
               </div>
               <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5"><span className="h-2 w-4 rounded-full bg-primary" /> Clicks</span>
+                <span className="flex items-center gap-1.5"><span className="h-2 w-4 rounded-full bg-gold" /> Conversions</span>
                 <span className="flex items-center gap-1.5"><span className="h-2 w-4 rounded-full bg-accent" /> Revenue</span>
               </div>
             </CardContent>
