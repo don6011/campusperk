@@ -24,6 +24,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
+import { SponsoredDealRow } from "@/components/SponsoredDealRow";
 
 // Types for the joined query result
 interface DealWithStore {
@@ -44,6 +45,9 @@ interface DealWithStore {
   affiliate_link_url: string | null;
   direct_link_url: string | null;
   visibility: string | null;
+  sponsor_tier: number | null;
+  sponsor_start_at: string | null;
+  sponsor_end_at: string | null;
   stores: {
     id: string;
     name: string;
@@ -173,6 +177,16 @@ export default function ExploreDeals() {
 
   const trendingDeals = useMemo(() => {
     return [...deals].filter((d) => d.status === "active").sort((a, b) => engagementScore(b) - engagementScore(a)).slice(0, 6);
+  }, [deals]);
+
+  const sponsoredDeals = useMemo(() => {
+    const now = new Date();
+    return deals.filter((d) => {
+      if (!d.sponsored || d.status !== "active") return false;
+      if (d.sponsor_start_at && new Date(d.sponsor_start_at) > now) return false;
+      if (d.sponsor_end_at && new Date(d.sponsor_end_at) < now) return false;
+      return true;
+    });
   }, [deals]);
 
   const scrollCarousel = (dir: "left" | "right") => {
@@ -312,6 +326,13 @@ export default function ExploreDeals() {
               })}
             </div>
           </div>
+        )}
+
+        {/* Sponsored Placements */}
+        {sponsoredDeals.length > 0 && (
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
+            <SponsoredDealRow deals={sponsoredDeals} />
+          </motion.div>
         )}
 
         {/* Search + Sort */}

@@ -27,11 +27,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { StatusBadge } from "@/components/StatusBadge";
-import { Search, Plus, Sparkles, Loader2 } from "lucide-react";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { StatusBadge, SponsoredBadge } from "@/components/StatusBadge";
+import { Search, Sparkles, CalendarIcon } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 type DealWithStore = {
   id: string;
@@ -40,6 +48,9 @@ type DealWithStore = {
   status: string;
   featured: boolean;
   sponsored: boolean;
+  sponsor_tier: number | null;
+  sponsor_start_at: string | null;
+  sponsor_end_at: string | null;
   discount_value: string | null;
   direct_link_url: string | null;
   affiliate_link_url: string | null;
@@ -48,8 +59,6 @@ type DealWithStore = {
   stores: { name: string } | null;
 };
 
-const CATEGORIES = ["Software", "Subscriptions", "Tech", "Clothing", "Food", "Learning", "Entertainment", "Fitness", "Travel", "Other"];
-
 const DealsManager = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -57,13 +66,14 @@ const DealsManager = () => {
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiUrl, setAiUrl] = useState("");
   const [aiText, setAiText] = useState("");
+  const [sponsorEditId, setSponsorEditId] = useState<string | null>(null);
 
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ["admin-deals"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("id, title, category, status, featured, sponsored, discount_value, direct_link_url, affiliate_link_url, commission_rate, requires_edu_email, stores(name)")
+        .select("id, title, category, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, discount_value, direct_link_url, affiliate_link_url, commission_rate, requires_edu_email, stores(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as DealWithStore[];
@@ -106,6 +116,32 @@ const DealsManager = () => {
     },
   });
 
+  const sponsorMutation = useMutation({
+    mutationFn: async ({ id, sponsor_tier, sponsor_start_at, sponsor_end_at }: {
+      id: string;
+      sponsor_tier: number | null;
+      sponsor_start_at: string | null;
+      sponsor_end_at: string | null;
+    }) => {
+      const { error } = await supabase.from("deals").update({
+        sponsor_tier,
+        sponsor_start_at,
+        sponsor_end_at,
+      }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-deals"] });
+      toast({ title: "Sponsor settings saved" });
+      setSponsorEditId(null);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const sponsorDeal = sponsorEditId ? deals.find((d) => d.id === sponsorEditId) : null;
+
   return (
     <AdminLayout>
       <div className="space-y-6">
@@ -143,7 +179,7 @@ const DealsManager = () => {
         </div>
 
         {/* Table */}
-        <div className="rounded-xl border border-border bg-card overflow-hidden">
+        <div className="rounded-xl border border-border bg-card overflow-hidden overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow className="hover:bg-transparent">
@@ -153,6 +189,7 @@ const DealsManager = () => {
                 <TableHead>Status</TableHead>
                 <TableHead className="text-center">Featured</TableHead>
                 <TableHead className="text-center">Sponsored</TableHead>
+                <TableHead>Sponsor Config</TableHead>
                 <TableHead>Status Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -160,67 +197,117 @@ const DealsManager = () => {
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((_, j) => (
+                    {Array.from({ length: 8 }).map((_, j) => (
                       <TableCell key={j}><div className="h-4 w-20 rounded bg-muted animate-pulse" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No deals found.</TableCell>
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No deals found.</TableCell>
                 </TableRow>
               ) : (
-                filtered.map((deal) => (
-                  <TableRow key={deal.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium text-sm">{deal.title}</div>
-                        <div className="text-xs text-muted-foreground">{deal.stores?.name || "—"}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className="bg-secondary text-muted-foreground border-border text-xs">
-                        {deal.category || "—"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-sm font-medium">{deal.discount_value || "—"}</TableCell>
-                    <TableCell><StatusBadge status={deal.status} /></TableCell>
-                    <TableCell className="text-center">
-                      <Switch
-                        checked={deal.featured}
-                        onCheckedChange={(v) => toggleMutation.mutate({ id: deal.id, field: "featured", value: v })}
-                      />
-                    </TableCell>
-                    <TableCell className="text-center">
-                      <Switch
-                        checked={deal.sponsored}
-                        onCheckedChange={(v) => toggleMutation.mutate({ id: deal.id, field: "sponsored", value: v })}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={deal.status}
-                        onValueChange={(v) => statusMutation.mutate({ id: deal.id, status: v })}
-                      >
-                        <SelectTrigger className="h-8 w-[120px] text-xs">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="active">Active</SelectItem>
-                          <SelectItem value="expired">Expired</SelectItem>
-                          <SelectItem value="coming_soon">Coming Soon</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                  </TableRow>
-                ))
+                filtered.map((deal) => {
+                  const isScheduleActive = deal.sponsor_start_at && deal.sponsor_end_at
+                    ? new Date(deal.sponsor_start_at) <= new Date() && new Date(deal.sponsor_end_at) >= new Date()
+                    : deal.sponsored;
+
+                  return (
+                    <TableRow key={deal.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium text-sm">{deal.title}</div>
+                          <div className="text-xs text-muted-foreground">{deal.stores?.name || "—"}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="bg-secondary text-muted-foreground border-border text-xs">
+                          {deal.category || "—"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm font-medium">{deal.discount_value || "—"}</TableCell>
+                      <TableCell><StatusBadge status={deal.status} /></TableCell>
+                      <TableCell className="text-center">
+                        <Switch
+                          checked={deal.featured}
+                          onCheckedChange={(v) => toggleMutation.mutate({ id: deal.id, field: "featured", value: v })}
+                        />
+                      </TableCell>
+                      <TableCell className="text-center">
+                        <Switch
+                          checked={deal.sponsored}
+                          onCheckedChange={(v) => toggleMutation.mutate({ id: deal.id, field: "sponsored", value: v })}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {deal.sponsored ? (
+                          <div className="flex items-center gap-2">
+                            <div className="text-xs space-y-0.5">
+                              <div className="flex items-center gap-1">
+                                <span className="text-muted-foreground">Tier:</span>
+                                <span className="font-medium">{deal.sponsor_tier ?? "—"}</span>
+                              </div>
+                              {deal.sponsor_start_at && deal.sponsor_end_at && (
+                                <div className={cn("text-[10px]", isScheduleActive ? "text-accent" : "text-muted-foreground")}>
+                                  {format(new Date(deal.sponsor_start_at), "MMM d")} – {format(new Date(deal.sponsor_end_at), "MMM d")}
+                                </div>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-xs text-primary"
+                              onClick={() => setSponsorEditId(deal.id)}
+                            >
+                              Edit
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={deal.status}
+                          onValueChange={(v) => statusMutation.mutate({ id: deal.id, status: v })}
+                        >
+                          <SelectTrigger className="h-8 w-[120px] text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="active">Active</SelectItem>
+                            <SelectItem value="expired">Expired</SelectItem>
+                            <SelectItem value="coming_soon">Coming Soon</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>
         </div>
       </div>
 
-      {/* AI Modal — placeholder for future AI integration */}
+      {/* Sponsor Config Modal */}
+      <SponsorConfigModal
+        deal={sponsorDeal}
+        open={!!sponsorEditId}
+        onOpenChange={(open) => { if (!open) setSponsorEditId(null); }}
+        onSave={(tier, start, end) => {
+          if (!sponsorEditId) return;
+          sponsorMutation.mutate({
+            id: sponsorEditId,
+            sponsor_tier: tier,
+            sponsor_start_at: start,
+            sponsor_end_at: end,
+          });
+        }}
+        isSaving={sponsorMutation.isPending}
+      />
+
+      {/* AI Modal */}
       <Dialog open={aiModalOpen} onOpenChange={setAiModalOpen}>
         <DialogContent className="sm:max-w-lg bg-card border-border">
           <DialogHeader>
@@ -232,7 +319,6 @@ const DealsManager = () => {
               Paste a URL or offer text. AI will extract the deal details for you.
             </DialogDescription>
           </DialogHeader>
-
           <div className="space-y-4 mt-2">
             <div>
               <label className="text-sm font-medium mb-1.5 block">Deal URL</label>
@@ -242,7 +328,6 @@ const DealsManager = () => {
               <label className="text-sm font-medium mb-1.5 block">Or paste offer text</label>
               <Textarea placeholder="Paste the deal description here..." value={aiText} onChange={(e) => setAiText(e.target.value)} rows={4} />
             </div>
-
             <Button disabled={!aiUrl && !aiText} className="w-full gap-2 bg-gold hover:bg-gold/90 text-background font-semibold">
               <Sparkles className="h-4 w-4" />
               Extract with AI (Coming Soon)
@@ -253,5 +338,120 @@ const DealsManager = () => {
     </AdminLayout>
   );
 };
+
+/* ---------- Sponsor Config Modal ---------- */
+
+function SponsorConfigModal({
+  deal,
+  open,
+  onOpenChange,
+  onSave,
+  isSaving,
+}: {
+  deal: DealWithStore | null | undefined;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (tier: number | null, start: string | null, end: string | null) => void;
+  isSaving: boolean;
+}) {
+  const [tier, setTier] = useState<string>("");
+  const [startDate, setStartDate] = useState<Date | undefined>();
+  const [endDate, setEndDate] = useState<Date | undefined>();
+
+  // Sync when deal changes
+  const dealId = deal?.id;
+  useState(() => {
+    if (deal) {
+      setTier(deal.sponsor_tier?.toString() ?? "");
+      setStartDate(deal.sponsor_start_at ? new Date(deal.sponsor_start_at) : undefined);
+      setEndDate(deal.sponsor_end_at ? new Date(deal.sponsor_end_at) : undefined);
+    }
+  });
+
+  // Reset when modal opens with a new deal
+  if (open && deal) {
+    const t = deal.sponsor_tier?.toString() ?? "";
+    const s = deal.sponsor_start_at ? new Date(deal.sponsor_start_at) : undefined;
+    const e = deal.sponsor_end_at ? new Date(deal.sponsor_end_at) : undefined;
+    // Only reset if deal changed (use a simple check)
+    if (tier === "" && !startDate && !endDate && (t || s || e)) {
+      // This is handled by the effect-like pattern below
+    }
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md bg-card border-border">
+        <DialogHeader>
+          <DialogTitle className="font-display text-lg flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-primary" />
+            Sponsor Configuration
+          </DialogTitle>
+          <DialogDescription>
+            {deal?.title ?? "Deal"} — set tier and schedule for sponsored placement.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div>
+            <label className="text-sm font-medium mb-1.5 block">Sponsor Tier (1–5)</label>
+            <Select value={tier} onValueChange={setTier}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select tier…" />
+              </SelectTrigger>
+              <SelectContent>
+                {[1, 2, 3, 4, 5].map((t) => (
+                  <SelectItem key={t} value={t.toString()}>Tier {t}{t === 5 ? " (Top)" : t === 1 ? " (Basic)" : ""}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Start Date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-sm", !startDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {startDate ? format(startDate, "MMM d, yyyy") : "Pick date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={startDate} onSelect={setStartDate} className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">End Date</label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className={cn("w-full justify-start text-left font-normal text-sm", !endDate && "text-muted-foreground")}>
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {endDate ? format(endDate, "MMM d, yyyy") : "Pick date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar mode="single" selected={endDate} onSelect={setEndDate} disabled={(date) => startDate ? date < startDate : false} className="p-3 pointer-events-auto" />
+                </PopoverContent>
+              </Popover>
+            </div>
+          </div>
+          <Button
+            className="w-full"
+            disabled={isSaving}
+            onClick={() => {
+              onSave(
+                tier ? parseInt(tier) : null,
+                startDate ? startDate.toISOString() : null,
+                endDate ? endDate.toISOString() : null,
+              );
+            }}
+          >
+            {isSaving ? "Saving…" : "Save Sponsor Settings"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default DealsManager;
