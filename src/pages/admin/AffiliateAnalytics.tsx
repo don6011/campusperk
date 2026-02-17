@@ -3,6 +3,8 @@ import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -18,6 +20,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import {
   BarChart,
   Bar,
@@ -46,96 +55,14 @@ import {
   Activity,
   AlertTriangle,
   Clock,
+  Plus,
+  Loader2,
 } from "lucide-react";
-import { mockDeals } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 
-// --- Mock analytics data seeded from deals ---
-
-function seeded(id: string, mult: number) {
-  return ((id.charCodeAt(1) * mult + 37) % 500) + 50;
-}
-
-const dealAnalytics = mockDeals
-  .filter((d) => d.status === "active" || d.status === "expired")
-  .map((d) => {
-    const clicks = seeded(d.id, 47);
-    const conversions = Math.round(clicks * (0.02 + (d.id.charCodeAt(1) % 8) * 0.005));
-    const revenue = parseFloat((seeded(d.id, 31) * (d.commissionRate ?? 3) * 0.12).toFixed(2));
-    const freshnessDays = (Date.now() - new Date(d.lastCheckedAt).getTime()) / (1000 * 60 * 60 * 24);
-    const saves = ((d.id.charCodeAt(1) * 13 + 29) % 200) + 10;
-    const convRate = clicks > 0 ? conversions / clicks : 0;
-
-    // Health score: 0-100
-    const clickScore = Math.min(clicks / 5, 100) * 0.3;
-    const convScore = Math.min(convRate * 1000, 100) * 0.25;
-    const freshnessScore = (freshnessDays <= 1 ? 100 : freshnessDays <= 7 ? 60 : freshnessDays <= 14 ? 30 : 10) * 0.25;
-    const saveScore = Math.min(saves / 2, 100) * 0.2;
-    const healthScore = Math.round(clickScore + convScore + freshnessScore + saveScore);
-
-    return {
-      dealId: d.id,
-      title: d.title,
-      storeName: d.storeName,
-      category: d.category,
-      clicks,
-      conversions,
-      revenue,
-      commissionRate: d.commissionRate ?? 3,
-      sponsored: d.sponsored,
-      lastCheckedAt: d.lastCheckedAt,
-      freshnessDays,
-      saves,
-      healthScore,
-      convRate,
-    };
-  })
-  .sort((a, b) => b.clicks - a.clicks);
-
-const totalClicks = dealAnalytics.reduce((s, d) => s + d.clicks, 0);
-const totalConversions = dealAnalytics.reduce((s, d) => s + d.conversions, 0);
-const totalRevenue = dealAnalytics.reduce((s, d) => s + d.revenue, 0);
-const avgConvRate = totalClicks > 0 ? ((totalConversions / totalClicks) * 100).toFixed(1) : "0";
-
-// Clicks per store
-const storeMap = new Map<string, number>();
-dealAnalytics.forEach((d) => storeMap.set(d.storeName, (storeMap.get(d.storeName) ?? 0) + d.clicks));
-const storeAnalytics = Array.from(storeMap.entries())
-  .map(([name, clicks]) => ({ name, clicks }))
-  .sort((a, b) => b.clicks - a.clicks);
-
-// Daily clicks (last 14 days)
-const dailyClicks = Array.from({ length: 14 }, (_, i) => {
-  const date = new Date();
-  date.setDate(date.getDate() - (13 - i));
-  const label = date.toLocaleDateString("en-US", { month: "short", day: "numeric" });
-  const clicks = Math.round(totalClicks / 14 * (0.7 + Math.sin(i * 0.9) * 0.5 + (i / 14) * 0.3));
-  const revenue = parseFloat((clicks * 0.35 + Math.random() * 10).toFixed(2));
-  return { date: label, clicks, revenue };
-});
-
-// Revenue leaderboard = top 5 deals by revenue
-const revenueLeaderboard = [...dealAnalytics].sort((a, b) => b.revenue - a.revenue).slice(0, 5);
-
-// Sponsored analytics
-const sponsoredDeals = dealAnalytics.filter((d) => d.sponsored);
-const organicDeals = dealAnalytics.filter((d) => !d.sponsored);
-const sponsoredRevenue = sponsoredDeals.reduce((s, d) => s + d.revenue, 0);
-const sponsoredClicks = sponsoredDeals.reduce((s, d) => s + d.clicks, 0);
-const organicClicks = organicDeals.reduce((s, d) => s + d.clicks, 0);
-const sponsoredClickShare = totalClicks > 0 ? ((sponsoredClicks / totalClicks) * 100).toFixed(1) : "0";
-const organicClickShare = totalClicks > 0 ? ((organicClicks / totalClicks) * 100).toFixed(1) : "0";
-const topSponsoredPlacements = [...sponsoredDeals].sort((a, b) => b.clicks - a.clicks);
-const sponsoredVsOrganic = [
-  { name: "Sponsored", value: sponsoredClicks },
-  { name: "Organic", value: organicClicks },
-];
-
-// Underperforming deals: high clicks + low conversions OR stale scan
-const underperformingDeals = dealAnalytics.filter((d) => {
-  const highClicksLowConv = d.clicks > 150 && d.convRate < 0.03;
-  const staleScan = d.freshnessDays > 7;
-  return highClicksLowConv || staleScan;
-}).sort((a, b) => a.healthScore - b.healthScore);
+// ── Constants ──
 
 const CHART_COLORS = [
   "hsl(var(--primary))",
@@ -151,6 +78,27 @@ const DATE_RANGES = [
   { value: "30d", label: "Last 30 days" },
   { value: "90d", label: "Last 90 days" },
 ];
+
+const AVG_ORDER_VALUES: Record<string, number> = {
+  Software: 120,
+  Subscriptions: 30,
+  Tech: 350,
+  Clothing: 85,
+  Food: 25,
+  Learning: 60,
+  Entertainment: 20,
+  Fitness: 50,
+  Travel: 200,
+  Other: 50,
+};
+
+const BENCHMARK_CONV_RATE = 0.035; // 3.5% avg
+
+// ── Helpers ──
+
+function getDaysFromRange(range: string): number {
+  return parseInt(range.replace("d", ""), 10);
+}
 
 function exportCSV(data: Record<string, unknown>[], filename: string) {
   if (!data.length) return;
@@ -174,12 +122,7 @@ function healthBadge(score: number) {
   return { label: `${score}`, className: "bg-destructive/15 text-destructive border-destructive/30" };
 }
 
-function underperformingReason(d: typeof dealAnalytics[0]) {
-  const reasons: string[] = [];
-  if (d.clicks > 150 && d.convRate < 0.03) reasons.push("Low conversion");
-  if (d.freshnessDays > 7) reasons.push("Stale scan");
-  return reasons;
-}
+// ── KPI Card ──
 
 const KPICard = ({
   title,
@@ -187,12 +130,14 @@ const KPICard = ({
   change,
   icon: Icon,
   prefix = "",
+  estimated = false,
 }: {
   title: string;
   value: string;
-  change: number;
+  change?: number;
   icon: React.ElementType;
   prefix?: string;
+  estimated?: boolean;
 }) => (
   <Card className="border-border bg-card">
     <CardContent className="p-5">
@@ -204,17 +149,248 @@ const KPICard = ({
       </div>
       <div className="text-2xl font-display font-bold text-foreground">
         {prefix}{value}
+        {estimated && <span className="text-xs font-normal text-muted-foreground ml-1">est.</span>}
       </div>
-      <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${change >= 0 ? "text-accent" : "text-destructive"}`}>
-        {change >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
-        {Math.abs(change)}% vs prev period
-      </div>
+      {change !== undefined && (
+        <div className={`flex items-center gap-1 mt-1 text-xs font-medium ${change >= 0 ? "text-accent" : "text-destructive"}`}>
+          {change >= 0 ? <ArrowUpRight className="h-3.5 w-3.5" /> : <ArrowDownRight className="h-3.5 w-3.5" />}
+          {Math.abs(change)}% vs prev period
+        </div>
+      )}
     </CardContent>
   </Card>
 );
 
+// ── Types ──
+
+type DealPerf = {
+  dealId: string;
+  title: string;
+  storeName: string;
+  category: string | null;
+  commissionRate: number;
+  sponsored: boolean;
+  clicks: number;
+  conversions: number;
+  confirmedRevenue: number;
+  estimatedRevenue: number;
+  totalRevenue: number;
+  convRate: number;
+  epc: number;
+  healthScore: number;
+  freshnessDays: number;
+  lastCheckedAt: string | null;
+};
+
+// ── Main Component ──
+
 export default function AffiliateAnalytics() {
+  const queryClient = useQueryClient();
   const [dateRange, setDateRange] = useState("14d");
+  const [convModalOpen, setConvModalOpen] = useState(false);
+  const [convForm, setConvForm] = useState({
+    deal_id: "",
+    order_value: "",
+    commission_earned: "",
+    network: "",
+    notes: "",
+    status: "pending" as "pending" | "confirmed" | "paid",
+  });
+
+  const days = getDaysFromRange(dateRange);
+  const since = new Date(Date.now() - days * 86400000).toISOString();
+
+  // ── Data fetching ──
+
+  const { data: deals = [] } = useQuery({
+    queryKey: ["analytics-deals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deals")
+        .select("id, title, category, commission_rate, sponsored, last_checked_at, stores(name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as { id: string; title: string; category: string | null; commission_rate: number | null; sponsored: boolean; last_checked_at: string | null; stores: { name: string } | null }[];
+    },
+  });
+
+  const { data: clicks = [] } = useQuery({
+    queryKey: ["analytics-clicks", dateRange],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("affiliate_clicks")
+        .select("id, deal_id, clicked_at, is_premium_user, is_verified_student, flagged")
+        .gte("clicked_at", since)
+        .order("clicked_at", { ascending: true });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  const { data: conversions = [] } = useQuery({
+    queryKey: ["analytics-conversions", dateRange],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("affiliate_conversions")
+        .select("*")
+        .gte("created_at", since)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // ── Manual conversion mutation ──
+
+  const addConversionMutation = useMutation({
+    mutationFn: async (form: typeof convForm) => {
+      const { error } = await supabase.from("affiliate_conversions").insert({
+        deal_id: form.deal_id,
+        order_value: form.order_value ? parseFloat(form.order_value) : null,
+        commission_earned: form.commission_earned ? parseFloat(form.commission_earned) : null,
+        network: form.network || "manual",
+        notes: form.notes || null,
+        status: form.status as any,
+      });
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["analytics-conversions"] });
+      toast({ title: "Conversion logged", description: "Manual conversion added successfully." });
+      setConvModalOpen(false);
+      setConvForm({ deal_id: "", order_value: "", commission_earned: "", network: "", notes: "", status: "pending" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  // ── Compute deal performance metrics ──
+
+  const clicksByDeal = new Map<string, number>();
+  const premiumClicksByDeal = new Map<string, number>();
+  clicks.forEach((c) => {
+    clicksByDeal.set(c.deal_id, (clicksByDeal.get(c.deal_id) ?? 0) + 1);
+    if (c.is_premium_user) premiumClicksByDeal.set(c.deal_id, (premiumClicksByDeal.get(c.deal_id) ?? 0) + 1);
+  });
+
+  const convByDeal = new Map<string, { count: number; revenue: number }>();
+  conversions.forEach((c) => {
+    const prev = convByDeal.get(c.deal_id) ?? { count: 0, revenue: 0 };
+    convByDeal.set(c.deal_id, {
+      count: prev.count + 1,
+      revenue: prev.revenue + (c.commission_earned ?? 0),
+    });
+  });
+
+  const dealPerf: DealPerf[] = deals.map((d) => {
+    const dClicks = clicksByDeal.get(d.id) ?? 0;
+    const conv = convByDeal.get(d.id) ?? { count: 0, revenue: 0 };
+    const commRate = d.commission_rate ?? 3;
+    const avgOV = AVG_ORDER_VALUES[d.category ?? "Other"] ?? 50;
+
+    // Commission estimation: clicks × benchmark conv rate × avg order value × commission %
+    const estimatedRevenue = conv.count > 0
+      ? 0
+      : parseFloat((dClicks * BENCHMARK_CONV_RATE * avgOV * (commRate / 100)).toFixed(2));
+
+    const totalRevenue = conv.revenue > 0 ? conv.revenue : estimatedRevenue;
+    const convRate = dClicks > 0 ? conv.count / dClicks : 0;
+    const epc = dClicks > 0 ? totalRevenue / dClicks : 0;
+
+    const freshnessDays = d.last_checked_at
+      ? (Date.now() - new Date(d.last_checked_at).getTime()) / 86400000
+      : 30;
+
+    // Health score
+    const clickScore = Math.min(dClicks / 5, 100) * 0.3;
+    const convScore = Math.min(convRate * 1000, 100) * 0.25;
+    const freshnessScore = (freshnessDays <= 1 ? 100 : freshnessDays <= 7 ? 60 : freshnessDays <= 14 ? 30 : 10) * 0.25;
+    const saveScore = 50 * 0.2; // placeholder without favorites count
+    const healthScore = Math.round(clickScore + convScore + freshnessScore + saveScore);
+
+    return {
+      dealId: d.id,
+      title: d.title,
+      storeName: d.stores?.name ?? "Unknown",
+      category: d.category,
+      commissionRate: commRate,
+      sponsored: d.sponsored,
+      clicks: dClicks,
+      conversions: conv.count,
+      confirmedRevenue: conv.revenue,
+      estimatedRevenue,
+      totalRevenue,
+      convRate,
+      epc,
+      healthScore,
+      freshnessDays,
+      lastCheckedAt: d.last_checked_at,
+    };
+  }).sort((a, b) => b.clicks - a.clicks);
+
+  const totalClicks = dealPerf.reduce((s, d) => s + d.clicks, 0);
+  const totalConversions = dealPerf.reduce((s, d) => s + d.conversions, 0);
+  const totalConfirmedRevenue = dealPerf.reduce((s, d) => s + d.confirmedRevenue, 0);
+  const totalEstimatedRevenue = dealPerf.reduce((s, d) => s + d.estimatedRevenue, 0);
+  const totalRevenue = totalConfirmedRevenue + totalEstimatedRevenue;
+  const hasEstimates = totalEstimatedRevenue > 0 && totalConfirmedRevenue === 0;
+  const avgConvRate = totalClicks > 0 ? ((totalConversions / totalClicks) * 100).toFixed(1) : "0";
+  const avgEpc = totalClicks > 0 ? (totalRevenue / totalClicks).toFixed(2) : "0.00";
+
+  // Store breakdown
+  const storeMap = new Map<string, number>();
+  dealPerf.forEach((d) => storeMap.set(d.storeName, (storeMap.get(d.storeName) ?? 0) + d.clicks));
+  const storeAnalytics = Array.from(storeMap.entries()).map(([name, clicks]) => ({ name, clicks })).sort((a, b) => b.clicks - a.clicks);
+
+  // Daily clicks (aggregate)
+  const dailyMap = new Map<string, { clicks: number; revenue: number }>();
+  clicks.forEach((c) => {
+    const day = new Date(c.clicked_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const prev = dailyMap.get(day) ?? { clicks: 0, revenue: 0 };
+    dailyMap.set(day, { clicks: prev.clicks + 1, revenue: prev.revenue });
+  });
+  conversions.forEach((c) => {
+    const day = new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const prev = dailyMap.get(day) ?? { clicks: 0, revenue: 0 };
+    dailyMap.set(day, { clicks: prev.clicks, revenue: prev.revenue + (c.commission_earned ?? 0) });
+  });
+  const dailyClicks = Array.from(dailyMap.entries()).map(([date, v]) => ({ date, ...v }));
+
+  // Revenue leaderboard
+  const revenueLeaderboard = [...dealPerf].sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 5);
+
+  // Sponsored
+  const sponsoredDeals = dealPerf.filter((d) => d.sponsored);
+  const organicDeals = dealPerf.filter((d) => !d.sponsored);
+  const sponsoredClicks = sponsoredDeals.reduce((s, d) => s + d.clicks, 0);
+  const organicClicks = organicDeals.reduce((s, d) => s + d.clicks, 0);
+  const sponsoredRevenue = sponsoredDeals.reduce((s, d) => s + d.totalRevenue, 0);
+  const sponsoredClickShare = totalClicks > 0 ? ((sponsoredClicks / totalClicks) * 100).toFixed(1) : "0";
+  const organicClickShare = totalClicks > 0 ? ((organicClicks / totalClicks) * 100).toFixed(1) : "0";
+  const sponsoredVsOrganic = [
+    { name: "Sponsored", value: sponsoredClicks },
+    { name: "Organic", value: organicClicks },
+  ];
+
+  // Premium insights
+  const totalPremiumClicks = clicks.filter((c) => c.is_premium_user).length;
+  const totalFreeClicks = totalClicks - totalPremiumClicks;
+
+  // Underperforming
+  const underperformingDeals = dealPerf.filter((d) => {
+    return (d.clicks > 10 && d.convRate < 0.02) || d.freshnessDays > 7;
+  }).sort((a, b) => a.healthScore - b.healthScore);
+
+  function underperformingReason(d: DealPerf) {
+    const reasons: string[] = [];
+    if (d.clicks > 10 && d.convRate < 0.02) reasons.push("Low conversion");
+    if (d.freshnessDays > 7) reasons.push("Stale scan");
+    return reasons;
+  }
+
+  // Flagged clicks
+  const flaggedClicks = clicks.filter((c) => c.flagged).length;
 
   return (
     <AdminLayout>
@@ -226,6 +402,15 @@ export default function AffiliateAnalytics() {
             <p className="text-sm text-muted-foreground">Track clicks, conversions, and affiliate revenue</p>
           </div>
           <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-accent/30 text-accent hover:bg-accent/10"
+              onClick={() => setConvModalOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Log Conversion
+            </Button>
             <Select value={dateRange} onValueChange={setDateRange}>
               <SelectTrigger className="w-[160px] h-9 bg-secondary border-border text-sm">
                 <SelectValue />
@@ -242,13 +427,15 @@ export default function AffiliateAnalytics() {
               className="gap-1.5"
               onClick={() =>
                 exportCSV(
-                  dealAnalytics.map((d) => ({
+                  dealPerf.map((d) => ({
                     Deal: d.title,
                     Store: d.storeName,
-                    Category: d.category,
+                    Category: d.category ?? "",
                     Clicks: d.clicks,
                     Conversions: d.conversions,
-                    Revenue: d.revenue,
+                    ConfirmedRevenue: d.confirmedRevenue.toFixed(2),
+                    EstimatedRevenue: d.estimatedRevenue.toFixed(2),
+                    EPC: d.epc.toFixed(3),
                     CommissionRate: d.commissionRate,
                     HealthScore: d.healthScore,
                     Sponsored: d.sponsored ? "Yes" : "No",
@@ -264,22 +451,61 @@ export default function AffiliateAnalytics() {
         </div>
 
         {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPICard title="Total Clicks" value={totalClicks.toLocaleString()} change={12.4} icon={MousePointerClick} />
-          <KPICard title="Conversions" value={totalConversions.toLocaleString()} change={8.2} icon={TrendingUp} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+          <KPICard title="Total Clicks" value={totalClicks.toLocaleString()} icon={MousePointerClick} />
+          <KPICard title="Conversions" value={totalConversions.toLocaleString()} icon={TrendingUp} />
           <KPICard
-            title="Est. Revenue"
+            title={hasEstimates ? "Est. Revenue" : "Revenue"}
             value={totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            change={15.7}
             icon={DollarSign}
             prefix="$"
+            estimated={hasEstimates}
           />
-          <KPICard title="Conv. Rate" value={`${avgConvRate}%`} change={-1.3} icon={Store} />
+          <KPICard title="Conv. Rate" value={`${avgConvRate}%`} icon={Store} />
+          <KPICard title="Avg EPC" value={`$${avgEpc}`} icon={Activity} />
+        </div>
+
+        {/* Premium vs Free insight */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Card className="border-border bg-card">
+            <CardContent className="p-5">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Premium vs Free Clicks</div>
+              <div className="flex items-end gap-4">
+                <div>
+                  <div className="text-xl font-bold text-foreground">{totalPremiumClicks}</div>
+                  <div className="text-xs text-muted-foreground">Premium users</div>
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-foreground">{totalFreeClicks}</div>
+                  <div className="text-xs text-muted-foreground">Free users</div>
+                </div>
+              </div>
+              {totalClicks > 0 && (
+                <div className="w-full h-2 rounded-full bg-secondary overflow-hidden mt-3">
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${(totalPremiumClicks / totalClicks) * 100}%` }} />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          <Card className="border-border bg-card">
+            <CardContent className="p-5">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Fraud Detection</div>
+              <div className="flex items-end gap-4">
+                <div>
+                  <div className="text-xl font-bold text-foreground">{flaggedClicks}</div>
+                  <div className="text-xs text-muted-foreground">Flagged clicks</div>
+                </div>
+                <div>
+                  <div className="text-xl font-bold text-foreground">{totalClicks > 0 ? ((flaggedClicks / totalClicks) * 100).toFixed(1) : "0"}%</div>
+                  <div className="text-xs text-muted-foreground">Flag rate</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* ========== SPONSORED REVENUE PANEL ========== */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* Sponsored KPIs */}
           <Card className="border-border bg-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -301,10 +527,7 @@ export default function AffiliateAnalytics() {
                   <span className="font-medium">{sponsoredClicks.toLocaleString()} ({sponsoredClickShare}%)</span>
                 </div>
                 <div className="w-full h-2 rounded-full bg-secondary overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gold"
-                    style={{ width: `${sponsoredClickShare}%` }}
-                  />
+                  <div className="h-full rounded-full bg-gold" style={{ width: `${sponsoredClickShare}%` }} />
                 </div>
                 <div className="flex justify-between text-xs">
                   <span className="text-muted-foreground">Organic clicks</span>
@@ -314,7 +537,6 @@ export default function AffiliateAnalytics() {
             </CardContent>
           </Card>
 
-          {/* Sponsored vs Organic Pie */}
           <Card className="border-border bg-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Sponsored vs Organic</CardTitle>
@@ -323,29 +545,11 @@ export default function AffiliateAnalytics() {
               <div className="h-[180px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
-                    <Pie
-                      data={sponsoredVsOrganic}
-                      dataKey="value"
-                      nameKey="name"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={70}
-                      innerRadius={40}
-                      paddingAngle={3}
-                      stroke="hsl(var(--card))"
-                      strokeWidth={2}
-                    >
+                    <Pie data={sponsoredVsOrganic} dataKey="value" nameKey="name" cx="50%" cy="50%" outerRadius={70} innerRadius={40} paddingAngle={3} stroke="hsl(var(--card))" strokeWidth={2}>
                       <Cell fill="hsl(var(--gold))" />
                       <Cell fill="hsl(var(--primary))" />
                     </Pie>
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "hsl(var(--card))",
-                        border: "1px solid hsl(var(--border))",
-                        borderRadius: "8px",
-                        fontSize: "12px",
-                      }}
-                    />
+                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -356,23 +560,22 @@ export default function AffiliateAnalytics() {
             </CardContent>
           </Card>
 
-          {/* Top Sponsored Placements */}
           <Card className="border-border bg-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Top Sponsored Placements</CardTitle>
             </CardHeader>
             <CardContent className="pt-0 space-y-2.5">
-              {topSponsoredPlacements.length === 0 && (
+              {sponsoredDeals.length === 0 && (
                 <p className="text-sm text-muted-foreground py-4 text-center">No sponsored deals</p>
               )}
-              {topSponsoredPlacements.map((d, i) => (
+              {[...sponsoredDeals].sort((a, b) => b.clicks - a.clicks).map((d) => (
                 <div key={d.dealId} className="flex items-center justify-between gap-2 py-1.5 border-b border-border last:border-0">
                   <div className="min-w-0">
                     <div className="text-sm font-medium truncate">{d.title}</div>
                     <div className="text-[11px] text-muted-foreground">{d.storeName} · {d.commissionRate}% commission</div>
                   </div>
                   <div className="text-right shrink-0">
-                    <div className="text-sm font-semibold text-gold">${d.revenue.toFixed(2)}</div>
+                    <div className="text-sm font-semibold text-gold">${d.totalRevenue.toFixed(2)}</div>
                     <div className="text-[11px] text-muted-foreground">{d.clicks} clicks</div>
                   </div>
                 </div>
@@ -383,24 +586,27 @@ export default function AffiliateAnalytics() {
 
         {/* Charts row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Daily Clicks + Revenue */}
           <Card className="border-border bg-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Daily Clicks & Revenue</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={dailyClicks}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                    <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                    <YAxis yAxisId="left" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                    <YAxis yAxisId="right" orientation="right" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
-                    <Line yAxisId="left" type="monotone" dataKey="clicks" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
-                    <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} strokeDasharray="5 5" />
-                  </LineChart>
-                </ResponsiveContainer>
+                {dailyClicks.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-sm text-muted-foreground">No click data in this period</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={dailyClicks}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                      <YAxis yAxisId="left" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                      <YAxis yAxisId="right" orientation="right" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                      <Line yAxisId="left" type="monotone" dataKey="clicks" stroke="hsl(var(--primary))" strokeWidth={2} dot={false} />
+                      <Line yAxisId="right" type="monotone" dataKey="revenue" stroke="hsl(var(--accent))" strokeWidth={2} dot={false} strokeDasharray="5 5" />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
               </div>
               <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
                 <span className="flex items-center gap-1.5"><span className="h-2 w-4 rounded-full bg-primary" /> Clicks</span>
@@ -409,22 +615,25 @@ export default function AffiliateAnalytics() {
             </CardContent>
           </Card>
 
-          {/* Top Performing Deals (bar) */}
           <Card className="border-border bg-card">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold">Top Performing Deals</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="h-[280px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={dealAnalytics.slice(0, 6).map((d) => ({ name: d.storeName, clicks: d.clicks }))} layout="vertical">
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
-                    <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                    <YAxis dataKey="name" type="category" width={80} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
-                    <Bar dataKey="clicks" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
+                {dealPerf.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-sm text-muted-foreground">No data</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={dealPerf.slice(0, 6).map((d) => ({ name: d.storeName, clicks: d.clicks }))} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
+                      <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                      <YAxis dataKey="name" type="category" width={80} tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                      <Bar dataKey="clicks" fill="hsl(var(--primary))" radius={[0, 4, 4, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -437,7 +646,7 @@ export default function AffiliateAnalytics() {
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Trophy className="h-4 w-4 text-gold" /> Revenue Leaderboard
               </CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => exportCSV(revenueLeaderboard.map((d) => ({ Deal: d.title, Store: d.storeName, Revenue: d.revenue, Clicks: d.clicks, Conversions: d.conversions })), "revenue-leaderboard")}>
+              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => exportCSV(revenueLeaderboard.map((d) => ({ Deal: d.title, Store: d.storeName, Revenue: d.totalRevenue.toFixed(2), Clicks: d.clicks, Conversions: d.conversions, EPC: d.epc.toFixed(3) })), "revenue-leaderboard")}>
                 <Download className="h-3.5 w-3.5" /> Export
               </Button>
             </CardHeader>
@@ -448,6 +657,7 @@ export default function AffiliateAnalytics() {
                     <TableHead className="text-xs">#</TableHead>
                     <TableHead className="text-xs">Deal</TableHead>
                     <TableHead className="text-xs text-right">Revenue</TableHead>
+                    <TableHead className="text-xs text-right">EPC</TableHead>
                     <TableHead className="text-xs text-right">Clicks</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -459,10 +669,17 @@ export default function AffiliateAnalytics() {
                         <div className="text-sm font-medium truncate max-w-[200px]">{d.title}</div>
                         <div className="text-[11px] text-muted-foreground">{d.storeName}</div>
                       </TableCell>
-                      <TableCell className="text-right text-sm font-semibold text-accent">${d.revenue.toFixed(2)}</TableCell>
+                      <TableCell className="text-right text-sm font-semibold text-accent">
+                        ${d.totalRevenue.toFixed(2)}
+                        {d.estimatedRevenue > 0 && d.confirmedRevenue === 0 && <span className="text-[10px] text-muted-foreground ml-0.5">est</span>}
+                      </TableCell>
+                      <TableCell className="text-right text-sm text-muted-foreground">${d.epc.toFixed(3)}</TableCell>
                       <TableCell className="text-right text-sm text-muted-foreground">{d.clicks}</TableCell>
                     </TableRow>
                   ))}
+                  {revenueLeaderboard.length === 0 && (
+                    <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-4">No data yet</TableCell></TableRow>
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
@@ -474,17 +691,21 @@ export default function AffiliateAnalytics() {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="h-[240px]">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie data={storeAnalytics} dataKey="clicks" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50} paddingAngle={2} stroke="hsl(var(--card))" strokeWidth={2}>
-                      {storeAnalytics.map((_, i) => (<Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />))}
-                    </Pie>
-                    <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
-                  </PieChart>
-                </ResponsiveContainer>
+                {storeAnalytics.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-sm text-muted-foreground">No data</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={storeAnalytics.slice(0, 5)} dataKey="clicks" nameKey="name" cx="50%" cy="50%" outerRadius={90} innerRadius={50} paddingAngle={2} stroke="hsl(var(--card))" strokeWidth={2}>
+                        {storeAnalytics.slice(0, 5).map((_, i) => (<Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />))}
+                      </Pie>
+                      <Tooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
               </div>
               <div className="flex flex-wrap gap-3 mt-2 justify-center">
-                {storeAnalytics.map((s, i) => (
+                {storeAnalytics.slice(0, 5).map((s, i) => (
                   <span key={s.name} className="flex items-center gap-1.5 text-xs text-muted-foreground">
                     <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: CHART_COLORS[i % CHART_COLORS.length] }} />
                     {s.name}
@@ -495,7 +716,7 @@ export default function AffiliateAnalytics() {
           </Card>
         </div>
 
-        {/* ========== UNDERPERFORMING DEALS WIDGET ========== */}
+        {/* Underperforming Deals */}
         {underperformingDeals.length > 0 && (
           <Card className="border-destructive/30 bg-card">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -505,12 +726,9 @@ export default function AffiliateAnalytics() {
                   {underperformingDeals.length} flagged
                 </Badge>
               </CardTitle>
-              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => exportCSV(underperformingDeals.map((d) => ({ Deal: d.title, Store: d.storeName, Clicks: d.clicks, ConvRate: `${(d.convRate * 100).toFixed(1)}%`, HealthScore: d.healthScore, ScanAge: `${Math.round(d.freshnessDays)}d`, Reasons: underperformingReason(d).join(", ") })), "underperforming-deals")}>
-                <Download className="h-3.5 w-3.5" /> Export
-              </Button>
             </CardHeader>
             <CardContent className="pt-0">
-              <p className="text-xs text-muted-foreground mb-3">Deals with high clicks but low conversions, or stale scan data. Flagged for admin review.</p>
+              <p className="text-xs text-muted-foreground mb-3">Deals with low conversions or stale scan data.</p>
               <div className="overflow-auto">
                 <Table>
                   <TableHeader>
@@ -519,7 +737,7 @@ export default function AffiliateAnalytics() {
                       <TableHead className="text-xs text-center">Health</TableHead>
                       <TableHead className="text-xs text-right">Clicks</TableHead>
                       <TableHead className="text-xs text-right">Conv. Rate</TableHead>
-                      <TableHead className="text-xs text-right">Scan Age</TableHead>
+                      <TableHead className="text-xs text-right">EPC</TableHead>
                       <TableHead className="text-xs">Issues</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -540,11 +758,7 @@ export default function AffiliateAnalytics() {
                           </TableCell>
                           <TableCell className="text-right text-sm">{d.clicks}</TableCell>
                           <TableCell className="text-right text-sm">{(d.convRate * 100).toFixed(1)}%</TableCell>
-                          <TableCell className="text-right text-sm">
-                            <span className={d.freshnessDays > 7 ? "text-destructive" : d.freshnessDays > 3 ? "text-gold" : "text-accent"}>
-                              {Math.round(d.freshnessDays)}d ago
-                            </span>
-                          </TableCell>
+                          <TableCell className="text-right text-sm">${d.epc.toFixed(3)}</TableCell>
                           <TableCell>
                             <div className="flex flex-wrap gap-1">
                               {reasons.includes("Low conversion") && (
@@ -569,11 +783,11 @@ export default function AffiliateAnalytics() {
           </Card>
         )}
 
-        {/* Full Deals Table with Health Score */}
+        {/* Full Deals Performance Table */}
         <Card className="border-border bg-card">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-semibold">All Deals Performance</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => exportCSV(dealAnalytics.map((d) => ({ Deal: d.title, Store: d.storeName, Category: d.category, Clicks: d.clicks, Conversions: d.conversions, Revenue: d.revenue, Commission: `${d.commissionRate}%`, HealthScore: d.healthScore, Sponsored: d.sponsored ? "Yes" : "No" })), "all-deals-performance")}>
+            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => exportCSV(dealPerf.map((d) => ({ Deal: d.title, Store: d.storeName, Category: d.category ?? "", Clicks: d.clicks, Conversions: d.conversions, ConvRate: `${(d.convRate * 100).toFixed(1)}%`, ConfirmedRev: d.confirmedRevenue.toFixed(2), EstimatedRev: d.estimatedRevenue.toFixed(2), EPC: d.epc.toFixed(3), Commission: `${d.commissionRate}%`, HealthScore: d.healthScore, Sponsored: d.sponsored ? "Yes" : "No" })), "all-deals-performance")}>
               <Download className="h-3.5 w-3.5" /> Export
             </Button>
           </CardHeader>
@@ -586,14 +800,15 @@ export default function AffiliateAnalytics() {
                     <TableHead className="text-xs">Category</TableHead>
                     <TableHead className="text-xs text-center">Health</TableHead>
                     <TableHead className="text-xs text-right">Clicks</TableHead>
-                    <TableHead className="text-xs text-right">Conversions</TableHead>
+                    <TableHead className="text-xs text-right">Conv.</TableHead>
                     <TableHead className="text-xs text-right">Conv. Rate</TableHead>
-                    <TableHead className="text-xs text-right">Commission</TableHead>
                     <TableHead className="text-xs text-right">Revenue</TableHead>
+                    <TableHead className="text-xs text-right">EPC</TableHead>
+                    <TableHead className="text-xs text-right">Commission</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {dealAnalytics.map((d) => {
+                  {dealPerf.map((d) => {
                     const hb = healthBadge(d.healthScore);
                     return (
                       <TableRow key={d.dealId}>
@@ -607,7 +822,7 @@ export default function AffiliateAnalytics() {
                           <div className="text-[11px] text-muted-foreground">{d.storeName}</div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="text-[10px] bg-secondary border-border">{d.category}</Badge>
+                          <Badge variant="outline" className="text-[10px] bg-secondary border-border">{d.category ?? "—"}</Badge>
                         </TableCell>
                         <TableCell className="text-center">
                           <Badge className={`text-[10px] font-bold ${hb.className}`}>
@@ -616,18 +831,187 @@ export default function AffiliateAnalytics() {
                         </TableCell>
                         <TableCell className="text-right text-sm">{d.clicks}</TableCell>
                         <TableCell className="text-right text-sm">{d.conversions}</TableCell>
-                        <TableCell className="text-right text-sm">{d.clicks > 0 ? ((d.conversions / d.clicks) * 100).toFixed(1) : "0"}%</TableCell>
+                        <TableCell className="text-right text-sm">{(d.convRate * 100).toFixed(1)}%</TableCell>
+                        <TableCell className="text-right text-sm font-semibold text-accent">
+                          ${d.totalRevenue.toFixed(2)}
+                          {d.estimatedRevenue > 0 && d.confirmedRevenue === 0 && <span className="text-[10px] text-muted-foreground ml-0.5">est</span>}
+                        </TableCell>
+                        <TableCell className="text-right text-sm text-muted-foreground">${d.epc.toFixed(3)}</TableCell>
                         <TableCell className="text-right text-sm text-muted-foreground">{d.commissionRate}%</TableCell>
-                        <TableCell className="text-right text-sm font-semibold text-accent">${d.revenue.toFixed(2)}</TableCell>
                       </TableRow>
                     );
                   })}
+                  {dealPerf.length === 0 && (
+                    <TableRow><TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">No deals found</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Conversions */}
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-semibold">Recent Conversions</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-accent/30 text-accent hover:bg-accent/10"
+              onClick={() => setConvModalOpen(true)}
+            >
+              <Plus className="h-4 w-4" />
+              Log Conversion
+            </Button>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="overflow-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs">Deal</TableHead>
+                    <TableHead className="text-xs">Network</TableHead>
+                    <TableHead className="text-xs text-right">Order Value</TableHead>
+                    <TableHead className="text-xs text-right">Commission</TableHead>
+                    <TableHead className="text-xs">Status</TableHead>
+                    <TableHead className="text-xs">Date</TableHead>
+                    <TableHead className="text-xs">Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {conversions.map((c) => {
+                    const deal = deals.find((d) => d.id === c.deal_id);
+                    return (
+                      <TableRow key={c.id}>
+                        <TableCell className="text-sm font-medium">{deal?.title ?? c.deal_id.slice(0, 8)}</TableCell>
+                        <TableCell className="text-sm">{c.network ?? "—"}</TableCell>
+                        <TableCell className="text-right text-sm">{c.order_value != null ? `$${Number(c.order_value).toFixed(2)}` : "—"}</TableCell>
+                        <TableCell className="text-right text-sm font-semibold text-accent">{c.commission_earned != null ? `$${Number(c.commission_earned).toFixed(2)}` : "—"}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`text-[10px] ${c.status === "confirmed" ? "bg-accent/15 text-accent border-accent/30" : c.status === "paid" ? "bg-primary/15 text-primary border-primary/30" : "bg-gold/15 text-gold border-gold/30"}`}>
+                            {c.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground truncate max-w-[150px]">{c.notes ?? "—"}</TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {conversions.length === 0 && (
+                    <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">No conversions yet. Click "Log Conversion" to add one.</TableCell></TableRow>
+                  )}
                 </TableBody>
               </Table>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {/* Manual Conversion Entry Dialog */}
+      <Dialog open={convModalOpen} onOpenChange={setConvModalOpen}>
+        <DialogContent className="sm:max-w-lg bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="font-display text-xl flex items-center gap-2">
+              <DollarSign className="h-5 w-5 text-accent" />
+              Log Manual Conversion
+            </DialogTitle>
+            <DialogDescription>
+              Record a conversion from brand reports, CSV imports, or sponsored deal tracking.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 mt-2">
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Deal *</label>
+              <Select value={convForm.deal_id} onValueChange={(v) => setConvForm((f) => ({ ...f, deal_id: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a deal" />
+                </SelectTrigger>
+                <SelectContent className="max-h-[200px]">
+                  {deals.map((d) => (
+                    <SelectItem key={d.id} value={d.id}>{d.title} ({d.stores?.name})</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Order Value ($)</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={convForm.order_value}
+                  onChange={(e) => setConvForm((f) => ({ ...f, order_value: e.target.value }))}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Commission Earned ($)</label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  placeholder="0.00"
+                  value={convForm.commission_earned}
+                  onChange={(e) => setConvForm((f) => ({ ...f, commission_earned: e.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Network</label>
+                <Select value={convForm.network} onValueChange={(v) => setConvForm((f) => ({ ...f, network: v }))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select network" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="manual">Manual</SelectItem>
+                    <SelectItem value="impact">Impact</SelectItem>
+                    <SelectItem value="rakuten">Rakuten</SelectItem>
+                    <SelectItem value="cj">CJ</SelectItem>
+                    <SelectItem value="shareasale">ShareASale</SelectItem>
+                    <SelectItem value="partnerize">Partnerize</SelectItem>
+                    <SelectItem value="brand_direct">Brand Direct</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-sm font-medium mb-1.5 block">Status</label>
+                <Select value={convForm.status} onValueChange={(v) => setConvForm((f) => ({ ...f, status: v as any }))}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                    <SelectItem value="paid">Paid</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium mb-1.5 block">Notes</label>
+              <Textarea
+                placeholder="Optional notes..."
+                value={convForm.notes}
+                onChange={(e) => setConvForm((f) => ({ ...f, notes: e.target.value }))}
+                rows={2}
+              />
+            </div>
+
+            <Button
+              disabled={!convForm.deal_id || addConversionMutation.isPending}
+              className="w-full gap-2"
+              onClick={() => addConversionMutation.mutate(convForm)}
+            >
+              {addConversionMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              Log Conversion
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </AdminLayout>
   );
 }
