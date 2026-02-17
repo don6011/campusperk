@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useQuery } from "@tanstack/react-query";
@@ -7,6 +7,7 @@ import {
   Shield, Crown, Clock, Lock, ShoppingBag, GraduationCap,
   AlertTriangle, Tag, X, RotateCcw, Sparkles, Monitor, Cpu,
   CreditCard, Plane, Utensils, BookOpen, Dumbbell, Film,
+  Bell, CheckCircle, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,6 +25,7 @@ import { VerifyModal } from "@/components/VerifyModal";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 interface DealWithStore {
   id: string;
@@ -50,16 +52,28 @@ interface DealWithStore {
   };
 }
 
-const CATEGORY_META: Record<string, { name: string; icon: any; description: string; dbNames: string[]; iconColor: string }> = {
-  clothing: { name: "Clothing", icon: ShoppingBag, description: "Student discounts on fashion, apparel, and accessories from top brands.", dbNames: ["Clothing"], iconColor: "text-pink-400" },
-  software: { name: "Software", icon: Monitor, description: "Save on creative tools, developer software, and productivity suites.", dbNames: ["Software"], iconColor: "text-primary" },
-  tech: { name: "Tech & Computers", icon: Cpu, description: "Discounts on laptops, phones, tablets, and tech accessories.", dbNames: ["Tech", "Tech & Computers"], iconColor: "text-violet-400" },
-  subscriptions: { name: "Subscriptions", icon: CreditCard, description: "Student pricing on streaming, music, and subscription services.", dbNames: ["Subscriptions"], iconColor: "text-accent" },
-  travel: { name: "Travel", icon: Plane, description: "Student travel deals on flights, hotels, and transportation.", dbNames: ["Travel"], iconColor: "text-sky-400" },
-  food: { name: "Food", icon: Utensils, description: "Discounts on food delivery, restaurants, and meal services.", dbNames: ["Food"], iconColor: "text-orange-400" },
-  learning: { name: "Books & Learning", icon: BookOpen, description: "Save on textbooks, online courses, and educational resources.", dbNames: ["Learning", "Books & Learning", "Books"], iconColor: "text-gold" },
-  fitness: { name: "Fitness", icon: Dumbbell, description: "Student deals on gym memberships, activewear, and fitness apps.", dbNames: ["Fitness"], iconColor: "text-red-400" },
-  entertainment: { name: "Entertainment", icon: Film, description: "Student pricing on streaming, gaming, and entertainment services.", dbNames: ["Entertainment"], iconColor: "text-indigo-400" },
+const CATEGORY_META: Record<string, { name: string; icon: any; description: string; dbNames: string[]; iconColor: string; gradient: string; seoDescription: string }> = {
+  clothing: { name: "Clothing", icon: ShoppingBag, description: "Student discounts on fashion, apparel, and accessories from top brands.", dbNames: ["Clothing"], iconColor: "text-pink-400", gradient: "from-pink-500/10 to-rose-500/10", seoDescription: "Browse verified student clothing discounts including Nike, Adidas, and ASOS." },
+  software: { name: "Software", icon: Monitor, description: "Save on creative tools, developer software, and productivity suites.", dbNames: ["Software"], iconColor: "text-primary", gradient: "from-primary/10 to-blue-400/10", seoDescription: "Browse verified student software discounts including Adobe, Notion, and Microsoft." },
+  tech: { name: "Tech & Computers", icon: Cpu, description: "Discounts on laptops, phones, tablets, and tech accessories.", dbNames: ["Tech", "Tech & Computers"], iconColor: "text-violet-400", gradient: "from-violet-500/10 to-purple-500/10", seoDescription: "Browse verified student tech discounts on laptops, phones, and accessories." },
+  subscriptions: { name: "Subscriptions", icon: CreditCard, description: "Student pricing on streaming, music, and subscription services.", dbNames: ["Subscriptions"], iconColor: "text-accent", gradient: "from-accent/10 to-emerald-500/10", seoDescription: "Browse verified student subscription discounts on Spotify, Netflix, and more." },
+  travel: { name: "Travel", icon: Plane, description: "Student travel deals on flights, hotels, and transportation.", dbNames: ["Travel"], iconColor: "text-sky-400", gradient: "from-sky-500/10 to-cyan-500/10", seoDescription: "Browse verified student travel discounts on flights, hotels, and transportation." },
+  food: { name: "Food", icon: Utensils, description: "Discounts on food delivery, restaurants, and meal services.", dbNames: ["Food"], iconColor: "text-orange-400", gradient: "from-orange-500/10 to-amber-500/10", seoDescription: "Browse verified student food discounts on delivery, restaurants, and meal services." },
+  learning: { name: "Books & Learning", icon: BookOpen, description: "Save on textbooks, online courses, and educational resources.", dbNames: ["Learning", "Books & Learning", "Books"], iconColor: "text-gold", gradient: "from-gold/10 to-yellow-500/10", seoDescription: "Browse verified student discounts on textbooks, courses, and educational resources." },
+  fitness: { name: "Fitness", icon: Dumbbell, description: "Student deals on gym memberships, activewear, and fitness apps.", dbNames: ["Fitness"], iconColor: "text-red-400", gradient: "from-red-500/10 to-rose-500/10", seoDescription: "Browse verified student fitness discounts on gyms, activewear, and fitness apps." },
+  entertainment: { name: "Entertainment", icon: Film, description: "Student pricing on streaming, gaming, and entertainment services.", dbNames: ["Entertainment"], iconColor: "text-indigo-400", gradient: "from-indigo-500/10 to-blue-500/10", seoDescription: "Browse verified student entertainment discounts on streaming, gaming, and more." },
+};
+
+const RELATED_CATEGORIES: Record<string, string[]> = {
+  clothing: ["fitness", "entertainment"],
+  software: ["tech", "subscriptions"],
+  tech: ["software", "subscriptions"],
+  subscriptions: ["software", "entertainment"],
+  travel: ["food", "entertainment"],
+  food: ["travel", "subscriptions"],
+  learning: ["software", "tech"],
+  fitness: ["clothing", "food"],
+  entertainment: ["subscriptions", "food"],
 };
 
 const STATUSES = [
@@ -122,14 +136,24 @@ const fadeUp = {
 export default function CategoryDetail() {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
-  const { isStudentVerified } = useAuth();
+  const { user, isStudentVerified, isPremium } = useAuth();
 
   const meta = slug ? CATEGORY_META[slug] : null;
+
+  // SEO
+  useEffect(() => {
+    if (meta) {
+      document.title = `Student ${meta.name} Discounts – CampusPerk`;
+      const desc = document.querySelector('meta[name="description"]');
+      if (desc) desc.setAttribute("content", meta.seoDescription);
+    }
+  }, [meta]);
 
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("sponsored");
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
   const [eduOnly, setEduOnly] = useState(false);
+  const [premiumOnly, setPremiumOnly] = useState(false);
   const [freshnessDays, setFreshnessDays] = useState<number | null>(null);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
@@ -147,7 +171,6 @@ export default function CategoryDetail() {
         .select("*, stores(id, name, logo_url, website_url)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      // Filter client-side for case-insensitive category matching
       return (data as unknown as DealWithStore[]).filter(
         (d) => d.category && dbNames.some((n) => n.toLowerCase() === d.category!.toLowerCase())
       );
@@ -155,18 +178,57 @@ export default function CategoryDetail() {
     enabled: !!meta,
   });
 
+  // Alert subscription
+  const { data: isAlertSubscribed = false, refetch: refetchAlert } = useQuery({
+    queryKey: ["category-alert-sub", user?.id, slug],
+    queryFn: async () => {
+      if (!user || !slug) return false;
+      const { data } = await supabase
+        .from("alert_subscriptions")
+        .select("categories")
+        .eq("user_id", user.id)
+        .eq("alert_type", "category")
+        .maybeSingle();
+      return (data?.categories ?? []).includes(slug);
+    },
+    enabled: !!user && !!slug,
+  });
+
+  const subscribeToAlert = async () => {
+    if (!user || !slug) return;
+    try {
+      const { data: existing } = await supabase
+        .from("alert_subscriptions")
+        .select("id, categories")
+        .eq("user_id", user.id)
+        .eq("alert_type", "category")
+        .maybeSingle();
+      if (existing) {
+        const cats = existing.categories ?? [];
+        if (!cats.includes(slug)) {
+          await supabase.from("alert_subscriptions").update({ categories: [...cats, slug] }).eq("id", existing.id);
+        }
+      } else {
+        await supabase.from("alert_subscriptions").insert({ user_id: user.id, alert_type: "category", categories: [slug] });
+      }
+      toast.success("Subscribed! We'll notify you of new deals.");
+      refetchAlert();
+    } catch {
+      toast.error("Failed to subscribe");
+    }
+  };
+
   const toggleStatus = (s: string) =>
     setSelectedStatuses((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
   const toggleFav = (id: string) =>
     setFavorites((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const resetFilters = () => {
     setSearch(""); setSelectedStatuses([]); setEduOnly(false);
-    setFreshnessDays(null); setVisibleCount(PAGE_SIZE);
+    setPremiumOnly(false); setFreshnessDays(null); setVisibleCount(PAGE_SIZE);
   };
 
-  const hasFilters = search || selectedStatuses.length || eduOnly || freshnessDays;
+  const hasFilters = search || selectedStatuses.length || eduOnly || premiumOnly || freshnessDays;
 
-  // Featured brands for header strip
   const featuredBrands = useMemo(() => {
     const map = new Map<string, string | null>();
     deals.forEach((d) => {
@@ -175,7 +237,6 @@ export default function CategoryDetail() {
     return Array.from(map.entries()).slice(0, 6).map(([name, logo]) => ({ name, logo }));
   }, [deals]);
 
-  // Sponsored deals for top placement
   const sponsoredDeals = useMemo(() => deals.filter((d) => d.sponsored && d.status === "active"), [deals]);
 
   const filtered = useMemo(() => {
@@ -230,6 +291,10 @@ export default function CategoryDetail() {
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
 
+  // Related categories
+  const relatedSlugs = slug ? (RELATED_CATEGORIES[slug] ?? []) : [];
+  const relatedCategories = relatedSlugs.map((s) => CATEGORY_META[s] ? { slug: s, ...CATEGORY_META[s] } : null).filter(Boolean) as (typeof CATEGORY_META[string] & { slug: string })[];
+
   if (!meta) {
     return (
       <DashboardLayout>
@@ -250,7 +315,7 @@ export default function CategoryDetail() {
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Back + Header */}
+        {/* Back */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
           <Button
             variant="ghost" size="sm"
@@ -259,18 +324,42 @@ export default function CategoryDetail() {
           >
             <ArrowLeft className="h-4 w-4" /> All Categories
           </Button>
+        </motion.div>
 
-          <div className="flex items-start gap-4">
-            <div className={`h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center ${meta.iconColor} shrink-0`}>
-              <CatIcon className="h-7 w-7" />
-            </div>
-            <div className="min-w-0">
-              <h1 className="font-display text-2xl font-bold text-foreground">{meta.name}</h1>
-              <p className="text-sm text-muted-foreground mt-0.5">{meta.description}</p>
-              <div className="flex items-center gap-3 mt-2">
-                <Badge variant="outline" className="border-border text-muted-foreground text-xs gap-1">
-                  <Tag className="h-3 w-3" /> {deals.length} {deals.length === 1 ? "deal" : "deals"}
-                </Badge>
+        {/* Hero Section */}
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0.5}>
+          <div className={`relative rounded-2xl border border-border bg-card overflow-hidden p-8`}>
+            <div className={`absolute inset-0 bg-gradient-to-br ${meta.gradient} pointer-events-none`} />
+            <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="relative z-10 flex flex-col md:flex-row md:items-start gap-6">
+              <div className={`h-16 w-16 rounded-2xl bg-secondary/80 flex items-center justify-center ${meta.iconColor} shrink-0`}>
+                <CatIcon className="h-8 w-8" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-3 flex-wrap mb-2">
+                  <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">{meta.name}</h1>
+                  {sponsoredDeals.length > 0 && (
+                    <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] gap-1">
+                      <Sparkles className="h-2.5 w-2.5" /> Sponsored Deals Available
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-muted-foreground mb-3">{meta.description}</p>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <Badge variant="outline" className="border-border text-muted-foreground text-xs gap-1 py-1 px-2.5">
+                    <Tag className="h-3 w-3" /> {deals.length} {deals.length === 1 ? "deal" : "deals"}
+                  </Badge>
+                  {isAlertSubscribed ? (
+                    <Badge variant="outline" className="border-accent/30 text-accent bg-accent/10 text-xs gap-1 py-1 px-2.5">
+                      <CheckCircle className="h-3 w-3" /> Subscribed
+                    </Badge>
+                  ) : (
+                    <Button variant="ghost" size="sm" className="text-xs h-7 gap-1.5 text-primary hover:bg-primary/10" onClick={subscribeToAlert}>
+                      <Bell className="h-3 w-3" /> Get Deal Alerts
+                    </Button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
@@ -383,6 +472,10 @@ export default function CategoryDetail() {
                 <Checkbox id="edu-cat" checked={eduOnly} onCheckedChange={(v) => { setEduOnly(!!v); setVisibleCount(PAGE_SIZE); }} />
                 <Label htmlFor="edu-cat" className="text-xs text-muted-foreground flex items-center gap-1"><GraduationCap className="h-3.5 w-3.5" /> Requires .edu</Label>
               </div>
+              <div className="flex items-center gap-2">
+                <Checkbox id="premium-cat" checked={premiumOnly} onCheckedChange={(v) => { setPremiumOnly(!!v); setVisibleCount(PAGE_SIZE); }} />
+                <Label htmlFor="premium-cat" className="text-xs text-muted-foreground flex items-center gap-1"><Crown className="h-3.5 w-3.5" /> Premium Only</Label>
+              </div>
               <Select value={freshnessDays?.toString() ?? "all"} onValueChange={(v) => { setFreshnessDays(v === "all" ? null : Number(v)); setVisibleCount(PAGE_SIZE); }}>
                 <SelectTrigger className="w-[160px] h-8 text-xs bg-secondary border-border"><SelectValue /></SelectTrigger>
                 <SelectContent className="bg-card border-border z-50">
@@ -412,12 +505,21 @@ export default function CategoryDetail() {
                 const days = deal.expires_at ? daysUntil(deal.expires_at) : null;
                 const refDate = deal.last_checked_at || deal.updated_at;
                 const isVerified24h = (Date.now() - new Date(refDate).getTime()) < 24 * 60 * 60 * 1000;
+                const isPremiumDeal = deal.featured && !isPremium;
 
                 return (
                   <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i}>
                     <Card className={`group relative border-border bg-card overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow-glow)] hover:border-primary/30`}>
+                      {/* Premium lock overlay */}
+                      {isPremiumDeal && (
+                        <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => setUpgradeOpen(true)}>
+                          <div className="h-10 w-10 rounded-full bg-gold/15 flex items-center justify-center"><Lock className="h-5 w-5 text-gold" /></div>
+                          <span className="text-sm font-semibold text-foreground">Premium Deal</span>
+                          <span className="text-[11px] text-muted-foreground">Upgrade to unlock</span>
+                        </div>
+                      )}
                       {/* Verification gate overlay */}
-                      {needsVerification && (
+                      {needsVerification && !isPremiumDeal && (
                         <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => setVerifyOpen(true)}>
                           <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center"><GraduationCap className="h-5 w-5 text-primary" /></div>
                           <span className="text-sm font-semibold text-foreground text-center px-4">Verify your .edu email</span>
@@ -450,6 +552,9 @@ export default function CategoryDetail() {
                           <div className="flex items-center gap-1.5">
                             {deal.sponsored && (
                               <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] gap-1">Sponsored</Badge>
+                            )}
+                            {isPremiumDeal && (
+                              <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] gap-1"><Crown className="h-2.5 w-2.5" /> Premium</Badge>
                             )}
                             {deal.status === "coming_soon" ? (
                               <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] gap-1"><Clock className="h-2.5 w-2.5" /> Coming Soon</Badge>
@@ -511,7 +616,16 @@ export default function CategoryDetail() {
               <p className="text-sm text-muted-foreground mb-6 max-w-sm mx-auto">
                 We're actively sourcing student discounts for this category. Check back soon or submit a deal you know about!
               </p>
-              <div className="flex items-center justify-center gap-3">
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                {isAlertSubscribed ? (
+                  <Badge variant="outline" className="border-accent/30 text-accent bg-accent/10 text-xs gap-1 py-1.5 px-3">
+                    <CheckCircle className="h-3 w-3" /> Subscribed for alerts
+                  </Badge>
+                ) : (
+                  <Button variant="outline" className="gap-2" onClick={subscribeToAlert}>
+                    <Bell className="h-4 w-4" /> Get Alerted When Deals Drop
+                  </Button>
+                )}
                 <Button variant="outline" className="gap-2" onClick={() => navigate("/categories")}>
                   <ArrowLeft className="h-4 w-4" /> Browse Categories
                 </Button>
@@ -521,6 +635,36 @@ export default function CategoryDetail() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* Cross-Category Discovery */}
+        {relatedCategories.length > 0 && (
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={10}>
+            <div className="space-y-4 pt-4">
+              <h2 className="font-display text-lg font-semibold text-foreground">Students Also Viewed</h2>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {relatedCategories.map((rc) => {
+                  const RcIcon = rc.icon;
+                  return (
+                    <Link key={rc.slug} to={`/categories/${rc.slug}`}>
+                      <Card className="group border-border bg-card hover:border-primary/30 transition-all duration-300 hover:shadow-[var(--shadow-glow)]">
+                        <CardContent className="p-5 flex items-center gap-4">
+                          <div className={`h-12 w-12 rounded-2xl bg-secondary flex items-center justify-center ${rc.iconColor} group-hover:scale-110 transition-transform shrink-0`}>
+                            <RcIcon className="h-6 w-6" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-display font-semibold text-foreground group-hover:text-primary transition-colors">{rc.name}</h3>
+                            <p className="text-xs text-muted-foreground line-clamp-1">{rc.description}</p>
+                          </div>
+                          <ChevronRight className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  );
+                })}
+              </div>
+            </div>
+          </motion.div>
         )}
 
         <div className="text-center pt-4 pb-2">
