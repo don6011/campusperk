@@ -15,6 +15,18 @@ import {
   Sparkles,
   AlertTriangle,
   ShoppingBag,
+  Monitor,
+  Cpu,
+  CreditCard,
+  Utensils,
+  Plane,
+  Eye,
+  Bookmark,
+  DollarSign,
+  Zap,
+  Lock,
+  BellRing,
+  BarChart3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -159,15 +171,38 @@ function DealCard({ deal, index, compact, featured: isFeatured }: { deal: Deal; 
   );
 }
 
+// Categories for quick access
+const categories = [
+  { name: "Clothing", icon: ShoppingBag, deals: 24 },
+  { name: "Software", icon: Monitor, deals: 31 },
+  { name: "Tech & Computers", icon: Cpu, deals: 18 },
+  { name: "Subscriptions", icon: CreditCard, deals: 27 },
+  { name: "Travel", icon: Plane, deals: 9 },
+  { name: "Food", icon: Utensils, deals: 12 },
+];
+
+// Seeded savings insights
+const savingsInsights = {
+  dealsViewed: 47,
+  favoritesSaved: 12,
+  estimatedSavings: "$384",
+};
+
+function daysUntil(dateStr: string) {
+  const diff = new Date(dateStr).getTime() - Date.now();
+  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+  return days;
+}
+
 export default function Dashboard() {
   const featuredDeals = mockDeals.filter((d) => d.featured && d.status === "active");
   const recentDeals = [...mockDeals]
     .filter((d) => d.status === "active")
     .sort((a, b) => new Date(b.lastCheckedAt).getTime() - new Date(a.lastCheckedAt).getTime())
     .slice(0, 6);
-  const expiringDeals = mockDeals.filter(
-    (d) => d.expiresAt && d.status !== "expired" && new Date(d.expiresAt) > new Date()
-  );
+  const expiringDeals = mockDeals
+    .filter((d) => d.expiresAt && d.status !== "expired" && new Date(d.expiresAt) > new Date())
+    .sort((a, b) => new Date(a.expiresAt!).getTime() - new Date(b.expiresAt!).getTime());
   const favDeals = mockDeals.filter((d) => favoriteIds.has(d.id));
 
   const activeCount = mockDeals.filter((d) => d.status === "active").length;
@@ -242,80 +277,204 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Expiring Soon + Favorites row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Expiring Soon */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" /> Expiring Soon
-              </h2>
-            </div>
-            {expiringDeals.length > 0 ? (
-              <div className="space-y-3">
-                {expiringDeals.map((deal, i) => (
-                  <DealCard key={deal.id} deal={deal} index={i} compact />
-                ))}
-              </div>
-            ) : (
-              <Card className="border-border bg-card">
-                <CardContent className="p-8 text-center text-muted-foreground text-sm">
-                  No deals expiring soon. You're all set!
-                </CardContent>
-              </Card>
-            )}
-          </section>
-
-          {/* Favorites */}
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-                <Heart className="h-5 w-5 text-destructive" /> Your Favorites
-              </h2>
-            </div>
-            {favDeals.length > 0 ? (
-              <div className="space-y-3">
-                {favDeals.map((deal, i) => (
-                  <DealCard key={deal.id} deal={deal} index={i} compact />
-                ))}
-              </div>
-            ) : (
-              <Card className="border-border bg-card border-dashed">
-                <CardContent className="p-8 text-center">
-                  <Heart className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">Save deals to track updates.</p>
-                </CardContent>
-              </Card>
-            )}
-          </section>
-        </div>
-
-        {/* Alerts Center */}
+        {/* Categories Quick Access */}
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-              <Bell className="h-5 w-5 text-primary" /> Alerts Center
+              <Tag className="h-5 w-5 text-primary" /> Browse Categories
             </h2>
           </div>
+          <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+            {categories.map((cat, i) => (
+              <motion.div
+                key={cat.name}
+                initial="hidden"
+                animate="visible"
+                variants={fadeUp}
+                custom={i}
+                whileHover={{ y: -3, transition: { duration: 0.2 } }}
+              >
+                <Link to={`/explore?category=${encodeURIComponent(cat.name)}`}>
+                  <Card className="border-border bg-card hover:border-primary/30 transition-all duration-300 cursor-pointer hover:shadow-[var(--shadow-glow)]">
+                    <CardContent className="p-4 text-center">
+                      <cat.icon className="h-6 w-6 mx-auto text-muted-foreground group-hover:text-primary transition-colors" />
+                      <div className="mt-2 text-xs font-medium text-foreground">{cat.name}</div>
+                      <div className="text-[10px] text-muted-foreground">{cat.deals} deals</div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Expiring Soon — enhanced with countdown */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" /> Expiring Soon
+            </h2>
+          </div>
+          {expiringDeals.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {expiringDeals.map((deal, i) => {
+                const days = daysUntil(deal.expiresAt!);
+                return (
+                  <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+                    <Card className="border-border bg-card hover:border-destructive/30 transition-all duration-300 overflow-hidden">
+                      <CardContent className="p-5">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+                            <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs text-muted-foreground">{deal.storeName}</div>
+                            <div className="font-medium text-sm text-foreground truncate">{deal.title}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                            {deal.discountValue}
+                          </span>
+                          <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-[10px] font-semibold gap-1">
+                            <Clock className="h-2.5 w-2.5" />
+                            {days <= 0 ? "Ending today" : `Ends in ${days}d`}
+                          </Badge>
+                        </div>
+                        <div className="mt-3">
+                          <Link to={`/out/${deal.id}`}>
+                            <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10 text-xs gap-1 h-7 w-full justify-center">
+                              View Deal <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          ) : (
+            <Card className="border-border bg-card">
+              <CardContent className="p-8 text-center text-muted-foreground text-sm">
+                No deals expiring soon. You're all set!
+              </CardContent>
+            </Card>
+          )}
+        </section>
+
+        {/* Favorites */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+              <Heart className="h-5 w-5 text-destructive" /> Your Favorites
+            </h2>
+          </div>
+          {favDeals.length > 0 ? (
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth">
+              {favDeals.map((deal, i) => (
+                <div key={deal.id} className="min-w-[280px] max-w-[320px] snap-start shrink-0">
+                  <DealCard deal={deal} index={i} compact />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <Card className="border-border bg-card border-dashed">
+              <CardContent className="p-8 text-center">
+                <Heart className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                <p className="text-sm text-muted-foreground">Save deals to track updates.</p>
+              </CardContent>
+            </Card>
+          )}
+        </section>
+
+        {/* Savings Insights + Alerts + Premium Upsell */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Savings Insights */}
           <Card className="border-border bg-card">
-            <CardContent className="p-0 divide-y divide-border">
-              {mockAlerts.map((alert) => (
-                <div key={alert.id} className="flex items-center gap-3 px-5 py-3.5 hover:bg-secondary/50 transition-colors">
-                  <div className={`h-2 w-2 rounded-full shrink-0 ${
-                    alert.type === "new" ? "bg-accent" : alert.type === "expiring" ? "bg-destructive" : "bg-gold"
-                  }`} />
-                  <span className="text-sm text-foreground flex-1">{alert.text}</span>
-                  {alert.premium && (
-                    <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] gap-1">
-                      <Crown className="h-2.5 w-2.5" /> Premium
-                    </Badge>
-                  )}
-                  <span className="text-xs text-muted-foreground shrink-0">{alert.time}</span>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-primary" /> Your Savings Insights
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {[
+                { label: "Deals Viewed", value: savingsInsights.dealsViewed, icon: Eye, color: "text-primary" },
+                { label: "Favorites Saved", value: savingsInsights.favoritesSaved, icon: Bookmark, color: "text-destructive" },
+                { label: "Est. Savings Unlocked", value: savingsInsights.estimatedSavings, icon: DollarSign, color: "text-accent" },
+              ].map((item) => (
+                <div key={item.label} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <item.icon className={`h-4 w-4 ${item.color}`} />
+                    {item.label}
+                  </div>
+                  <span className="font-display font-bold text-foreground">{item.value}</span>
                 </div>
               ))}
             </CardContent>
           </Card>
-        </section>
+
+          {/* Alerts Preview */}
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Bell className="h-4 w-4 text-primary" /> Alerts
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-0">
+              {mockAlerts.length > 0 ? (
+                <div className="divide-y divide-border">
+                  {mockAlerts.map((alert) => (
+                    <div key={alert.id} className="flex items-center gap-3 px-6 py-3 hover:bg-secondary/50 transition-colors">
+                      <div className={`h-2 w-2 rounded-full shrink-0 ${
+                        alert.type === "new" ? "bg-accent" : alert.type === "expiring" ? "bg-destructive" : "bg-gold"
+                      }`} />
+                      <span className="text-xs text-foreground flex-1">{alert.text}</span>
+                      {alert.premium && (
+                        <Badge className="bg-gold/15 text-gold border-gold/30 text-[9px] gap-0.5 px-1.5 py-0">
+                          <Crown className="h-2 w-2" /> Pro
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="px-6 py-8 text-center">
+                  <BellRing className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
+                  <p className="text-xs text-muted-foreground">Subscribe to categories to get alerts.</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Premium Upsell */}
+          <Card className="border-border bg-card relative overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-gold/5 to-transparent pointer-events-none" />
+            <CardHeader className="pb-2 relative z-10">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-gold">
+                <Crown className="h-4 w-4" /> Upgrade to Premium
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="relative z-10 space-y-3">
+              {[
+                { icon: Zap, text: "Early access deals" },
+                { icon: Lock, text: "Hidden discounts" },
+                { icon: Bell, text: "Unlimited alerts" },
+                { icon: TrendingUp, text: "Price drop tracking" },
+              ].map((item) => (
+                <div key={item.text} className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <item.icon className="h-3.5 w-3.5 text-gold" />
+                  <span>{item.text}</span>
+                </div>
+              ))}
+              <Link to="/pricing">
+                <Button size="sm" className="w-full mt-2 bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 text-xs gap-1">
+                  <Crown className="h-3.5 w-3.5" /> Upgrade Now
+                </Button>
+              </Link>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </DashboardLayout>
   );
