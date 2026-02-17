@@ -16,6 +16,7 @@ import SubmissionsQueue from "./pages/admin/SubmissionsQueue";
 import ScansPage from "./pages/admin/ScansPage";
 import AffiliateAnalytics from "./pages/admin/AffiliateAnalytics";
 import Favorites from "./pages/Favorites";
+import SubmitDeal from "./pages/SubmitDeal";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/deals/:dealId" element={<DealDetail />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/favorites" element={<Favorites />} />
+          <Route path="/submit" element={<SubmitDeal />} />
           <Route path="/admin/deals" element={<DealsManager />} />
           <Route path="/admin/submissions" element={<SubmissionsQueue />} />
           <Route path="/admin/scans" element={<ScansPage />} />
