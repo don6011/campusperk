@@ -259,7 +259,7 @@ export default function Favorites() {
                             View Deal
                           </Button>
                         </Link>
-                        <Link to={`/out/${deal.id}`}>
+                        <Link to={`/go/${deal.id}`}>
                           <Button size="sm" className="text-xs gap-1.5">
                             <ExternalLink className="h-3.5 w-3.5" /> Go
                           </Button>

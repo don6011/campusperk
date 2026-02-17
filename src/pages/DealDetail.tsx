@@ -90,7 +90,7 @@ export default function DealDetail() {
       return;
     }
     // Route through /out/:dealId for affiliate tracking
-    navigate(`/out/${deal.id}`);
+    navigate(`/go/${deal.id}`);
   };
 
   const handleCopyLink = () => {
