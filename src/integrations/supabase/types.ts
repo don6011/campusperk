@@ -258,6 +258,36 @@ export type Database = {
         }
         Relationships: []
       }
+      verification_attempts: {
+        Row: {
+          attempted_at: string
+          email: string
+          email_domain: string
+          id: string
+          ip_hint: string | null
+          success: boolean
+          user_id: string | null
+        }
+        Insert: {
+          attempted_at?: string
+          email: string
+          email_domain: string
+          id?: string
+          ip_hint?: string | null
+          success?: boolean
+          user_id?: string | null
+        }
+        Update: {
+          attempted_at?: string
+          email?: string
+          email_domain?: string
+          id?: string
+          ip_hint?: string | null
+          success?: boolean
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       verification_audit_log: {
         Row: {
           admin_id: string
@@ -296,6 +326,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_domain_abuse: {
+        Args: {
+          p_domain: string
+          p_max_accounts?: number
+          p_window_hours?: number
+        }
+        Returns: boolean
+      }
+      check_verification_rate_limit: {
+        Args: {
+          p_max_attempts?: number
+          p_user_id: string
+          p_window_hours?: number
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
