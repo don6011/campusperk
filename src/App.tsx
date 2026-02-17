@@ -4,10 +4,13 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
+import ProtectedRoute from "@/components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
+import ForgotPassword from "./pages/ForgotPassword";
+import ResetPassword from "./pages/ResetPassword";
 import OutboundRedirect from "./pages/OutboundRedirect";
 import ExploreDeals from "./pages/ExploreDeals";
 import DealDetail from "./pages/DealDetail";
@@ -30,20 +33,28 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <Routes>
+            {/* Public routes */}
             <Route path="/" element={<LandingPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/explore" element={<ExploreDeals />} />
             <Route path="/sign-in" element={<SignIn />} />
             <Route path="/sign-up" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/pricing" element={<Pricing />} />
             <Route path="/out/:dealId" element={<OutboundRedirect />} />
             <Route path="/deals/:dealId" element={<DealDetail />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/favorites" element={<Favorites />} />
-            <Route path="/submit" element={<SubmitDeal />} />
-            <Route path="/admin/deals" element={<DealsManager />} />
-            <Route path="/admin/submissions" element={<SubmissionsQueue />} />
-            <Route path="/admin/scans" element={<ScansPage />} />
-            <Route path="/admin/analytics" element={<AffiliateAnalytics />} />
+
+            {/* Protected routes */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/explore" element={<ProtectedRoute><ExploreDeals /></ProtectedRoute>} />
+            <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
+            <Route path="/submit" element={<ProtectedRoute><SubmitDeal /></ProtectedRoute>} />
+
+            {/* Admin routes (protected) */}
+            <Route path="/admin/deals" element={<ProtectedRoute><DealsManager /></ProtectedRoute>} />
+            <Route path="/admin/submissions" element={<ProtectedRoute><SubmissionsQueue /></ProtectedRoute>} />
+            <Route path="/admin/scans" element={<ProtectedRoute><ScansPage /></ProtectedRoute>} />
+            <Route path="/admin/analytics" element={<ProtectedRoute><AffiliateAnalytics /></ProtectedRoute>} />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
