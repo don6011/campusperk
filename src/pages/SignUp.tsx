@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 
 const fadeUp = {
@@ -63,6 +64,28 @@ export default function SignUp() {
       return;
     }
     setLoading(true);
+
+    // Pre-check domain abuse before signup
+    const domain = email.split("@")[1]?.toLowerCase() ?? "";
+    try {
+      const { data: domainAbused } = await supabase.rpc("check_domain_abuse", {
+        p_domain: domain,
+        p_window_hours: 24,
+        p_max_accounts: 3,
+      });
+      if (domainAbused) {
+        setLoading(false);
+        toast({
+          title: "Domain limit reached",
+          description: "This .edu domain has reached its verification limit. Please try again later or contact support.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } catch {
+      // If RPC fails (e.g. not logged in), proceed — the edge function will catch it later
+    }
+
     const { error } = await signUp(email, password, name);
     setLoading(false);
     if (error) {
