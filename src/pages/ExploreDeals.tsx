@@ -43,6 +43,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { VerifyModal } from "@/components/VerifyModal";
+import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { mockDeals, type Deal } from "@/lib/mock-data";
 
@@ -138,6 +140,8 @@ export default function ExploreDeals() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [verifyOpen, setVerifyOpen] = useState(false);
+  const { isStudentVerified, isPremium } = useAuth();
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const toggleCategory = (cat: string) =>
@@ -474,7 +478,9 @@ export default function ExploreDeals() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {visible.map((deal, i) => {
-                const isPremium = deal.visibility === "premium";
+                const isPremiumDeal = deal.visibility === "premium";
+                const needsVerification = deal.requiresEduEmail && !isStudentVerified;
+                const isLocked = (isPremiumDeal && !isPremium) || needsVerification;
                 const days = deal.expiresAt ? daysUntil(deal.expiresAt) : null;
                 const savings = seededSavings(deal.id);
                 const isVerified24h = (Date.now() - new Date(deal.lastCheckedAt).getTime()) < 24 * 60 * 60 * 1000;
@@ -482,10 +488,35 @@ export default function ExploreDeals() {
                 return (
                   <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i}>
                     <Card className={`group relative border-border bg-card overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow-glow)] ${
-                      isPremium ? "hover:border-gold/30" : "hover:border-primary/30"
+                      isPremiumDeal ? "hover:border-gold/30" : needsVerification ? "hover:border-primary/30" : "hover:border-primary/30"
                     }`}>
+                      {/* Verification gate overlay */}
+                      {needsVerification && !isPremiumDeal && (
+                        <div
+                          className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer"
+                          onClick={() => setVerifyOpen(true)}
+                        >
+                          <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center">
+                            <GraduationCap className="h-5 w-5 text-primary" />
+                          </div>
+                          <span className="text-sm font-semibold text-foreground text-center px-4">
+                            Verify your .edu email
+                          </span>
+                          <span className="text-[11px] text-muted-foreground">
+                            Student-verified deal
+                          </span>
+                          <Button
+                            size="sm"
+                            className="text-xs gap-1.5 h-8 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            onClick={(e) => { e.stopPropagation(); setVerifyOpen(true); }}
+                          >
+                            <GraduationCap className="h-3 w-3" /> Verify Now
+                          </Button>
+                        </div>
+                      )}
+
                       {/* Premium blur overlay — enhanced */}
-                      {isPremium && (
+                      {isPremiumDeal && !isPremium && (
                         <div
                           className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer"
                           onClick={() => setUpgradeOpen(true)}
@@ -628,6 +659,7 @@ export default function ExploreDeals() {
       </div>
 
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <VerifyModal open={verifyOpen} onOpenChange={setVerifyOpen} reason="This deal requires a verified .edu email to access." />
     </DashboardLayout>
   );
 }

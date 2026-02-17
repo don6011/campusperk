@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Mail,
@@ -19,6 +19,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 
 const fadeUp = {
@@ -41,6 +42,8 @@ export default function SignUp() {
   const [eduStatus, setEduStatus] = useState<EduStatus>("idle");
   const [step, setStep] = useState<"form" | "verify">("form");
   const { toast } = useToast();
+  const { login } = useAuth();
+  const navigate = useNavigate();
 
   const handleEmailChange = (val: string) => {
     setEmail(val);
@@ -60,9 +63,18 @@ export default function SignUp() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (eduStatus !== "valid") {
+      toast({
+        title: "Invalid email",
+        description: "Please use a valid .edu email address to sign up.",
+        variant: "destructive",
+      });
+      return;
+    }
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
+      login(email);
       setStep("verify");
     }, 1500);
   };
@@ -248,7 +260,7 @@ export default function SignUp() {
 
               <Button
                 type="submit"
-                disabled={loading}
+                disabled={loading || eduStatus === "invalid"}
                 className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2"
               >
                 {loading ? "Creating account…" : "Create Account"}
