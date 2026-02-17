@@ -105,12 +105,16 @@ const LandingPage = () => {
             <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Reviews</a>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="text-muted-foreground">
-              Sign In
-            </Button>
-            <Button size="sm" className="bg-primary hover:bg-primary/90">
-              Get Started
-            </Button>
+            <Link to="/sign-in">
+              <Button variant="ghost" size="sm" className="text-muted-foreground">
+                Sign In
+              </Button>
+            </Link>
+            <Link to="/sign-up">
+              <Button size="sm" className="bg-primary hover:bg-primary/90">
+                Get Started
+              </Button>
+            </Link>
           </div>
         </div>
       </nav>
@@ -163,14 +167,18 @@ const LandingPage = () => {
               custom={3}
               className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
             >
-              <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-base gap-2">
-                Explore Discounts
-                <ArrowRight className="h-4 w-4" />
-              </Button>
-              <Button size="lg" variant="outline" className="border-border hover:bg-secondary h-12 px-8 text-base gap-2">
-                <GraduationCap className="h-4 w-4" />
-                Verify Student Access
-              </Button>
+              <Link to="/explore">
+                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-base gap-2">
+                  Explore Discounts
+                  <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link to="/sign-up">
+                <Button size="lg" variant="outline" className="border-border hover:bg-secondary h-12 px-8 text-base gap-2">
+                  <GraduationCap className="h-4 w-4" />
+                  Verify Student Access
+                </Button>
+              </Link>
             </motion.div>
 
             {/* Stats */}
@@ -335,10 +343,12 @@ const LandingPage = () => {
                 Join 50,000+ students already saving hundreds each semester with CampusPerk.
               </motion.p>
               <motion.div variants={fadeUp} custom={2} className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-base gap-2">
-                  Get Started Free
-                  <ArrowRight className="h-4 w-4" />
-                </Button>
+                <Link to="/sign-up">
+                  <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-base gap-2">
+                    Get Started Free
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
               </motion.div>
               <motion.div variants={fadeUp} custom={3} className="mt-6 flex items-center justify-center gap-6 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5"><Check className="h-3.5 w-3.5 text-accent" /> Free forever</span>
