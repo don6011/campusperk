@@ -87,12 +87,27 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function DealCard({ deal, index, compact }: { deal: Deal; index: number; compact?: boolean }) {
+function freshnessColor(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const days = diff / (1000 * 60 * 60 * 24);
+  if (days <= 1) return "text-accent";       // green — fresh
+  if (days <= 7) return "text-gold";         // yellow — aging
+  return "text-destructive";                 // red — stale
+}
+
+function DealCard({ deal, index, compact, featured: isFeatured }: { deal: Deal; index: number; compact?: boolean; featured?: boolean }) {
   const [fav, setFav] = useState(favoriteIds.has(deal.id));
 
   return (
-    <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={index}>
-      <Card className="group relative overflow-hidden border-border bg-card hover:border-primary/30 transition-all duration-300 hover:shadow-[var(--shadow-glow)]">
+    <motion.div
+      initial="hidden"
+      animate="visible"
+      variants={fadeUp}
+      custom={index}
+      whileHover={{ y: -4, transition: { duration: 0.2 } }}
+      className="h-full"
+    >
+      <Card className={`group relative overflow-hidden border-border bg-card hover:border-primary/30 transition-all duration-300 hover:shadow-[var(--shadow-glow)] h-full ${isFeatured ? "ring-1 ring-primary/20 shadow-[0_0_24px_-6px_hsl(217_91%_60%/0.25)]" : ""}`}>
         <CardContent className={compact ? "p-4" : "p-5"}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -104,17 +119,20 @@ function DealCard({ deal, index, compact }: { deal: Deal; index: number; compact
                 <div className="font-medium text-sm text-foreground truncate">{deal.title}</div>
               </div>
             </div>
-            <button
+            <motion.button
               onClick={() => setFav(!fav)}
+              whileTap={{ scale: 0.85 }}
               className="shrink-0 p-1 rounded-md hover:bg-secondary transition-colors"
             >
-              <Heart className={`h-4 w-4 ${fav ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
-            </button>
+              <Heart className={`h-4 w-4 transition-colors ${fav ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+            </motion.button>
           </div>
 
           <div className="mt-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="font-display text-lg font-bold text-primary">{deal.discountValue}</span>
+              <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                {deal.discountValue}
+              </span>
               {getStatusBadge(deal)}
             </div>
           </div>
@@ -125,7 +143,7 @@ function DealCard({ deal, index, compact }: { deal: Deal; index: number; compact
 
           <div className="mt-3 flex items-center justify-between">
             {!compact && (
-              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <span className={`text-[11px] flex items-center gap-1 ${freshnessColor(deal.lastCheckedAt)}`}>
                 <Clock className="h-3 w-3" /> Checked {timeAgo(deal.lastCheckedAt)}
               </span>
             )}
@@ -195,11 +213,17 @@ export default function Dashboard() {
               View all <ChevronRight className="h-3 w-3" />
             </Link>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
+          <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border">
             {featuredDeals.map((deal, i) => (
-              <div key={deal.id} className="min-w-[280px] max-w-[320px] snap-start shrink-0">
-                <DealCard deal={deal} index={i} />
-              </div>
+              <motion.div
+                key={deal.id}
+                className="min-w-[280px] max-w-[320px] snap-start shrink-0"
+                initial={{ opacity: 0, x: 40 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+              >
+                <DealCard deal={deal} index={i} featured />
+              </motion.div>
             ))}
           </div>
         </section>
