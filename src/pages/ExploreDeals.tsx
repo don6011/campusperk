@@ -1,10 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Search,
   Filter,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Heart,
   ExternalLink,
   Shield,
@@ -17,6 +19,10 @@ import {
   Tag,
   X,
   RotateCcw,
+  Flame,
+  Sparkles,
+  Zap,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -90,6 +96,26 @@ function discountNum(deal: Deal) {
   return m ? parseInt(m[1]) : 0;
 }
 
+// Seeded engagement score for trending
+function engagementScore(deal: Deal) {
+  const base = deal.id.charCodeAt(1) * 47 + 123;
+  const clicks = (base % 500) + 200;
+  const favs = (base * 3 % 300) + 50;
+  const recency = (Date.now() - new Date(deal.lastCheckedAt).getTime()) / (1000 * 60 * 60 * 24);
+  return clicks * 2 + favs * 3 - recency * 10;
+}
+
+function seededSavings(id: string) {
+  return ((id.charCodeAt(1) * 31 + 77) % 400 + 80);
+}
+
+// Trending badge assignment
+function trendingBadge(deal: Deal, rank: number): { label: string; icon: React.ReactNode; className: string } {
+  if (rank === 0) return { label: "Trending 🔥", icon: <Flame className="h-3 w-3" />, className: "bg-destructive/15 text-destructive border-destructive/30" };
+  if (deal.featured) return { label: "Hot Deal", icon: <Zap className="h-3 w-3" />, className: "bg-gold/15 text-gold border-gold/30" };
+  return { label: "Popular", icon: <TrendingUp className="h-3 w-3" />, className: "bg-primary/15 text-primary border-primary/30" };
+}
+
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
   visible: (i: number) => ({
@@ -107,10 +133,12 @@ export default function ExploreDeals() {
   const [eduOnly, setEduOnly] = useState(false);
   const [premiumOnly, setPremiumOnly] = useState(false);
   const [freshnessDays, setFreshnessDays] = useState<number | null>(null);
+  const [verifiedRecently, setVerifiedRecently] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   const toggleCategory = (cat: string) =>
     setSelectedCategories((prev) =>
@@ -136,15 +164,29 @@ export default function ExploreDeals() {
     setEduOnly(false);
     setPremiumOnly(false);
     setFreshnessDays(null);
+    setVerifiedRecently(false);
     setVisibleCount(PAGE_SIZE);
   };
 
-  const hasFilters = search || selectedCategories.length || selectedStatuses.length || eduOnly || premiumOnly || freshnessDays;
+  const hasFilters = search || selectedCategories.length || selectedStatuses.length || eduOnly || premiumOnly || freshnessDays || verifiedRecently;
+
+  // Trending deals: top 6 by engagement
+  const trendingDeals = useMemo(() => {
+    return [...mockDeals]
+      .filter((d) => d.status === "active")
+      .sort((a, b) => engagementScore(b) - engagementScore(a))
+      .slice(0, 6);
+  }, []);
+
+  const scrollCarousel = (dir: "left" | "right") => {
+    if (!carouselRef.current) return;
+    const amount = 320;
+    carouselRef.current.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
+  };
 
   const filtered = useMemo(() => {
     let deals = [...mockDeals];
 
-    // Search
     if (search) {
       const q = search.toLowerCase();
       deals = deals.filter(
@@ -155,11 +197,9 @@ export default function ExploreDeals() {
       );
     }
 
-    // Category
     if (selectedCategories.length)
       deals = deals.filter((d) => selectedCategories.includes(d.category));
 
-    // Status
     if (selectedStatuses.length) {
       deals = deals.filter((d) => {
         if (selectedStatuses.includes("expiring") && d.expiresAt) {
@@ -170,19 +210,19 @@ export default function ExploreDeals() {
       });
     }
 
-    // Edu
     if (eduOnly) deals = deals.filter((d) => d.requiresEduEmail);
-
-    // Premium
     if (premiumOnly) deals = deals.filter((d) => d.visibility === "premium");
 
-    // Freshness
     if (freshnessDays) {
       const cutoff = Date.now() - freshnessDays * 24 * 60 * 60 * 1000;
       deals = deals.filter((d) => new Date(d.lastCheckedAt).getTime() >= cutoff);
     }
 
-    // Sort
+    if (verifiedRecently) {
+      const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+      deals = deals.filter((d) => new Date(d.lastCheckedAt).getTime() >= cutoff);
+    }
+
     switch (sortBy) {
       case "newest":
         deals.sort((a, b) => new Date(b.lastCheckedAt).getTime() - new Date(a.lastCheckedAt).getTime());
@@ -206,7 +246,7 @@ export default function ExploreDeals() {
     }
 
     return deals;
-  }, [search, selectedCategories, selectedStatuses, eduOnly, premiumOnly, freshnessDays, sortBy]);
+  }, [search, selectedCategories, selectedStatuses, eduOnly, premiumOnly, freshnessDays, verifiedRecently, sortBy]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
@@ -220,6 +260,70 @@ export default function ExploreDeals() {
           <p className="text-sm text-muted-foreground mt-1">
             {filtered.length} deal{filtered.length !== 1 ? "s" : ""} found
           </p>
+        </div>
+
+        {/* ========== TRENDING DEALS CAROUSEL ========== */}
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+              <Flame className="h-5 w-5 text-destructive" />
+              Trending Deals
+            </h2>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => scrollCarousel("left")}>
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => scrollCarousel("right")}>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+          <div
+            ref={carouselRef}
+            className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1 snap-x snap-mandatory"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          >
+            {trendingDeals.map((deal, idx) => {
+              const badge = trendingBadge(deal, idx);
+              const isVerifiedRecently = (Date.now() - new Date(deal.lastCheckedAt).getTime()) < 24 * 60 * 60 * 1000;
+              return (
+                <Link
+                  key={deal.id}
+                  to={`/deals/${deal.id}`}
+                  className="snap-start shrink-0 w-[280px]"
+                >
+                  <Card className="border-border bg-card hover:border-primary/30 transition-all duration-300 hover:shadow-[var(--shadow-glow)] h-full">
+                    <CardContent className="p-4 space-y-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-[11px] text-muted-foreground">{deal.storeName}</div>
+                            <div className="font-medium text-sm text-foreground truncate">{deal.title}</div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                          {deal.discountValue}
+                        </span>
+                        <Badge className={`text-[10px] font-semibold gap-1 ${badge.className}`}>
+                          {badge.icon} {badge.label}
+                        </Badge>
+                      </div>
+                      {isVerifiedRecently && (
+                        <div className="flex items-center gap-1 text-[11px] text-accent">
+                          <Sparkles className="h-3 w-3" /> Verified within 24h
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
         {/* Search + Sort bar */}
@@ -328,6 +432,16 @@ export default function ExploreDeals() {
                   <Crown className="h-3.5 w-3.5" /> Premium only
                 </Label>
               </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="verified24h"
+                  checked={verifiedRecently}
+                  onCheckedChange={(v) => { setVerifiedRecently(!!v); setVisibleCount(PAGE_SIZE); }}
+                />
+                <Label htmlFor="verified24h" className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Sparkles className="h-3.5 w-3.5" /> Verified within 24 hours
+                </Label>
+              </div>
 
               {/* Freshness */}
               <Select
@@ -362,25 +476,36 @@ export default function ExploreDeals() {
               {visible.map((deal, i) => {
                 const isPremium = deal.visibility === "premium";
                 const days = deal.expiresAt ? daysUntil(deal.expiresAt) : null;
+                const savings = seededSavings(deal.id);
+                const isVerified24h = (Date.now() - new Date(deal.lastCheckedAt).getTime()) < 24 * 60 * 60 * 1000;
 
                 return (
                   <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i}>
                     <Card className={`group relative border-border bg-card overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow-glow)] ${
                       isPremium ? "hover:border-gold/30" : "hover:border-primary/30"
                     }`}>
-                      {/* Premium blur overlay */}
+                      {/* Premium blur overlay — enhanced */}
                       {isPremium && (
                         <div
-                          className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-3 cursor-pointer"
+                          className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer"
                           onClick={() => setUpgradeOpen(true)}
                         >
                           <div className="h-10 w-10 rounded-full bg-gold/15 flex items-center justify-center">
                             <Lock className="h-5 w-5 text-gold" />
                           </div>
-                          <Badge className="bg-gold/15 text-gold border-gold/30 text-xs font-semibold gap-1">
-                            <Crown className="h-3 w-3" /> Premium Only
-                          </Badge>
-                          <span className="text-[11px] text-muted-foreground">Click to unlock</span>
+                          <span className="text-sm font-semibold text-foreground text-center px-4">
+                            Unlock exclusive student deals
+                          </span>
+                          <span className="text-[11px] text-gold font-medium">
+                            Students saved ${savings}+ on this offer
+                          </span>
+                          <Button
+                            size="sm"
+                            className="bg-gold hover:bg-gold/90 text-background text-xs gap-1.5 h-8 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                            onClick={(e) => { e.stopPropagation(); setUpgradeOpen(true); }}
+                          >
+                            <Crown className="h-3 w-3" /> Upgrade Now
+                          </Button>
                         </div>
                       )}
 
@@ -440,10 +565,11 @@ export default function ExploreDeals() {
                           </Badge>
                         )}
 
-                        {/* Freshness */}
+                        {/* Freshness + verified-24h highlight */}
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-3">
-                          <span className={`flex items-center gap-1 ${freshnessColor(deal.lastCheckedAt)}`}>
-                            <Clock className="h-2.5 w-2.5" /> {timeAgo(deal.lastCheckedAt)}
+                          <span className={`flex items-center gap-1 ${isVerified24h ? "text-accent font-medium" : freshnessColor(deal.lastCheckedAt)}`}>
+                            {isVerified24h ? <Sparkles className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
+                            {isVerified24h ? "Verified today" : timeAgo(deal.lastCheckedAt)}
                           </span>
                           {deal.requiresEduEmail && (
                             <span className="flex items-center gap-1 text-primary">
@@ -492,6 +618,13 @@ export default function ExploreDeals() {
             </CardContent>
           </Card>
         )}
+
+        {/* Affiliate disclosure */}
+        <div className="text-center pt-6 pb-2">
+          <p className="text-[11px] text-muted-foreground">
+            CampusPerk may earn commissions from qualifying purchases.
+          </p>
+        </div>
       </div>
 
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
