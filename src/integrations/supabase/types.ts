@@ -240,39 +240,72 @@ export type Database = {
       submissions: {
         Row: {
           admin_notes: string | null
+          affiliate_network: string | null
+          banner_url: string | null
           category: string | null
+          commission_rate: number | null
           created_at: string
           deal_info: string | null
           deal_title: string | null
+          deal_type: string | null
           deal_url: string | null
+          expiration_date: string | null
           id: string
+          is_affiliate: boolean | null
+          logo_url: string | null
+          redemption_steps: string | null
+          region: string | null
+          screenshot_url: string | null
           status: Database["public"]["Enums"]["submission_status"]
           store_name: string
           submitted_by: string | null
+          verification_provider: string | null
         }
         Insert: {
           admin_notes?: string | null
+          affiliate_network?: string | null
+          banner_url?: string | null
           category?: string | null
+          commission_rate?: number | null
           created_at?: string
           deal_info?: string | null
           deal_title?: string | null
+          deal_type?: string | null
           deal_url?: string | null
+          expiration_date?: string | null
           id?: string
+          is_affiliate?: boolean | null
+          logo_url?: string | null
+          redemption_steps?: string | null
+          region?: string | null
+          screenshot_url?: string | null
           status?: Database["public"]["Enums"]["submission_status"]
           store_name: string
           submitted_by?: string | null
+          verification_provider?: string | null
         }
         Update: {
           admin_notes?: string | null
+          affiliate_network?: string | null
+          banner_url?: string | null
           category?: string | null
+          commission_rate?: number | null
           created_at?: string
           deal_info?: string | null
           deal_title?: string | null
+          deal_type?: string | null
           deal_url?: string | null
+          expiration_date?: string | null
           id?: string
+          is_affiliate?: boolean | null
+          logo_url?: string | null
+          redemption_steps?: string | null
+          region?: string | null
+          screenshot_url?: string | null
           status?: Database["public"]["Enums"]["submission_status"]
           store_name?: string
           submitted_by?: string | null
+          verification_provider?: string | null
         }
         Relationships: []
       }
