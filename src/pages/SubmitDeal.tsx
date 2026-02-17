@@ -24,9 +24,12 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Badge } from "@/components/ui/badge";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { mockDeals } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useQuery } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
 
-const CATEGORIES = ["Software", "Subscriptions", "Tech", "Clothing", "Food", "Learning", "Other"];
+const CATEGORIES = ["Software", "Subscriptions", "Tech", "Clothing", "Food", "Learning", "Entertainment", "Fitness", "Travel", "Other"];
 
 const submissionSchema = z.object({
   storeName: z.string().trim().min(1, "Store name is required").max(100, "Max 100 characters"),
@@ -36,23 +39,12 @@ const submissionSchema = z.object({
   discountValue: z.string().trim().min(1, "Discount value is required").max(50, "Max 50 characters"),
   category: z.string().min(1, "Category is required"),
   requiresEdu: z.boolean(),
-  submitterEmail: z.string().trim().email("Must be a valid email").max(255, "Max 255 characters"),
 });
 
 type FormData = z.infer<typeof submissionSchema>;
 
-function detectDuplicates(storeName: string, dealUrl: string) {
-  const lower = storeName.toLowerCase();
-  const urlLower = dealUrl.toLowerCase();
-  return mockDeals.filter((d) => {
-    const nameMatch = d.storeName.toLowerCase() === lower;
-    const urlMatch = d.directLinkUrl.toLowerCase() === urlLower || d.affiliateLinkUrl?.toLowerCase() === urlLower;
-    const titleSimilar = d.storeName.toLowerCase().includes(lower) || lower.includes(d.storeName.toLowerCase());
-    return nameMatch || urlMatch || titleSimilar;
-  });
-}
-
 export default function SubmitDeal() {
+  const { user } = useAuth();
   const [form, setForm] = useState<FormData>({
     storeName: "",
     dealUrl: "",
@@ -61,29 +53,42 @@ export default function SubmitDeal() {
     discountValue: "",
     category: "",
     requiresEdu: false,
-    submitterEmail: "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
   const [submitted, setSubmitted] = useState(false);
-  const [duplicates, setDuplicates] = useState<typeof mockDeals>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Fetch existing deals for duplicate detection
+  const { data: existingDeals = [] } = useQuery({
+    queryKey: ["deals-for-dupes"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("deals")
+        .select("id, title, store_id, direct_link_url, affiliate_link_url, stores(name)")
+        .eq("status", "active")
+        .limit(500);
+      return data || [];
+    },
+  });
+
+  const duplicates = (() => {
+    if (form.storeName.length < 3 && form.dealUrl.length < 5) return [];
+    const lower = form.storeName.toLowerCase();
+    const urlLower = form.dealUrl.toLowerCase();
+    return existingDeals.filter((d: any) => {
+      const storeName = d.stores?.name?.toLowerCase() || "";
+      const nameMatch = storeName === lower || storeName.includes(lower) || lower.includes(storeName);
+      const urlMatch = d.direct_link_url?.toLowerCase() === urlLower || d.affiliate_link_url?.toLowerCase() === urlLower;
+      return nameMatch || urlMatch;
+    });
+  })();
 
   const updateField = <K extends keyof FormData>(key: K, value: FormData[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     setErrors((prev) => ({ ...prev, [key]: undefined }));
-
-    // Live duplicate detection on store name or URL change
-    if (key === "storeName" || key === "dealUrl") {
-      const sName = key === "storeName" ? (value as string) : form.storeName;
-      const sUrl = key === "dealUrl" ? (value as string) : form.dealUrl;
-      if (sName.length > 2 || sUrl.length > 5) {
-        setDuplicates(detectDuplicates(sName, sUrl));
-      } else {
-        setDuplicates([]);
-      }
-    }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const result = submissionSchema.safeParse(form);
     if (!result.success) {
       const fieldErrors: Partial<Record<keyof FormData, string>> = {};
@@ -94,6 +99,28 @@ export default function SubmitDeal() {
       setErrors(fieldErrors);
       return;
     }
+
+    if (!user) {
+      toast({ title: "Please sign in", description: "You must be logged in to submit deals.", variant: "destructive" });
+      return;
+    }
+
+    setSubmitting(true);
+    const { error } = await supabase.from("submissions").insert({
+      store_name: form.storeName,
+      deal_title: form.dealTitle,
+      deal_url: form.dealUrl,
+      deal_info: form.description,
+      category: form.category,
+      submitted_by: user.id,
+    });
+    setSubmitting(false);
+
+    if (error) {
+      toast({ title: "Submission failed", description: error.message, variant: "destructive" });
+      return;
+    }
+
     setSubmitted(true);
   };
 
@@ -114,7 +141,10 @@ export default function SubmitDeal() {
               Your submission is now in the review queue. Our team will verify the deal and add it to CampusPerk.
             </p>
             <div className="flex gap-3 justify-center mt-6">
-              <Button variant="outline" onClick={() => { setSubmitted(false); setForm({ storeName: "", dealUrl: "", dealTitle: "", description: "", discountValue: "", category: "", requiresEdu: false, submitterEmail: "" }); setDuplicates([]); }}>
+              <Button variant="outline" onClick={() => {
+                setSubmitted(false);
+                setForm({ storeName: "", dealUrl: "", dealTitle: "", description: "", discountValue: "", category: "", requiresEdu: false });
+              }}>
                 Submit Another
               </Button>
               <Link to="/explore">
@@ -149,9 +179,9 @@ export default function SubmitDeal() {
                     We found {duplicates.length} similar deal{duplicates.length !== 1 ? "s" : ""} already on CampusPerk:
                   </p>
                   <div className="mt-2 space-y-1.5">
-                    {duplicates.slice(0, 3).map((d) => (
+                    {duplicates.slice(0, 3).map((d: any) => (
                       <div key={d.id} className="flex items-center gap-2 text-xs">
-                        <Badge variant="outline" className="text-[10px] bg-secondary border-border">{d.storeName}</Badge>
+                        <Badge variant="outline" className="text-[10px] bg-secondary border-border">{d.stores?.name}</Badge>
                         <span className="text-muted-foreground truncate">{d.title}</span>
                         <Link to={`/deals/${d.id}`} className="shrink-0 text-primary hover:underline flex items-center gap-0.5">
                           View <ExternalLink className="h-3 w-3" />
@@ -173,60 +203,27 @@ export default function SubmitDeal() {
             <CardTitle className="text-base font-semibold">Deal Details</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            {/* Store Name */}
             <div className="space-y-1.5">
               <Label htmlFor="storeName">Store Name *</Label>
-              <Input
-                id="storeName"
-                placeholder="e.g. Adobe, Spotify, Nike"
-                value={form.storeName}
-                onChange={(e) => updateField("storeName", e.target.value)}
-                className={errors.storeName ? "border-destructive" : ""}
-                maxLength={100}
-              />
+              <Input id="storeName" placeholder="e.g. Adobe, Spotify, Nike" value={form.storeName} onChange={(e) => updateField("storeName", e.target.value)} className={errors.storeName ? "border-destructive" : ""} maxLength={100} />
               {errors.storeName && <p className="text-xs text-destructive">{errors.storeName}</p>}
             </div>
 
-            {/* Deal URL */}
             <div className="space-y-1.5">
               <Label htmlFor="dealUrl">Deal URL *</Label>
-              <Input
-                id="dealUrl"
-                placeholder="https://example.com/student-discount"
-                value={form.dealUrl}
-                onChange={(e) => updateField("dealUrl", e.target.value)}
-                className={errors.dealUrl ? "border-destructive" : ""}
-                maxLength={500}
-              />
+              <Input id="dealUrl" placeholder="https://example.com/student-discount" value={form.dealUrl} onChange={(e) => updateField("dealUrl", e.target.value)} className={errors.dealUrl ? "border-destructive" : ""} maxLength={500} />
               {errors.dealUrl && <p className="text-xs text-destructive">{errors.dealUrl}</p>}
             </div>
 
-            {/* Deal Title */}
             <div className="space-y-1.5">
               <Label htmlFor="dealTitle">Deal Title *</Label>
-              <Input
-                id="dealTitle"
-                placeholder="e.g. 60% Off Creative Cloud for Students"
-                value={form.dealTitle}
-                onChange={(e) => updateField("dealTitle", e.target.value)}
-                className={errors.dealTitle ? "border-destructive" : ""}
-                maxLength={200}
-              />
+              <Input id="dealTitle" placeholder="e.g. 60% Off Creative Cloud for Students" value={form.dealTitle} onChange={(e) => updateField("dealTitle", e.target.value)} className={errors.dealTitle ? "border-destructive" : ""} maxLength={200} />
               {errors.dealTitle && <p className="text-xs text-destructive">{errors.dealTitle}</p>}
             </div>
 
-            {/* Description */}
             <div className="space-y-1.5">
               <Label htmlFor="description">Description *</Label>
-              <Textarea
-                id="description"
-                placeholder="Describe the deal, how to get it, any requirements…"
-                value={form.description}
-                onChange={(e) => updateField("description", e.target.value)}
-                className={errors.description ? "border-destructive" : ""}
-                rows={4}
-                maxLength={1000}
-              />
+              <Textarea id="description" placeholder="Describe the deal, how to get it, any requirements…" value={form.description} onChange={(e) => updateField("description", e.target.value)} className={errors.description ? "border-destructive" : ""} rows={4} maxLength={1000} />
               <div className="flex justify-between">
                 {errors.description ? <p className="text-xs text-destructive">{errors.description}</p> : <span />}
                 <span className="text-[11px] text-muted-foreground">{form.description.length}/1000</span>
@@ -234,21 +231,12 @@ export default function SubmitDeal() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Discount Value */}
               <div className="space-y-1.5">
                 <Label htmlFor="discountValue">Discount Value *</Label>
-                <Input
-                  id="discountValue"
-                  placeholder="e.g. 60%, $5.99/mo, Free"
-                  value={form.discountValue}
-                  onChange={(e) => updateField("discountValue", e.target.value)}
-                  className={errors.discountValue ? "border-destructive" : ""}
-                  maxLength={50}
-                />
+                <Input id="discountValue" placeholder="e.g. 60%, $5.99/mo, Free" value={form.discountValue} onChange={(e) => updateField("discountValue", e.target.value)} className={errors.discountValue ? "border-destructive" : ""} maxLength={50} />
                 {errors.discountValue && <p className="text-xs text-destructive">{errors.discountValue}</p>}
               </div>
 
-              {/* Category */}
               <div className="space-y-1.5">
                 <Label>Category *</Label>
                 <Select value={form.category} onValueChange={(v) => updateField("category", v)}>
@@ -265,37 +253,17 @@ export default function SubmitDeal() {
               </div>
             </div>
 
-            {/* Edu Required */}
             <div className="flex items-center gap-2">
-              <Checkbox
-                id="requiresEdu"
-                checked={form.requiresEdu}
-                onCheckedChange={(v) => updateField("requiresEdu", !!v)}
-              />
-              <Label htmlFor="requiresEdu" className="text-sm text-muted-foreground">
-                Requires .edu email verification
-              </Label>
+              <Checkbox id="requiresEdu" checked={form.requiresEdu} onCheckedChange={(v) => updateField("requiresEdu", !!v)} />
+              <Label htmlFor="requiresEdu" className="text-sm text-muted-foreground">Requires .edu email verification</Label>
             </div>
 
-            {/* Submitter Email */}
-            <div className="space-y-1.5">
-              <Label htmlFor="submitterEmail">Your Email *</Label>
-              <Input
-                id="submitterEmail"
-                placeholder="you@university.edu"
-                value={form.submitterEmail}
-                onChange={(e) => updateField("submitterEmail", e.target.value)}
-                className={errors.submitterEmail ? "border-destructive" : ""}
-                maxLength={255}
-              />
-              {errors.submitterEmail && <p className="text-xs text-destructive">{errors.submitterEmail}</p>}
-              <p className="text-[11px] text-muted-foreground flex items-center gap-1">
-                <Info className="h-3 w-3" /> We'll notify you when your submission is reviewed.
-              </p>
+            <div className="text-[11px] text-muted-foreground flex items-center gap-1">
+              <Info className="h-3 w-3" /> We'll notify you when your submission is reviewed.
             </div>
 
-            <Button onClick={handleSubmit} className="w-full gap-2 mt-2">
-              <Send className="h-4 w-4" /> Submit Deal for Review
+            <Button onClick={handleSubmit} disabled={submitting} className="w-full gap-2 mt-2">
+              <Send className="h-4 w-4" /> {submitting ? "Submitting…" : "Submit Deal for Review"}
             </Button>
           </CardContent>
         </Card>
