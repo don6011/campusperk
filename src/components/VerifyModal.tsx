@@ -1,3 +1,4 @@
+import { useState } from "react";
 import {
   Dialog,
   DialogContent,
@@ -6,9 +7,11 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, ShieldCheck, Lock, Mail } from "lucide-react";
+import { GraduationCap, ShieldCheck, Lock, Mail, Loader2, AlertTriangle } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 interface VerifyModalProps {
   open: boolean;
@@ -17,8 +20,36 @@ interface VerifyModalProps {
 }
 
 export const VerifyModal = ({ open, onOpenChange, reason }: VerifyModalProps) => {
-  const { user, isLoggedIn, isStudentVerified } = useAuth();
+  const { user, isLoggedIn, isStudentVerified, refreshProfile } = useAuth();
   const hasEdu = user?.email?.split("@")[1]?.toLowerCase().endsWith(".edu");
+  const { toast } = useToast();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleVerify = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const { data, error: fnError } = await supabase.functions.invoke("verify-student");
+      if (fnError) {
+        setError(fnError.message || "Verification failed. Please try again.");
+        return;
+      }
+      if (data?.error) {
+        setError(data.error);
+        return;
+      }
+      if (data?.verified) {
+        await refreshProfile();
+        toast({ title: "Verified!", description: "Your student status has been confirmed." });
+        onOpenChange(false);
+      }
+    } catch (err: any) {
+      setError(err.message || "Something went wrong.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -53,6 +84,15 @@ export const VerifyModal = ({ open, onOpenChange, reason }: VerifyModalProps) =>
                 </Button>
               </div>
             </>
+          ) : isStudentVerified ? (
+            <div className="rounded-xl border border-accent/30 bg-accent/5 p-4 space-y-2">
+              <div className="flex items-center gap-2 text-sm font-medium text-accent">
+                <ShieldCheck className="h-4 w-4" /> Already verified
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Your student status is confirmed. You have full access to student deals.
+              </p>
+            </div>
           ) : !hasEdu ? (
             <>
               <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-4 space-y-2">
@@ -77,9 +117,16 @@ export const VerifyModal = ({ open, onOpenChange, reason }: VerifyModalProps) =>
                   <ShieldCheck className="h-4 w-4" /> Ready to verify
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  We'll send a verification link to <span className="font-medium text-foreground">{user?.email}</span>. Click the link to confirm your student status.
+                  Your .edu email <span className="font-medium text-foreground">{user?.email}</span> will be verified to confirm your student status.
                 </p>
               </div>
+
+              {error && (
+                <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 flex items-start gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                  <p className="text-xs text-destructive">{error}</p>
+                </div>
+              )}
 
               <div className="space-y-3 text-sm">
                 <p className="font-medium text-foreground">After verification you'll unlock:</p>
@@ -97,12 +144,14 @@ export const VerifyModal = ({ open, onOpenChange, reason }: VerifyModalProps) =>
 
               <Button
                 className="w-full gap-2"
-                onClick={() => {
-                  // In a real app, this would trigger an email verification flow
-                  onOpenChange(false);
-                }}
+                onClick={handleVerify}
+                disabled={loading}
               >
-                <Mail className="h-4 w-4" /> Send Verification Email
+                {loading ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" /> Verifying…</>
+                ) : (
+                  <><ShieldCheck className="h-4 w-4" /> Verify My Student Status</>
+                )}
               </Button>
             </>
           )}
