@@ -1,17 +1,9 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  ArrowRight,
-  Chrome,
-  GraduationCap,
-  CheckCircle2,
-  AlertCircle,
-  User,
+  Mail, Lock, Eye, EyeOff, ArrowRight, Chrome,
+  GraduationCap, CheckCircle2, AlertCircle, User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -42,8 +34,7 @@ export default function SignUp() {
   const [eduStatus, setEduStatus] = useState<EduStatus>("idle");
   const [step, setStep] = useState<"form" | "verify">("form");
   const { toast } = useToast();
-  const { login } = useAuth();
-  const navigate = useNavigate();
+  const { signUp } = useAuth();
 
   const handleEmailChange = (val: string) => {
     setEmail(val);
@@ -61,7 +52,7 @@ export default function SignUp() {
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (eduStatus !== "valid") {
       toast({
@@ -72,11 +63,13 @@ export default function SignUp() {
       return;
     }
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      login(email);
+    const { error } = await signUp(email, password, name);
+    setLoading(false);
+    if (error) {
+      toast({ title: "Sign up failed", description: error, variant: "destructive" });
+    } else {
       setStep("verify");
-    }, 1500);
+    }
   };
 
   return (
@@ -127,7 +120,6 @@ export default function SignUp() {
       <div className="flex-1 flex items-center justify-center px-4 py-12">
         {step === "form" ? (
           <motion.div className="w-full max-w-md" initial="hidden" animate="visible">
-            {/* Mobile logo */}
             <motion.div variants={fadeUp} custom={0} className="lg:hidden flex justify-center mb-8">
               <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto" />
             </motion.div>
@@ -156,7 +148,6 @@ export default function SignUp() {
             </motion.div>
 
             <motion.form variants={fadeUp} custom={3} onSubmit={handleSubmit} className="space-y-5">
-              {/* Name */}
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm text-foreground">Full Name</Label>
                 <div className="relative">
@@ -173,7 +164,6 @@ export default function SignUp() {
                 </div>
               </div>
 
-              {/* Email with .edu validation */}
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm text-foreground">Student Email</Label>
                 <div className="relative">
@@ -215,7 +205,6 @@ export default function SignUp() {
                 )}
               </div>
 
-              {/* Password */}
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm text-foreground">Password</Label>
                 <div className="relative">
@@ -282,7 +271,6 @@ export default function SignUp() {
             </motion.p>
           </motion.div>
         ) : (
-          /* Email verification step */
           <motion.div
             className="w-full max-w-md text-center"
             initial={{ opacity: 0, scale: 0.95 }}
@@ -302,9 +290,9 @@ export default function SignUp() {
             <Card className="mt-8 border-border bg-card">
               <CardContent className="p-5 space-y-3">
                 {[
-                  { step: "1", text: "Open the email from CampusPerk", done: false },
-                  { step: "2", text: "Click the verification link", done: false },
-                  { step: "3", text: "Start exploring deals!", done: false },
+                  { step: "1", text: "Open the email from CampusPerk" },
+                  { step: "2", text: "Click the verification link" },
+                  { step: "3", text: "Start exploring deals!" },
                 ].map((item) => (
                   <div key={item.step} className="flex items-center gap-3 text-sm text-muted-foreground">
                     <div className="h-6 w-6 rounded-full bg-secondary flex items-center justify-center text-xs font-semibold text-foreground shrink-0">

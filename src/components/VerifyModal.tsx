@@ -17,7 +17,7 @@ interface VerifyModalProps {
 }
 
 export const VerifyModal = ({ open, onOpenChange, reason }: VerifyModalProps) => {
-  const { user, isLoggedIn, verifyStudent } = useAuth();
+  const { user, isLoggedIn, isStudentVerified } = useAuth();
   const hasEdu = user?.email?.split("@")[1]?.toLowerCase().endsWith(".edu");
 
   return (
@@ -98,7 +98,7 @@ export const VerifyModal = ({ open, onOpenChange, reason }: VerifyModalProps) =>
               <Button
                 className="w-full gap-2"
                 onClick={() => {
-                  verifyStudent();
+                  // In a real app, this would trigger an email verification flow
                   onOpenChange(false);
                 }}
               >
