@@ -35,9 +35,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { VerifiedStudentBadge } from "@/components/VerifiedStudentBadge";
+import { UpgradeModal } from "@/components/UpgradeModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { logPaywallView, isDealPremium } from "@/lib/paywall";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -62,6 +64,7 @@ type DealRow = {
   direct_link_url: string | null;
   updated_at: string;
   category: string | null;
+  visibility: string | null;
   stores: { name: string; logo_url: string | null } | null;
 };
 
@@ -85,12 +88,14 @@ function daysUntil(dateStr: string) {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
-function DealCard({ deal, index, compact, featured: isFeatured, favIds, onToggleFav }: {
+function DealCard({ deal, index, compact, featured: isFeatured, favIds, onToggleFav, isPremiumUser, userId, onUpgrade }: {
   deal: DealRow; index: number; compact?: boolean; featured?: boolean;
   favIds: Set<string>; onToggleFav: (id: string) => void;
+  isPremiumUser: boolean; userId?: string; onUpgrade: () => void;
 }) {
   const storeName = deal.stores?.name || "Unknown";
   const isFav = favIds.has(deal.id);
+  const isGated = isDealPremium(deal) && !isPremiumUser;
 
   const statusBadge = (() => {
     if (deal.expires_at && daysUntil(deal.expires_at) <= 30 && daysUntil(deal.expires_at) >= 0) {
@@ -111,6 +116,14 @@ function DealCard({ deal, index, compact, featured: isFeatured, favIds, onToggle
     <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={index} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="h-full">
       <Card className={`group relative overflow-hidden border-border bg-card hover:border-primary/30 transition-all duration-300 h-full ${isFeatured ? "ring-1 ring-primary/30 border-primary/20 shadow-[0_0_30px_-4px_hsl(217_91%_60%/0.3)]" : "hover:shadow-[var(--shadow-glow)]"}`}>
         {isFeatured && <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />}
+        {/* Premium lock overlay */}
+        {isGated && (
+          <div className="absolute inset-0 z-20 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => { onUpgrade(); logPaywallView(deal.id, "dashboard", userId); }}>
+            <div className="h-10 w-10 rounded-full bg-gold/15 flex items-center justify-center"><Lock className="h-5 w-5 text-gold" /></div>
+            <span className="text-sm font-semibold text-foreground">Premium Deal</span>
+            <span className="text-[11px] text-muted-foreground">Upgrade to unlock</span>
+          </div>
+        )}
         <CardContent className={`relative z-10 ${compact ? "p-4" : "p-6"}`}>
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
@@ -177,7 +190,8 @@ const categoryIcons = [
 ];
 
 export default function Dashboard() {
-  const { profile, user } = useAuth();
+  const { profile, user, isPremium } = useAuth();
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // Fetch active deals with store info
   const { data: deals = [] } = useQuery({
@@ -185,7 +199,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("id, title, description, discount_value, status, featured, sponsored, requires_edu_email, expires_at, affiliate_link_url, direct_link_url, updated_at, category, stores(name, logo_url)")
+        .select("id, title, description, discount_value, status, featured, sponsored, requires_edu_email, expires_at, affiliate_link_url, direct_link_url, updated_at, category, visibility, stores(name, logo_url)")
         .eq("status", "active")
         .order("updated_at", { ascending: false })
         .limit(50);
@@ -429,7 +443,7 @@ export default function Dashboard() {
             <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth">
               {featuredDeals.map((deal, i) => (
                 <motion.div key={deal.id} className="min-w-[280px] max-w-[320px] snap-start shrink-0" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-                  <DealCard deal={deal} index={i} featured favIds={favIds} onToggleFav={toggleFav} />
+                  <DealCard deal={deal} index={i} featured favIds={favIds} onToggleFav={toggleFav} isPremiumUser={isPremium} userId={user?.id} onUpgrade={() => setUpgradeOpen(true)} />
                 </motion.div>
               ))}
             </div>
@@ -499,7 +513,7 @@ export default function Dashboard() {
           {recentDeals.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {recentDeals.map((deal, i) => (
-                <DealCard key={deal.id} deal={deal} index={i} favIds={favIds} onToggleFav={toggleFav} />
+                <DealCard key={deal.id} deal={deal} index={i} favIds={favIds} onToggleFav={toggleFav} isPremiumUser={isPremium} userId={user?.id} onUpgrade={() => setUpgradeOpen(true)} />
               ))}
             </div>
           ) : (
@@ -544,7 +558,7 @@ export default function Dashboard() {
             <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth">
               {favDeals.map((deal, i) => (
                 <div key={deal.id} className="min-w-[280px] max-w-[320px] snap-start shrink-0">
-                  <DealCard deal={deal} index={i} compact favIds={favIds} onToggleFav={toggleFav} />
+                  <DealCard deal={deal} index={i} compact favIds={favIds} onToggleFav={toggleFav} isPremiumUser={isPremium} userId={user?.id} onUpgrade={() => setUpgradeOpen(true)} />
                 </div>
               ))}
             </div>
@@ -613,6 +627,7 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+      <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </DashboardLayout>
   );
 }

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
+import { useAuth } from "@/contexts/AuthContext";
+import { logPaywallView } from "@/lib/paywall";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -58,6 +60,7 @@ export default function DealDetail() {
   const { dealId } = useParams<{ dealId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { isPremium: userIsPremium, user } = useAuth();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [fav, setFav] = useState(false);
 
@@ -78,18 +81,19 @@ export default function DealDetail() {
     );
   }
 
-  const isPremium = deal.visibility === "premium";
+  const isPremiumDeal = deal.visibility === "premium";
+  const isGated = isPremiumDeal && !userIsPremium;
   const isExpiring = deal.expiresAt && new Date(deal.expiresAt) > new Date();
   const daysLeft = deal.expiresAt
     ? Math.ceil((new Date(deal.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
     : null;
 
   const handleGoToOffer = () => {
-    if (isPremium) {
+    if (isGated) {
       setUpgradeOpen(true);
+      logPaywallView(deal.id, "deal_detail", user?.id);
       return;
     }
-    // Route through /out/:dealId for affiliate tracking
     navigate(`/go/${deal.id}`);
   };
 
@@ -117,7 +121,7 @@ export default function DealDetail() {
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
           <Card className="border-border bg-card overflow-hidden">
             {/* Header with premium gradient */}
-            {isPremium && (
+            {isPremiumDeal && (
               <div className="h-1 bg-gradient-to-r from-gold via-gold/60 to-gold/20" />
             )}
 
@@ -153,7 +157,7 @@ export default function DealDetail() {
               {/* Badges */}
               <div className="flex flex-wrap items-center gap-2 mt-4">
                 <VerifiedStudentBadge />
-                {isPremium ? (
+                {isPremiumDeal ? (
                   <Tooltip>
                     <TooltipTrigger>
                       <Badge className="bg-gold/15 text-gold border-gold/30 text-xs font-semibold gap-1">
@@ -311,7 +315,7 @@ export default function DealDetail() {
                     onClick={handleGoToOffer}
                     className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base gap-2"
                   >
-                    {isPremium ? (
+                    {isGated ? (
                       <>
                         <Crown className="h-5 w-5" /> Unlock Premium Deal
                       </>

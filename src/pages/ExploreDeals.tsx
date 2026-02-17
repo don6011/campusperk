@@ -23,6 +23,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
+import { logPaywallView, isDealPremium } from "@/lib/paywall";
 
 // Types for the joined query result
 interface DealWithStore {
@@ -42,6 +43,7 @@ interface DealWithStore {
   last_checked_at: string | null;
   affiliate_link_url: string | null;
   direct_link_url: string | null;
+  visibility: string | null;
   stores: {
     id: string;
     name: string;
@@ -141,7 +143,7 @@ export default function ExploreDeals() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
-  const { isStudentVerified, isPremium } = useAuth();
+  const { isStudentVerified, isPremium, user } = useAuth();
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const { data: deals = [], isLoading } = useQuery({
@@ -384,6 +386,7 @@ export default function ExploreDeals() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {visible.map((deal, i) => {
                 const needsVerification = deal.requires_edu_email && !isStudentVerified;
+                const isPremiumDeal = isDealPremium(deal) && !isPremium;
                 const days = deal.expires_at ? daysUntil(deal.expires_at) : null;
                 const savings = seededSavings(deal.id);
                 const refDate = deal.last_checked_at || deal.updated_at;
@@ -392,15 +395,20 @@ export default function ExploreDeals() {
                 return (
                   <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i}>
                     <Card className={`group relative border-border bg-card overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow-glow)] ${needsVerification ? "hover:border-primary/30" : "hover:border-primary/30"}`}>
+                      {/* Premium lock overlay */}
+                      {isPremiumDeal && (
+                        <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => { setUpgradeOpen(true); logPaywallView(deal.id, "explore", user?.id); }}>
+                          <div className="h-10 w-10 rounded-full bg-gold/15 flex items-center justify-center"><Lock className="h-5 w-5 text-gold" /></div>
+                          <span className="text-sm font-semibold text-foreground">Premium Deal</span>
+                          <span className="text-[11px] text-muted-foreground">Upgrade to unlock</span>
+                        </div>
+                      )}
                       {/* Verification gate overlay */}
-                      {needsVerification && (
+                      {needsVerification && !isPremiumDeal && (
                         <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => setVerifyOpen(true)}>
                           <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center"><GraduationCap className="h-5 w-5 text-primary" /></div>
                           <span className="text-sm font-semibold text-foreground text-center px-4">Verify your .edu email</span>
                           <span className="text-[11px] text-muted-foreground">Student-verified deal</span>
-                          <Button size="sm" className="text-xs gap-1.5 h-8 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => { e.stopPropagation(); setVerifyOpen(true); }}>
-                            <GraduationCap className="h-3 w-3" /> Verify Now
-                          </Button>
                         </div>
                       )}
 

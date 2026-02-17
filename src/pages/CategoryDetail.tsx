@@ -26,6 +26,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { logPaywallView, isDealPremium } from "@/lib/paywall";
 
 interface DealWithStore {
   id: string;
@@ -44,6 +45,7 @@ interface DealWithStore {
   last_checked_at: string | null;
   affiliate_link_url: string | null;
   direct_link_url: string | null;
+  visibility: string | null;
   stores: {
     id: string;
     name: string;
@@ -505,14 +507,14 @@ export default function CategoryDetail() {
                 const days = deal.expires_at ? daysUntil(deal.expires_at) : null;
                 const refDate = deal.last_checked_at || deal.updated_at;
                 const isVerified24h = (Date.now() - new Date(refDate).getTime()) < 24 * 60 * 60 * 1000;
-                const isPremiumDeal = deal.featured && !isPremium;
+                const isPremiumDeal = isDealPremium(deal) && !isPremium;
 
                 return (
                   <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i}>
                     <Card className={`group relative border-border bg-card overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow-glow)] hover:border-primary/30`}>
                       {/* Premium lock overlay */}
                       {isPremiumDeal && (
-                        <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => setUpgradeOpen(true)}>
+                        <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => { setUpgradeOpen(true); logPaywallView(deal.id, "category", user?.id); }}>
                           <div className="h-10 w-10 rounded-full bg-gold/15 flex items-center justify-center"><Lock className="h-5 w-5 text-gold" /></div>
                           <span className="text-sm font-semibold text-foreground">Premium Deal</span>
                           <span className="text-[11px] text-muted-foreground">Upgrade to unlock</span>
