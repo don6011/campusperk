@@ -27,6 +27,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import campusperkLogo from "@/assets/campusperk-logo.png";
+import { VerifiedStudentBadge } from "@/components/VerifiedStudentBadge";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -129,6 +130,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
+            {/* Verified Student Badge */}
+            <VerifiedStudentBadge />
+
             {/* Notifications */}
             <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
               <Bell className="h-5 w-5" />
