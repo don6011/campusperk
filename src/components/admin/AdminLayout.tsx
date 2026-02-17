@@ -7,6 +7,7 @@ import {
   Tag,
   Inbox,
   ScanSearch,
+  BarChart3,
   Menu,
   X,
 } from "lucide-react";
@@ -16,6 +17,7 @@ const navItems = [
   { label: "Deals Manager", href: "/admin/deals", icon: Tag },
   { label: "Submissions", href: "/admin/submissions", icon: Inbox },
   { label: "Scans", href: "/admin/scans", icon: ScanSearch },
+  { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
 ];
 
 export const AdminLayout = ({ children }: { children: ReactNode }) => {

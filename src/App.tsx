@@ -14,6 +14,7 @@ import Pricing from "./pages/Pricing";
 import DealsManager from "./pages/admin/DealsManager";
 import SubmissionsQueue from "./pages/admin/SubmissionsQueue";
 import ScansPage from "./pages/admin/ScansPage";
+import AffiliateAnalytics from "./pages/admin/AffiliateAnalytics";
 import Favorites from "./pages/Favorites";
 import NotFound from "./pages/NotFound";
 
@@ -38,6 +39,7 @@ const App = () => (
           <Route path="/admin/deals" element={<DealsManager />} />
           <Route path="/admin/submissions" element={<SubmissionsQueue />} />
           <Route path="/admin/scans" element={<ScansPage />} />
+          <Route path="/admin/analytics" element={<AffiliateAnalytics />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
