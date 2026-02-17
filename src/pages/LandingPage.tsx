@@ -135,7 +135,7 @@ const LandingPage = () => {
           >
             <motion.div variants={fadeUp} custom={0} className="mb-8 flex justify-center">
               <Link to="/">
-                <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
+                <img src={campusperkLogo} alt="CampusPerk" className="h-20 w-auto" />
               </Link>
             </motion.div>
 
