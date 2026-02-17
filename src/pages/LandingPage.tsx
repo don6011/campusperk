@@ -133,9 +133,15 @@ const LandingPage = () => {
             initial="hidden"
             animate="visible"
           >
+            <motion.div variants={fadeUp} custom={0} className="mb-8 flex justify-center">
+              <Link to="/">
+                <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
+              </Link>
+            </motion.div>
+
             <motion.div
               variants={fadeUp}
-              custom={0}
+              custom={0.5}
               className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-sm text-primary"
             >
               <Zap className="h-3.5 w-3.5" />
