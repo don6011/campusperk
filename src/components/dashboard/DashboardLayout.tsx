@@ -14,6 +14,7 @@ import {
   ChevronDown,
   LogOut,
   User,
+  Send,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ const navItems = [
   { title: "Explore Deals", url: "/explore", icon: Compass },
   { title: "Categories", url: "/categories", icon: Grid3X3 },
   { title: "Favorites", url: "/favorites", icon: Heart },
+  { title: "Submit Deal", url: "/submit", icon: Send },
   { title: "Alerts", url: "/alerts", icon: Bell },
   { title: "Premium", url: "/pricing", icon: Crown },
   { title: "Account Settings", url: "/settings", icon: Settings },
