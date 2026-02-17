@@ -96,7 +96,8 @@ const LandingPage = () => {
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2">
+          <div className="hidden md:w-[200px] md:block" />
+          <Link to="/" className="flex items-center gap-2 absolute left-1/2 -translate-x-1/2 md:relative md:left-auto md:translate-x-0">
             <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto" />
           </Link>
           <div className="hidden md:flex items-center gap-8">
