@@ -26,6 +26,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip
 import { useToast } from "@/hooks/use-toast";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { VerifiedStudentBadge } from "@/components/VerifiedStudentBadge";
 import { mockDeals } from "@/lib/mock-data";
 
 function timeAgo(dateStr: string) {
@@ -151,6 +152,7 @@ export default function DealDetail() {
 
               {/* Badges */}
               <div className="flex flex-wrap items-center gap-2 mt-4">
+                <VerifiedStudentBadge />
                 {isPremium ? (
                   <Tooltip>
                     <TooltipTrigger>

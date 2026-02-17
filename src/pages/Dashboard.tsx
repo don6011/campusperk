@@ -34,6 +34,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { VerifiedStudentBadge } from "@/components/VerifiedStudentBadge";
 import { mockDeals, type Deal } from "@/lib/mock-data";
 
 const fadeUp = {
@@ -233,7 +234,10 @@ export default function Dashboard() {
         {/* Welcome */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
           <h1 className="font-display text-2xl font-bold text-foreground">Welcome back, Alex 👋</h1>
-          <p className="text-sm text-muted-foreground mt-1">Here's what's new in student discounts today.</p>
+          <div className="flex items-center gap-3 mt-1">
+            <p className="text-sm text-muted-foreground">Here's what's new in student discounts today.</p>
+            <VerifiedStudentBadge />
+          </div>
         </motion.div>
 
         {/* Stats Row */}
