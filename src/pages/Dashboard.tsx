@@ -216,7 +216,11 @@ export default function Dashboard() {
     .sort((a, b) => new Date(b.lastCheckedAt).getTime() - new Date(a.lastCheckedAt).getTime())
     .slice(0, 6);
   const expiringDeals = mockDeals
-    .filter((d) => d.expiresAt && d.status !== "expired" && new Date(d.expiresAt) > new Date())
+    .filter((d) => {
+      if (!d.expiresAt || d.status === "expired") return false;
+      const days = daysUntil(d.expiresAt);
+      return days >= 0 && days <= 30;
+    })
     .sort((a, b) => new Date(a.expiresAt!).getTime() - new Date(b.expiresAt!).getTime());
   const favDeals = mockDeals.filter((d) => favoriteIds.has(d.id));
 
