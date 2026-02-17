@@ -1,28 +1,11 @@
 import { useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { useQuery } from "@tanstack/react-query";
 import {
-  Search,
-  Filter,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  Heart,
-  ExternalLink,
-  Shield,
-  Crown,
-  Clock,
-  Lock,
-  ShoppingBag,
-  GraduationCap,
-  AlertTriangle,
-  Tag,
-  X,
-  RotateCcw,
-  Flame,
-  Sparkles,
-  Zap,
-  TrendingUp,
+  Search, Filter, ChevronDown, ChevronLeft, ChevronRight, Heart,
+  ExternalLink, Shield, Crown, Clock, Lock, ShoppingBag, GraduationCap,
+  AlertTriangle, Tag, X, RotateCcw, Flame, Sparkles, Zap, TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,24 +14,43 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { VerifyModal } from "@/components/VerifyModal";
 import { useAuth } from "@/contexts/AuthContext";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
-import { mockDeals, type Deal } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
+import { Skeleton } from "@/components/ui/skeleton";
 
-const CATEGORIES = ["Software", "Subscriptions", "Tech", "Clothing", "Food", "Learning"];
+// Types for the joined query result
+interface DealWithStore {
+  id: string;
+  title: string;
+  description: string | null;
+  discount_type: string;
+  discount_value: string | null;
+  requires_edu_email: boolean;
+  status: string;
+  sponsored: boolean;
+  featured: boolean;
+  category: string | null;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+  last_checked_at: string | null;
+  affiliate_link_url: string | null;
+  direct_link_url: string | null;
+  stores: {
+    id: string;
+    name: string;
+    logo_url: string | null;
+    website_url: string | null;
+  };
+}
+
+const CATEGORIES = ["Software", "Subscriptions", "Tech", "Clothing", "Food", "Learning", "Books", "Travel", "Fitness", "Entertainment"];
 const STATUSES = [
   { value: "active", label: "Active" },
   { value: "expiring", label: "Expiring Soon" },
@@ -93,17 +95,17 @@ function urgencyColor(days: number) {
   return "bg-accent/15 text-accent border-accent/30";
 }
 
-function discountNum(deal: Deal) {
-  const m = deal.discountValue.match(/(\d+)/);
+function discountNum(deal: DealWithStore) {
+  const m = (deal.discount_value ?? "").match(/(\d+)/);
   return m ? parseInt(m[1]) : 0;
 }
 
-// Seeded engagement score for trending
-function engagementScore(deal: Deal) {
+function engagementScore(deal: DealWithStore) {
   const base = deal.id.charCodeAt(1) * 47 + 123;
   const clicks = (base % 500) + 200;
   const favs = (base * 3 % 300) + 50;
-  const recency = (Date.now() - new Date(deal.lastCheckedAt).getTime()) / (1000 * 60 * 60 * 24);
+  const refDate = deal.last_checked_at || deal.updated_at;
+  const recency = (Date.now() - new Date(refDate).getTime()) / (1000 * 60 * 60 * 24);
   return clicks * 2 + favs * 3 - recency * 10;
 }
 
@@ -111,8 +113,7 @@ function seededSavings(id: string) {
   return ((id.charCodeAt(1) * 31 + 77) % 400 + 80);
 }
 
-// Trending badge assignment
-function trendingBadge(deal: Deal, rank: number): { label: string; icon: React.ReactNode; className: string } {
+function trendingBadge(deal: DealWithStore, rank: number) {
   if (rank === 0) return { label: "Trending 🔥", icon: <Flame className="h-3 w-3" />, className: "bg-destructive/15 text-destructive border-destructive/30" };
   if (deal.featured) return { label: "Hot Deal", icon: <Zap className="h-3 w-3" />, className: "bg-gold/15 text-gold border-gold/30" };
   return { label: "Popular", icon: <TrendingUp className="h-3 w-3" />, className: "bg-primary/15 text-primary border-primary/30" };
@@ -121,8 +122,7 @@ function trendingBadge(deal: Deal, rank: number): { label: string; icon: React.R
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
   visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
+    opacity: 1, y: 0,
     transition: { delay: i * 0.04, duration: 0.35, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
   }),
 };
@@ -144,227 +144,189 @@ export default function ExploreDeals() {
   const { isStudentVerified, isPremium } = useAuth();
   const carouselRef = useRef<HTMLDivElement>(null);
 
+  const { data: deals = [], isLoading } = useQuery({
+    queryKey: ["deals-with-stores"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deals")
+        .select("*, stores(id, name, logo_url, website_url)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as unknown as DealWithStore[];
+    },
+  });
+
   const toggleCategory = (cat: string) =>
-    setSelectedCategories((prev) =>
-      prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]
-    );
-
+    setSelectedCategories((prev) => prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]);
   const toggleStatus = (s: string) =>
-    setSelectedStatuses((prev) =>
-      prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]
-    );
-
+    setSelectedStatuses((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
   const toggleFav = (id: string) =>
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-
+    setFavorites((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const resetFilters = () => {
-    setSearch("");
-    setSelectedCategories([]);
-    setSelectedStatuses([]);
-    setEduOnly(false);
-    setPremiumOnly(false);
-    setFreshnessDays(null);
-    setVerifiedRecently(false);
-    setVisibleCount(PAGE_SIZE);
+    setSearch(""); setSelectedCategories([]); setSelectedStatuses([]); setEduOnly(false);
+    setPremiumOnly(false); setFreshnessDays(null); setVerifiedRecently(false); setVisibleCount(PAGE_SIZE);
   };
 
   const hasFilters = search || selectedCategories.length || selectedStatuses.length || eduOnly || premiumOnly || freshnessDays || verifiedRecently;
 
-  // Trending deals: top 6 by engagement
   const trendingDeals = useMemo(() => {
-    return [...mockDeals]
-      .filter((d) => d.status === "active")
-      .sort((a, b) => engagementScore(b) - engagementScore(a))
-      .slice(0, 6);
-  }, []);
+    return [...deals].filter((d) => d.status === "active").sort((a, b) => engagementScore(b) - engagementScore(a)).slice(0, 6);
+  }, [deals]);
 
   const scrollCarousel = (dir: "left" | "right") => {
     if (!carouselRef.current) return;
-    const amount = 320;
-    carouselRef.current.scrollBy({ left: dir === "left" ? -amount : amount, behavior: "smooth" });
+    carouselRef.current.scrollBy({ left: dir === "left" ? -320 : 320, behavior: "smooth" });
   };
 
   const filtered = useMemo(() => {
-    let deals = [...mockDeals];
-
+    let list = [...deals];
     if (search) {
       const q = search.toLowerCase();
-      deals = deals.filter(
-        (d) =>
-          d.title.toLowerCase().includes(q) ||
-          d.storeName.toLowerCase().includes(q) ||
-          d.category.toLowerCase().includes(q)
+      list = list.filter((d) =>
+        d.title.toLowerCase().includes(q) ||
+        d.stores.name.toLowerCase().includes(q) ||
+        (d.category ?? "").toLowerCase().includes(q)
       );
     }
-
-    if (selectedCategories.length)
-      deals = deals.filter((d) => selectedCategories.includes(d.category));
-
+    if (selectedCategories.length) list = list.filter((d) => d.category && selectedCategories.includes(d.category));
     if (selectedStatuses.length) {
-      deals = deals.filter((d) => {
-        if (selectedStatuses.includes("expiring") && d.expiresAt) {
-          const days = daysUntil(d.expiresAt);
+      list = list.filter((d) => {
+        if (selectedStatuses.includes("expiring") && d.expires_at) {
+          const days = daysUntil(d.expires_at);
           if (days > 0 && days <= 30) return true;
         }
         return selectedStatuses.includes(d.status);
       });
     }
-
-    if (eduOnly) deals = deals.filter((d) => d.requiresEduEmail);
-    if (premiumOnly) deals = deals.filter((d) => d.visibility === "premium");
-
+    if (eduOnly) list = list.filter((d) => d.requires_edu_email);
     if (freshnessDays) {
       const cutoff = Date.now() - freshnessDays * 24 * 60 * 60 * 1000;
-      deals = deals.filter((d) => new Date(d.lastCheckedAt).getTime() >= cutoff);
+      list = list.filter((d) => d.last_checked_at && new Date(d.last_checked_at).getTime() >= cutoff);
     }
-
     if (verifiedRecently) {
       const cutoff = Date.now() - 24 * 60 * 60 * 1000;
-      deals = deals.filter((d) => new Date(d.lastCheckedAt).getTime() >= cutoff);
+      list = list.filter((d) => d.last_checked_at && new Date(d.last_checked_at).getTime() >= cutoff);
     }
 
     switch (sortBy) {
       case "newest":
-        deals.sort((a, b) => new Date(b.lastCheckedAt).getTime() - new Date(a.lastCheckedAt).getTime());
+        list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
       case "popular":
-        deals.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || (b.sponsored ? 1 : 0) - (a.sponsored ? 1 : 0));
+        list.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0) || (b.sponsored ? 1 : 0) - (a.sponsored ? 1 : 0));
         break;
       case "expiring":
-        deals.sort((a, b) => {
-          const da = a.expiresAt ? new Date(a.expiresAt).getTime() : Infinity;
-          const db = b.expiresAt ? new Date(b.expiresAt).getTime() : Infinity;
+        list.sort((a, b) => {
+          const da = a.expires_at ? new Date(a.expires_at).getTime() : Infinity;
+          const db = b.expires_at ? new Date(b.expires_at).getTime() : Infinity;
           return da - db;
         });
         break;
       case "discount":
-        deals.sort((a, b) => discountNum(b) - discountNum(a));
+        list.sort((a, b) => discountNum(b) - discountNum(a));
         break;
       case "verified":
-        deals.sort((a, b) => new Date(b.lastCheckedAt).getTime() - new Date(a.lastCheckedAt).getTime());
+        list.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
         break;
     }
-
-    return deals;
-  }, [search, selectedCategories, selectedStatuses, eduOnly, premiumOnly, freshnessDays, verifiedRecently, sortBy]);
+    return list;
+  }, [deals, search, selectedCategories, selectedStatuses, eduOnly, premiumOnly, freshnessDays, verifiedRecently, sortBy]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
 
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-6xl mx-auto space-y-6">
+          <Skeleton className="h-8 w-64" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <Skeleton key={i} className="h-56 rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </DashboardLayout>
+    );
+  }
+
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto space-y-6">
-        {/* Header */}
         <div>
           <h1 className="font-display text-2xl font-bold text-foreground">Explore Student Discounts</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {filtered.length} deal{filtered.length !== 1 ? "s" : ""} found
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} deal{filtered.length !== 1 ? "s" : ""} found</p>
         </div>
 
-        {/* ========== TRENDING DEALS CAROUSEL ========== */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-              <Flame className="h-5 w-5 text-destructive" />
-              Trending Deals
-            </h2>
-            <div className="flex items-center gap-1">
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => scrollCarousel("left")}>
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => scrollCarousel("right")}>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+        {/* Trending carousel */}
+        {trendingDeals.length > 0 && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+                <Flame className="h-5 w-5 text-destructive" /> Trending Deals
+              </h2>
+              <div className="flex items-center gap-1">
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => scrollCarousel("left")}><ChevronLeft className="h-4 w-4" /></Button>
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => scrollCarousel("right")}><ChevronRight className="h-4 w-4" /></Button>
+              </div>
+            </div>
+            <div ref={carouselRef} className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1 snap-x snap-mandatory" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+              {trendingDeals.map((deal, idx) => {
+                const badge = trendingBadge(deal, idx);
+                const refDate = deal.last_checked_at || deal.updated_at;
+                const isVerifiedRecently = (Date.now() - new Date(refDate).getTime()) < 24 * 60 * 60 * 1000;
+                return (
+                  <Link key={deal.id} to={`/deals/${deal.id}`} className="snap-start shrink-0 w-[280px]">
+                    <Card className="border-border bg-card hover:border-primary/30 transition-all duration-300 hover:shadow-[var(--shadow-glow)] h-full">
+                      <CardContent className="p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {deal.stores.logo_url ? (
+                              <img src={deal.stores.logo_url} alt={deal.stores.name} className="h-9 w-9 rounded-lg object-contain bg-secondary p-1" />
+                            ) : (
+                              <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
+                            <div className="min-w-0">
+                              <div className="text-[11px] text-muted-foreground">{deal.stores.name}</div>
+                              <div className="font-medium text-sm text-foreground truncate">{deal.title}</div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                            {deal.discount_value ?? "Special"}
+                          </span>
+                          <Badge className={`text-[10px] font-semibold gap-1 ${badge.className}`}>{badge.icon} {badge.label}</Badge>
+                        </div>
+                        {isVerifiedRecently && (
+                          <div className="flex items-center gap-1 text-[11px] text-accent"><Sparkles className="h-3 w-3" /> Verified within 24h</div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
             </div>
           </div>
-          <div
-            ref={carouselRef}
-            className="flex gap-4 overflow-x-auto scrollbar-hide pb-2 -mx-1 px-1 snap-x snap-mandatory"
-            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
-          >
-            {trendingDeals.map((deal, idx) => {
-              const badge = trendingBadge(deal, idx);
-              const isVerifiedRecently = (Date.now() - new Date(deal.lastCheckedAt).getTime()) < 24 * 60 * 60 * 1000;
-              return (
-                <Link
-                  key={deal.id}
-                  to={`/deals/${deal.id}`}
-                  className="snap-start shrink-0 w-[280px]"
-                >
-                  <Card className="border-border bg-card hover:border-primary/30 transition-all duration-300 hover:shadow-[var(--shadow-glow)] h-full">
-                    <CardContent className="p-4 space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                            <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-[11px] text-muted-foreground">{deal.storeName}</div>
-                            <div className="font-medium text-sm text-foreground truncate">{deal.title}</div>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                          {deal.discountValue}
-                        </span>
-                        <Badge className={`text-[10px] font-semibold gap-1 ${badge.className}`}>
-                          {badge.icon} {badge.label}
-                        </Badge>
-                      </div>
-                      {isVerifiedRecently && (
-                        <div className="flex items-center gap-1 text-[11px] text-accent">
-                          <Sparkles className="h-3 w-3" /> Verified within 24h
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+        )}
 
-        {/* Search + Sort bar */}
+        {/* Search + Sort */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search deals, stores, categories…"
-              value={search}
-              onChange={(e) => { setSearch(e.target.value); setVisibleCount(PAGE_SIZE); }}
-              className="pl-9 bg-secondary border-border h-10"
-            />
-            {search && (
-              <button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                <X className="h-4 w-4" />
-              </button>
-            )}
+            <Input placeholder="Search deals, stores, categories…" value={search} onChange={(e) => { setSearch(e.target.value); setVisibleCount(PAGE_SIZE); }} className="pl-9 bg-secondary border-border h-10" />
+            {search && (<button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>)}
           </div>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 h-10"
-              onClick={() => setFiltersOpen(!filtersOpen)}
-            >
-              <Filter className="h-4 w-4" />
-              Filters
-              {hasFilters ? <span className="ml-1 h-2 w-2 rounded-full bg-primary" /> : null}
+            <Button variant="outline" size="sm" className="gap-1.5 h-10" onClick={() => setFiltersOpen(!filtersOpen)}>
+              <Filter className="h-4 w-4" /> Filters {hasFilters ? <span className="ml-1 h-2 w-2 rounded-full bg-primary" /> : null}
             </Button>
             <Select value={sortBy} onValueChange={setSortBy}>
-              <SelectTrigger className="w-[180px] h-10 bg-secondary border-border">
-                <SelectValue />
-              </SelectTrigger>
+              <SelectTrigger className="w-[180px] h-10 bg-secondary border-border"><SelectValue /></SelectTrigger>
               <SelectContent className="bg-card border-border z-50">
-                {SORT_OPTIONS.map((o) => (
-                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
-                ))}
+                {SORT_OPTIONS.map((o) => (<SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>))}
               </SelectContent>
             </Select>
           </div>
@@ -372,103 +334,46 @@ export default function ExploreDeals() {
 
         {/* Filters panel */}
         {filtersOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="rounded-xl border border-border bg-card p-5 space-y-5"
-          >
-            {/* Categories */}
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="rounded-xl border border-border bg-card p-5 space-y-5">
             <div>
               <h3 className="text-xs font-semibold text-foreground mb-2.5 uppercase tracking-wider">Category</h3>
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map((cat) => (
-                  <Button
-                    key={cat}
-                    variant={selectedCategories.includes(cat) ? "default" : "outline"}
-                    size="sm"
-                    className="text-xs h-8"
-                    onClick={() => { toggleCategory(cat); setVisibleCount(PAGE_SIZE); }}
-                  >
-                    {cat}
-                  </Button>
+                  <Button key={cat} variant={selectedCategories.includes(cat) ? "default" : "outline"} size="sm" className="text-xs h-8" onClick={() => { toggleCategory(cat); setVisibleCount(PAGE_SIZE); }}>{cat}</Button>
                 ))}
               </div>
             </div>
-
-            {/* Status */}
             <div>
               <h3 className="text-xs font-semibold text-foreground mb-2.5 uppercase tracking-wider">Status</h3>
               <div className="flex flex-wrap gap-2">
                 {STATUSES.map((s) => (
-                  <Button
-                    key={s.value}
-                    variant={selectedStatuses.includes(s.value) ? "default" : "outline"}
-                    size="sm"
-                    className="text-xs h-8"
-                    onClick={() => { toggleStatus(s.value); setVisibleCount(PAGE_SIZE); }}
-                  >
-                    {s.label}
-                  </Button>
+                  <Button key={s.value} variant={selectedStatuses.includes(s.value) ? "default" : "outline"} size="sm" className="text-xs h-8" onClick={() => { toggleStatus(s.value); setVisibleCount(PAGE_SIZE); }}>{s.label}</Button>
                 ))}
               </div>
             </div>
-
-            {/* Toggles row */}
             <div className="flex flex-wrap items-center gap-6">
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="edu"
-                  checked={eduOnly}
-                  onCheckedChange={(v) => { setEduOnly(!!v); setVisibleCount(PAGE_SIZE); }}
-                />
-                <Label htmlFor="edu" className="text-xs text-muted-foreground flex items-center gap-1">
-                  <GraduationCap className="h-3.5 w-3.5" /> Requires .edu
-                </Label>
+                <Checkbox id="edu" checked={eduOnly} onCheckedChange={(v) => { setEduOnly(!!v); setVisibleCount(PAGE_SIZE); }} />
+                <Label htmlFor="edu" className="text-xs text-muted-foreground flex items-center gap-1"><GraduationCap className="h-3.5 w-3.5" /> Requires .edu</Label>
               </div>
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="premium"
-                  checked={premiumOnly}
-                  onCheckedChange={(v) => { setPremiumOnly(!!v); setVisibleCount(PAGE_SIZE); }}
-                />
-                <Label htmlFor="premium" className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Crown className="h-3.5 w-3.5" /> Premium only
-                </Label>
+                <Checkbox id="premium" checked={premiumOnly} onCheckedChange={(v) => { setPremiumOnly(!!v); setVisibleCount(PAGE_SIZE); }} />
+                <Label htmlFor="premium" className="text-xs text-muted-foreground flex items-center gap-1"><Crown className="h-3.5 w-3.5" /> Premium only</Label>
               </div>
               <div className="flex items-center gap-2">
-                <Checkbox
-                  id="verified24h"
-                  checked={verifiedRecently}
-                  onCheckedChange={(v) => { setVerifiedRecently(!!v); setVisibleCount(PAGE_SIZE); }}
-                />
-                <Label htmlFor="verified24h" className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Sparkles className="h-3.5 w-3.5" /> Verified within 24 hours
-                </Label>
+                <Checkbox id="verified24h" checked={verifiedRecently} onCheckedChange={(v) => { setVerifiedRecently(!!v); setVisibleCount(PAGE_SIZE); }} />
+                <Label htmlFor="verified24h" className="text-xs text-muted-foreground flex items-center gap-1"><Sparkles className="h-3.5 w-3.5" /> Verified within 24 hours</Label>
               </div>
-
-              {/* Freshness */}
-              <Select
-                value={freshnessDays?.toString() ?? "all"}
-                onValueChange={(v) => { setFreshnessDays(v === "all" ? null : Number(v)); setVisibleCount(PAGE_SIZE); }}
-              >
-                <SelectTrigger className="w-[160px] h-8 text-xs bg-secondary border-border">
-                  <Clock className="h-3 w-3 mr-1.5 text-muted-foreground" />
-                  <SelectValue placeholder="Freshness" />
-                </SelectTrigger>
+              <Select value={freshnessDays?.toString() ?? "all"} onValueChange={(v) => { setFreshnessDays(v === "all" ? null : Number(v)); setVisibleCount(PAGE_SIZE); }}>
+                <SelectTrigger className="w-[160px] h-8 text-xs bg-secondary border-border"><Clock className="h-3 w-3 mr-1.5 text-muted-foreground" /><SelectValue placeholder="Freshness" /></SelectTrigger>
                 <SelectContent className="bg-card border-border z-50">
                   <SelectItem value="all">Any freshness</SelectItem>
-                  {FRESHNESS.map((f) => (
-                    <SelectItem key={f.value} value={f.value.toString()}>{f.label}</SelectItem>
-                  ))}
+                  {FRESHNESS.map((f) => (<SelectItem key={f.value} value={f.value.toString()}>{f.label}</SelectItem>))}
                 </SelectContent>
               </Select>
             </div>
-
             {hasFilters && (
-              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1.5" onClick={resetFilters}>
-                <RotateCcw className="h-3 w-3" /> Reset filters
-              </Button>
+              <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1.5" onClick={resetFilters}><RotateCcw className="h-3 w-3" /> Reset filters</Button>
             )}
           </motion.div>
         )}
@@ -478,138 +383,76 @@ export default function ExploreDeals() {
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {visible.map((deal, i) => {
-                const isPremiumDeal = deal.visibility === "premium";
-                const needsVerification = deal.requiresEduEmail && !isStudentVerified;
-                const isLocked = (isPremiumDeal && !isPremium) || needsVerification;
-                const days = deal.expiresAt ? daysUntil(deal.expiresAt) : null;
+                const needsVerification = deal.requires_edu_email && !isStudentVerified;
+                const days = deal.expires_at ? daysUntil(deal.expires_at) : null;
                 const savings = seededSavings(deal.id);
-                const isVerified24h = (Date.now() - new Date(deal.lastCheckedAt).getTime()) < 24 * 60 * 60 * 1000;
+                const refDate = deal.last_checked_at || deal.updated_at;
+                const isVerified24h = (Date.now() - new Date(refDate).getTime()) < 24 * 60 * 60 * 1000;
 
                 return (
                   <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i}>
-                    <Card className={`group relative border-border bg-card overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow-glow)] ${
-                      isPremiumDeal ? "hover:border-gold/30" : needsVerification ? "hover:border-primary/30" : "hover:border-primary/30"
-                    }`}>
+                    <Card className={`group relative border-border bg-card overflow-hidden transition-all duration-300 hover:shadow-[var(--shadow-glow)] ${needsVerification ? "hover:border-primary/30" : "hover:border-primary/30"}`}>
                       {/* Verification gate overlay */}
-                      {needsVerification && !isPremiumDeal && (
-                        <div
-                          className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer"
-                          onClick={() => setVerifyOpen(true)}
-                        >
-                          <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center">
-                            <GraduationCap className="h-5 w-5 text-primary" />
-                          </div>
-                          <span className="text-sm font-semibold text-foreground text-center px-4">
-                            Verify your .edu email
-                          </span>
-                          <span className="text-[11px] text-muted-foreground">
-                            Student-verified deal
-                          </span>
-                          <Button
-                            size="sm"
-                            className="text-xs gap-1.5 h-8 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                            onClick={(e) => { e.stopPropagation(); setVerifyOpen(true); }}
-                          >
+                      {needsVerification && (
+                        <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => setVerifyOpen(true)}>
+                          <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center"><GraduationCap className="h-5 w-5 text-primary" /></div>
+                          <span className="text-sm font-semibold text-foreground text-center px-4">Verify your .edu email</span>
+                          <span className="text-[11px] text-muted-foreground">Student-verified deal</span>
+                          <Button size="sm" className="text-xs gap-1.5 h-8 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200" onClick={(e) => { e.stopPropagation(); setVerifyOpen(true); }}>
                             <GraduationCap className="h-3 w-3" /> Verify Now
                           </Button>
                         </div>
                       )}
 
-                      {/* Premium blur overlay — enhanced */}
-                      {isPremiumDeal && !isPremium && (
-                        <div
-                          className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer"
-                          onClick={() => setUpgradeOpen(true)}
-                        >
-                          <div className="h-10 w-10 rounded-full bg-gold/15 flex items-center justify-center">
-                            <Lock className="h-5 w-5 text-gold" />
-                          </div>
-                          <span className="text-sm font-semibold text-foreground text-center px-4">
-                            Unlock exclusive student deals
-                          </span>
-                          <span className="text-[11px] text-gold font-medium">
-                            Students saved ${savings}+ on this offer
-                          </span>
-                          <Button
-                            size="sm"
-                            className="bg-gold hover:bg-gold/90 text-background text-xs gap-1.5 h-8 mt-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                            onClick={(e) => { e.stopPropagation(); setUpgradeOpen(true); }}
-                          >
-                            <Crown className="h-3 w-3" /> Upgrade Now
-                          </Button>
-                        </div>
-                      )}
-
                       <CardContent className="p-5">
-                        {/* Top row: logo + fav */}
                         <div className="flex items-start justify-between gap-3 mb-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                              <ShoppingBag className="h-5 w-5 text-muted-foreground" />
-                            </div>
+                            {deal.stores.logo_url ? (
+                              <img src={deal.stores.logo_url} alt={deal.stores.name} className="h-10 w-10 rounded-xl object-contain bg-secondary p-1" />
+                            ) : (
+                              <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0"><ShoppingBag className="h-5 w-5 text-muted-foreground" /></div>
+                            )}
                             <div className="min-w-0">
-                              <div className="text-[11px] text-muted-foreground">{deal.storeName}</div>
+                              <div className="text-[11px] text-muted-foreground">{deal.stores.name}</div>
                               <div className="font-medium text-sm text-foreground truncate">{deal.title}</div>
                             </div>
                           </div>
-                          <motion.button
-                            whileTap={{ scale: 0.8 }}
-                            onClick={() => toggleFav(deal.id)}
-                            className="p-1.5 rounded-lg hover:bg-secondary transition-colors shrink-0"
-                          >
+                          <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleFav(deal.id)} className="p-1.5 rounded-lg hover:bg-secondary transition-colors shrink-0">
                             <Heart className={`h-4 w-4 ${favorites.has(deal.id) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
                           </motion.button>
                         </div>
 
-                        {/* Discount + badges */}
                         <div className="flex items-center justify-between mb-3">
                           <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                            {deal.discountValue}
+                            {deal.discount_value ?? "Special"}
                           </span>
                           <div className="flex items-center gap-1.5">
                             {deal.status === "coming_soon" ? (
-                              <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] gap-1">
-                                <Clock className="h-2.5 w-2.5" /> Coming Soon
-                              </Badge>
+                              <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] gap-1"><Clock className="h-2.5 w-2.5" /> Coming Soon</Badge>
                             ) : deal.status === "expired" ? (
-                              <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-[10px] gap-1">
-                                Expired
-                              </Badge>
+                              <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-[10px] gap-1">Expired</Badge>
                             ) : (
-                              <Tooltip>
-                                <TooltipTrigger>
-                                  <Badge className="bg-accent/15 text-accent border-accent/30 text-[10px] gap-1">
-                                    <Shield className="h-2.5 w-2.5" /> Verified
-                                  </Badge>
-                                </TooltipTrigger>
-                                <TooltipContent>Verified student deal via .edu or partner validation.</TooltipContent>
-                              </Tooltip>
+                              <Tooltip><TooltipTrigger><Badge className="bg-accent/15 text-accent border-accent/30 text-[10px] gap-1"><Shield className="h-2.5 w-2.5" /> Verified</Badge></TooltipTrigger><TooltipContent>Verified student deal via .edu or partner validation.</TooltipContent></Tooltip>
                             )}
                           </div>
                         </div>
 
-                        {/* Expiration urgency */}
                         {days !== null && days > 0 && days <= 30 && (
                           <Badge className={`text-[10px] font-semibold gap-1 mb-3 ${urgencyColor(days)}`}>
-                            <AlertTriangle className="h-2.5 w-2.5" />
-                            {days === 1 ? "Ends tomorrow" : `Ends in ${days}d`}
+                            <AlertTriangle className="h-2.5 w-2.5" /> {days === 1 ? "Ends tomorrow" : `Ends in ${days}d`}
                           </Badge>
                         )}
 
-                        {/* Freshness + verified-24h highlight */}
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-3">
-                          <span className={`flex items-center gap-1 ${isVerified24h ? "text-accent font-medium" : freshnessColor(deal.lastCheckedAt)}`}>
+                          <span className={`flex items-center gap-1 ${isVerified24h ? "text-accent font-medium" : freshnessColor(refDate)}`}>
                             {isVerified24h ? <Sparkles className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
-                            {isVerified24h ? "Verified today" : timeAgo(deal.lastCheckedAt)}
+                            {isVerified24h ? "Verified today" : timeAgo(refDate)}
                           </span>
-                          {deal.requiresEduEmail && (
-                            <span className="flex items-center gap-1 text-primary">
-                              <GraduationCap className="h-3 w-3" /> .edu
-                            </span>
+                          {deal.requires_edu_email && (
+                            <span className="flex items-center gap-1 text-primary"><GraduationCap className="h-3 w-3" /> .edu</span>
                           )}
                         </div>
 
-                        {/* CTA */}
                         <div className="pt-3 border-t border-border/50">
                           <Link to={`/deals/${deal.id}`}>
                             <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10 text-xs gap-1 h-7 w-full justify-center">
@@ -623,15 +466,9 @@ export default function ExploreDeals() {
                 );
               })}
             </div>
-
-            {/* Load more */}
             {hasMore && (
               <div className="flex justify-center pt-4">
-                <Button
-                  variant="outline"
-                  className="gap-2"
-                  onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
-                >
+                <Button variant="outline" className="gap-2" onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}>
                   <ChevronDown className="h-4 w-4" /> Load More Deals
                 </Button>
               </div>
@@ -643,18 +480,13 @@ export default function ExploreDeals() {
               <Tag className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
               <h3 className="font-display text-lg font-semibold text-foreground mb-2">No deals match your filters</h3>
               <p className="text-sm text-muted-foreground mb-6">Try adjusting your search or filter criteria.</p>
-              <Button variant="outline" className="gap-2" onClick={resetFilters}>
-                <RotateCcw className="h-4 w-4" /> Reset Filters
-              </Button>
+              <Button variant="outline" className="gap-2" onClick={resetFilters}><RotateCcw className="h-4 w-4" /> Reset Filters</Button>
             </CardContent>
           </Card>
         )}
 
-        {/* Affiliate disclosure */}
         <div className="text-center pt-6 pb-2">
-          <p className="text-[11px] text-muted-foreground">
-            CampusPerk may earn commissions from qualifying purchases.
-          </p>
+          <p className="text-[11px] text-muted-foreground">CampusPerk may earn commissions from qualifying purchases.</p>
         </div>
       </div>
 
