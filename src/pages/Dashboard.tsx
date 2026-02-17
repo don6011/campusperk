@@ -173,7 +173,7 @@ function DealCard({ deal, index, compact, featured: isFeatured }: { deal: Deal; 
                   <TooltipContent className="max-w-[200px] text-[11px]">CampusPerk may earn commissions from purchases.</TooltipContent>
                 </Tooltip>
               )}
-              <Link to={`/out/${deal.id}`}>
+              <Link to={`/deals/${deal.id}`}>
                 <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10 text-xs gap-1 h-7">
                   View Deal <ExternalLink className="h-3 w-3" />
                 </Button>
@@ -317,7 +317,7 @@ export default function Dashboard() {
                           </Badge>
                         </div>
                         <div className="mt-3 pt-3 border-t border-border/50">
-                          <Link to={`/out/${deal.id}`}>
+                          <Link to={`/deals/${deal.id}`}>
                             <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10 text-xs gap-1 h-7 w-full justify-center">
                               View Deal <ExternalLink className="h-3 w-3" />
                             </Button>
