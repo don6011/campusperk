@@ -45,6 +45,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/out/:dealId" element={<OutboundRedirect />} />
+            <Route path="/go/:dealId" element={<OutboundRedirect />} />
             <Route path="/deals/:dealId" element={<DealDetail />} />
 
             {/* Protected routes */}
