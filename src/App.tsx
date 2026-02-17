@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import SignIn from "./pages/SignIn";
 import SignUp from "./pages/SignUp";
 import OutboundRedirect from "./pages/OutboundRedirect";
+import DealDetail from "./pages/DealDetail";
 import Pricing from "./pages/Pricing";
 import DealsManager from "./pages/admin/DealsManager";
 import SubmissionsQueue from "./pages/admin/SubmissionsQueue";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/sign-in" element={<SignIn />} />
           <Route path="/sign-up" element={<SignUp />} />
           <Route path="/out/:dealId" element={<OutboundRedirect />} />
+          <Route path="/deals/:dealId" element={<DealDetail />} />
           <Route path="/pricing" element={<Pricing />} />
           <Route path="/admin/deals" element={<DealsManager />} />
           <Route path="/admin/submissions" element={<SubmissionsQueue />} />
