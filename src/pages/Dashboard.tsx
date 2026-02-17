@@ -52,6 +52,8 @@ const mockAlerts = [
   { id: 1, text: "New deal added in Software", type: "new", time: "2h ago" },
   { id: 2, text: "Adobe Creative Cloud expiring in 4 months", type: "expiring", time: "5h ago" },
   { id: 3, text: "Price drop on Samsung Education Store", type: "price_drop", premium: true, time: "1d ago" },
+  { id: 4, text: "Your saved Spotify deal was updated", type: "updated", time: "3h ago" },
+  { id: 5, text: "New Clothing deals this week", type: "new", time: "6h ago" },
 ];
 
 function getStatusBadge(deal: Deal) {
@@ -265,6 +267,61 @@ export default function Dashboard() {
           </div>
         </section>
 
+        {/* Expiring Soon — right after Featured */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-destructive" /> Expiring Soon
+            </h2>
+          </div>
+          {expiringDeals.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {expiringDeals.map((deal, i) => {
+                const days = daysUntil(deal.expiresAt!);
+                return (
+                  <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
+                    <Card className="border-border bg-card hover:border-destructive/30 transition-all duration-300 overflow-hidden hover:shadow-[0_0_24px_-4px_hsl(0_84%_60%/0.2)]">
+                      <CardContent className="p-5">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+                            <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs text-muted-foreground">{deal.storeName}</div>
+                            <div className="font-medium text-sm text-foreground truncate">{deal.title}</div>
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                            {deal.discountValue}
+                          </span>
+                          <Badge className={`text-[10px] font-semibold gap-1 ${days <= 3 ? "bg-destructive/15 text-destructive border-destructive/30" : "bg-gold/15 text-gold border-gold/30"}`}>
+                            <Clock className="h-2.5 w-2.5" />
+                            {days <= 0 ? "Ending today" : days === 1 ? "Ends tomorrow" : `Ends in ${days}d`}
+                          </Badge>
+                        </div>
+                        <div className="mt-3 pt-3 border-t border-border/50">
+                          <Link to={`/out/${deal.id}`}>
+                            <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10 text-xs gap-1 h-7 w-full justify-center">
+                              View Deal <ExternalLink className="h-3 w-3" />
+                            </Button>
+                          </Link>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          ) : (
+            <Card className="border-border bg-card">
+              <CardContent className="p-8 text-center text-muted-foreground text-sm">
+                No deals expiring soon. You're all set!
+              </CardContent>
+            </Card>
+          )}
+        </section>
+
         {/* Recently Updated */}
         <section>
           <div className="flex items-center justify-between mb-4">
@@ -310,60 +367,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* Expiring Soon — enhanced with countdown */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" /> Expiring Soon
-            </h2>
-          </div>
-          {expiringDeals.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {expiringDeals.map((deal, i) => {
-                const days = daysUntil(deal.expiresAt!);
-                return (
-                  <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-                    <Card className="border-border bg-card hover:border-destructive/30 transition-all duration-300 overflow-hidden">
-                      <CardContent className="p-5">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                            <ShoppingBag className="h-5 w-5 text-muted-foreground" />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="text-xs text-muted-foreground">{deal.storeName}</div>
-                            <div className="font-medium text-sm text-foreground truncate">{deal.title}</div>
-                          </div>
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                            {deal.discountValue}
-                          </span>
-                          <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-[10px] font-semibold gap-1">
-                            <Clock className="h-2.5 w-2.5" />
-                            {days <= 0 ? "Ending today" : `Ends in ${days}d`}
-                          </Badge>
-                        </div>
-                        <div className="mt-3">
-                          <Link to={`/out/${deal.id}`}>
-                            <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10 text-xs gap-1 h-7 w-full justify-center">
-                              View Deal <ExternalLink className="h-3 w-3" />
-                            </Button>
-                          </Link>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
-          ) : (
-            <Card className="border-border bg-card">
-              <CardContent className="p-8 text-center text-muted-foreground text-sm">
-                No deals expiring soon. You're all set!
-              </CardContent>
-            </Card>
-          )}
-        </section>
+
 
         {/* Favorites */}
         <section>
@@ -429,7 +433,7 @@ export default function Dashboard() {
                   {mockAlerts.map((alert) => (
                     <div key={alert.id} className="flex items-center gap-3 px-6 py-3 hover:bg-secondary/50 transition-colors">
                       <div className={`h-2 w-2 rounded-full shrink-0 ${
-                        alert.type === "new" ? "bg-accent" : alert.type === "expiring" ? "bg-destructive" : "bg-gold"
+                        alert.type === "new" ? "bg-accent" : alert.type === "expiring" ? "bg-destructive" : alert.type === "updated" ? "bg-primary" : "bg-gold"
                       }`} />
                       <span className="text-xs text-foreground flex-1">{alert.text}</span>
                       {alert.premium && (
@@ -454,9 +458,14 @@ export default function Dashboard() {
             <div className="absolute inset-0 bg-gradient-to-br from-gold/8 via-gold/3 to-transparent pointer-events-none" />
             <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-gold/5 blur-3xl pointer-events-none" />
             <CardHeader className="pb-2 relative z-10">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-gold">
-                <Crown className="h-4 w-4" /> Upgrade to Premium
-              </CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-gold">
+                  <Crown className="h-4 w-4" /> Upgrade to Premium
+                </CardTitle>
+                <Badge className="bg-gold/15 text-gold border-gold/30 text-[9px] font-semibold px-2">
+                  Most Popular
+                </Badge>
+              </div>
             </CardHeader>
             <CardContent className="relative z-10 space-y-3">
               {[
@@ -473,7 +482,7 @@ export default function Dashboard() {
                 </div>
               ))}
               <Link to="/pricing">
-                <Button size="sm" className="w-full mt-3 bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 text-xs gap-1 font-semibold">
+                <Button size="sm" className="w-full mt-3 bg-gold/20 text-gold hover:bg-gold/30 hover:shadow-[0_0_20px_-2px_hsl(45_93%_56%/0.35)] border border-gold/30 text-xs gap-1 font-semibold transition-all duration-300">
                   <Crown className="h-3.5 w-3.5" /> Upgrade Now
                 </Button>
               </Link>
