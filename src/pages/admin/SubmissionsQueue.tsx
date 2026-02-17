@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Check, X, ExternalLink, Eye, AlertTriangle, Copy, Store, Sparkles } from "lucide-react";
+import { Check, X, ExternalLink, Eye, AlertTriangle, Copy, Store, Sparkles, Image, Globe, Calendar, Link2, Shield } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -45,6 +45,14 @@ const statusStyles: Record<SubmissionStatus, string> = {
 };
 
 const CATEGORIES = ["Software", "Subscriptions", "Tech", "Clothing", "Food", "Learning", "Entertainment", "Fitness", "Travel", "Other"];
+
+const DEAL_TYPE_LABELS: Record<string, string> = {
+  percentage: "Percentage Off",
+  fixed: "Fixed Discount",
+  free_trial: "Free Trial",
+  bogo: "Bundle / BOGO",
+  other: "Other",
+};
 
 const SubmissionsQueue = () => {
   const queryClient = useQueryClient();
@@ -73,7 +81,7 @@ const SubmissionsQueue = () => {
     },
   });
 
-  // Fetch existing stores for "exists" badge
+  // Fetch existing stores
   const { data: stores = [] } = useQuery({
     queryKey: ["admin-stores"],
     queryFn: async () => {
@@ -95,7 +103,7 @@ const SubmissionsQueue = () => {
     },
   });
 
-  const reviewSub = submissions.find((s) => s.id === reviewId);
+  const reviewSub = submissions.find((s) => s.id === reviewId) as any;
   const filtered = submissions.filter((s) => filterStatus === "all" || s.status === filterStatus);
   const pendingCount = submissions.filter((s) => s.status === "pending").length;
 
@@ -109,10 +117,9 @@ const SubmissionsQueue = () => {
   };
 
   const duplicatesForReview = reviewSub ? getDuplicates(reviewSub.store_name, reviewSub.deal_url) : [];
-
   const storeExists = stores.some((s) => s.name.toLowerCase() === createStoreName.toLowerCase());
 
-  const openReview = (sub: typeof submissions[0]) => {
+  const openReview = (sub: any) => {
     setReviewId(sub.id);
     setReviewNotes(sub.admin_notes || "");
     setCreateStoreName(sub.store_name);
@@ -125,7 +132,6 @@ const SubmissionsQueue = () => {
 
   const approveMutation = useMutation({
     mutationFn: async (id: string) => {
-      // 1. Find or create store
       let storeId: string;
       const existing = stores.find((s) => s.name.toLowerCase() === createStoreName.toLowerCase());
       if (existing) {
@@ -140,21 +146,24 @@ const SubmissionsQueue = () => {
         storeId = newStore.id;
       }
 
-      // 2. Create deal
+      const sub = submissions.find((s) => s.id === id) as any;
+
       const { error: dealErr } = await supabase.from("deals").insert({
         store_id: storeId,
         title: createDealTitle,
-        description: reviewSub?.deal_info || null,
+        description: sub?.deal_info || null,
         category: createCategory || null,
         discount_value: createDiscountValue || null,
-        direct_link_url: reviewSub?.deal_url || null,
+        direct_link_url: sub?.deal_url || null,
+        affiliate_link_url: sub?.is_affiliate ? sub?.deal_url : null,
         requires_edu_email: createRequiresEdu,
         sponsored: createSponsored,
         status: "active",
+        discount_type: sub?.deal_type || "percentage",
+        expires_at: sub?.expiration_date || null,
       });
       if (dealErr) throw dealErr;
 
-      // 3. Update submission status
       const { error: subErr } = await supabase
         .from("submissions")
         .update({ status: "approved" as const, admin_notes: reviewNotes || "Approved and added." })
@@ -221,9 +230,10 @@ const SubmissionsQueue = () => {
               <TableRow className="hover:bg-transparent">
                 <TableHead>Store</TableHead>
                 <TableHead>Deal</TableHead>
+                <TableHead>Type</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead>Duplicates</TableHead>
+                <TableHead>Media</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
@@ -232,20 +242,21 @@ const SubmissionsQueue = () => {
               {isLoading ? (
                 Array.from({ length: 3 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 7 }).map((_, j) => (
+                    {Array.from({ length: 8 }).map((_, j) => (
                       <TableCell key={j}><div className="h-4 w-20 rounded bg-muted animate-pulse" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                     No submissions match this filter.
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((sub) => {
+                filtered.map((sub: any) => {
                   const dupes = getDuplicates(sub.store_name, sub.deal_url);
+                  const hasMedia = sub.logo_url || sub.banner_url || sub.screenshot_url;
                   return (
                     <TableRow key={sub.id}>
                       <TableCell className="font-medium">{sub.store_name}</TableCell>
@@ -254,17 +265,22 @@ const SubmissionsQueue = () => {
                           {sub.deal_title || sub.deal_info}
                         </div>
                       </TableCell>
+                      <TableCell>
+                        <span className="text-xs text-muted-foreground">
+                          {DEAL_TYPE_LABELS[sub.deal_type] || sub.deal_type || "—"}
+                        </span>
+                      </TableCell>
                       <TableCell className="text-sm text-muted-foreground">{sub.category || "—"}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {new Date(sub.created_at).toLocaleDateString()}
                       </TableCell>
                       <TableCell>
-                        {dupes.length > 0 ? (
-                          <Badge className="text-[10px] bg-gold/15 text-gold border-gold/30 gap-0.5">
-                            <Copy className="h-3 w-3" /> {dupes.length}
+                        {hasMedia ? (
+                          <Badge className="text-[10px] bg-primary/15 text-primary border-primary/30 gap-0.5">
+                            <Image className="h-3 w-3" /> Yes
                           </Badge>
                         ) : (
-                          <span className="text-xs text-muted-foreground">None</span>
+                          <span className="text-xs text-muted-foreground">—</span>
                         )}
                       </TableCell>
                       <TableCell>
@@ -297,10 +313,10 @@ const SubmissionsQueue = () => {
 
       {/* Review Modal */}
       <Dialog open={!!reviewSub} onOpenChange={(open) => !open && setReviewId(null)}>
-        <DialogContent className="sm:max-w-xl bg-card border-border max-h-[90vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-2xl bg-card border-border max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="font-display text-xl">Review Submission</DialogTitle>
-            <DialogDescription>Review, configure deal details, and approve or reject.</DialogDescription>
+            <DialogDescription>Review deal details, media, and approve or reject.</DialogDescription>
           </DialogHeader>
 
           {reviewSub && (
@@ -316,12 +332,84 @@ const SubmissionsQueue = () => {
                     </a>
                   </p>
                 )}
-                <p><span className="text-muted-foreground">Category:</span> {reviewSub.category || "Not specified"}</p>
-                <p><span className="text-muted-foreground">Date:</span> {new Date(reviewSub.created_at).toLocaleDateString()}</p>
+                <div className="flex flex-wrap gap-3">
+                  <span className="text-muted-foreground">Type: <span className="text-foreground">{DEAL_TYPE_LABELS[reviewSub.deal_type] || reviewSub.deal_type || "—"}</span></span>
+                  <span className="text-muted-foreground">Category: <span className="text-foreground">{reviewSub.category || "—"}</span></span>
+                </div>
                 {reviewSub.deal_info && (
                   <p><span className="text-muted-foreground">Description:</span> {reviewSub.deal_info}</p>
                 )}
               </div>
+
+              {/* Extended Details */}
+              {(reviewSub.verification_provider || reviewSub.expiration_date || reviewSub.region || reviewSub.is_affiliate || reviewSub.redemption_steps) && (
+                <div className="rounded-lg border border-border bg-secondary/50 p-4 space-y-2 text-sm">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Extended Details</h4>
+                  {reviewSub.verification_provider && reviewSub.verification_provider !== "none" && (
+                    <p className="flex items-center gap-1.5">
+                      <Shield className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-muted-foreground">Verification:</span> {reviewSub.verification_provider}
+                    </p>
+                  )}
+                  {reviewSub.expiration_date && (
+                    <p className="flex items-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-gold" />
+                      <span className="text-muted-foreground">Expires:</span> {new Date(reviewSub.expiration_date).toLocaleDateString()}
+                    </p>
+                  )}
+                  {reviewSub.region && (
+                    <p className="flex items-center gap-1.5">
+                      <Globe className="h-3.5 w-3.5 text-accent" />
+                      <span className="text-muted-foreground">Region:</span> {reviewSub.region}
+                    </p>
+                  )}
+                  {reviewSub.is_affiliate && (
+                    <p className="flex items-center gap-1.5">
+                      <Link2 className="h-3.5 w-3.5 text-primary" />
+                      <span className="text-muted-foreground">Affiliate:</span> {reviewSub.affiliate_network || "Yes"}
+                    </p>
+                  )}
+                  {reviewSub.redemption_steps && (
+                    <div>
+                      <span className="text-muted-foreground">Redemption Steps:</span>
+                      <pre className="mt-1 text-xs whitespace-pre-wrap text-foreground/80 bg-background/50 rounded p-2">{reviewSub.redemption_steps}</pre>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Media Previews */}
+              {(reviewSub.logo_url || reviewSub.banner_url || reviewSub.screenshot_url) && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Uploaded Media</h4>
+                  <div className="grid grid-cols-3 gap-3">
+                    {reviewSub.logo_url && (
+                      <div className="space-y-1">
+                        <span className="text-[11px] text-muted-foreground">Logo</span>
+                        <a href={reviewSub.logo_url} target="_blank" rel="noopener noreferrer">
+                          <img src={reviewSub.logo_url} alt="Logo" className="rounded-lg border border-border aspect-video object-cover w-full hover:opacity-80 transition-opacity" />
+                        </a>
+                      </div>
+                    )}
+                    {reviewSub.banner_url && (
+                      <div className="space-y-1">
+                        <span className="text-[11px] text-muted-foreground">Banner</span>
+                        <a href={reviewSub.banner_url} target="_blank" rel="noopener noreferrer">
+                          <img src={reviewSub.banner_url} alt="Banner" className="rounded-lg border border-border aspect-video object-cover w-full hover:opacity-80 transition-opacity" />
+                        </a>
+                      </div>
+                    )}
+                    {reviewSub.screenshot_url && (
+                      <div className="space-y-1">
+                        <span className="text-[11px] text-muted-foreground">Screenshot</span>
+                        <a href={reviewSub.screenshot_url} target="_blank" rel="noopener noreferrer">
+                          <img src={reviewSub.screenshot_url} alt="Screenshot" className="rounded-lg border border-border aspect-video object-cover w-full hover:opacity-80 transition-opacity" />
+                        </a>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Duplicate warning */}
               {duplicatesForReview.length > 0 && (
