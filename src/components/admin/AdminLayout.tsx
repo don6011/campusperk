@@ -12,11 +12,13 @@ import {
   Menu,
   X,
   ChevronRight,
+  Grid3X3,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const navItems = [
   { label: "Deals Manager", href: "/admin/deals", icon: Tag },
+  { label: "Categories", href: "/admin/categories", icon: Grid3X3 },
   { label: "Submissions", href: "/admin/submissions", icon: Inbox },
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Scans", href: "/admin/scans", icon: ScanSearch },

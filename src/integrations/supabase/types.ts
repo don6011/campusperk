@@ -38,6 +38,42 @@ export type Database = {
         }
         Relationships: []
       }
+      categories: {
+        Row: {
+          created_at: string
+          description: string | null
+          display_order: number
+          icon_url: string | null
+          id: string
+          name: string
+          slug: string
+          sponsored: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon_url?: string | null
+          id?: string
+          name: string
+          slug: string
+          sponsored?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon_url?: string | null
+          id?: string
+          name?: string
+          slug?: string
+          sponsored?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
       deals: {
         Row: {
           affiliate_link_url: string | null
