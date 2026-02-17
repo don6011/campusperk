@@ -27,52 +27,84 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { StatusBadge, VisibilityBadge, FeaturedBadge, SponsoredBadge } from "@/components/StatusBadge";
-import { mockDeals, type Deal, type DealVisibility } from "@/lib/mock-data";
-import { Search, Plus, Sparkles, ScanSearch, Loader2 } from "lucide-react";
+import { StatusBadge } from "@/components/StatusBadge";
+import { Search, Plus, Sparkles, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { toast } from "@/hooks/use-toast";
+
+type DealWithStore = {
+  id: string;
+  title: string;
+  category: string | null;
+  status: string;
+  featured: boolean;
+  sponsored: boolean;
+  discount_value: string | null;
+  direct_link_url: string | null;
+  affiliate_link_url: string | null;
+  commission_rate: number | null;
+  requires_edu_email: boolean;
+  stores: { name: string } | null;
+};
+
+const CATEGORIES = ["Software", "Subscriptions", "Tech", "Clothing", "Food", "Learning", "Entertainment", "Fitness", "Travel", "Other"];
 
 const DealsManager = () => {
-  const [deals, setDeals] = useState<Deal[]>(mockDeals);
+  const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [aiModalOpen, setAiModalOpen] = useState(false);
   const [aiUrl, setAiUrl] = useState("");
   const [aiText, setAiText] = useState("");
-  const [aiLoading, setAiLoading] = useState(false);
-  const [aiResult, setAiResult] = useState<null | Partial<Deal>>(null);
 
-  const categories = Array.from(new Set(deals.map((d) => d.category)));
+  const { data: deals = [], isLoading } = useQuery({
+    queryKey: ["admin-deals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deals")
+        .select("id, title, category, status, featured, sponsored, discount_value, direct_link_url, affiliate_link_url, commission_rate, requires_edu_email, stores(name)")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as DealWithStore[];
+    },
+  });
+
+  const categories = Array.from(new Set(deals.map((d) => d.category).filter(Boolean)));
 
   const filtered = deals.filter((d) => {
-    const matchesSearch = d.title.toLowerCase().includes(search.toLowerCase()) || d.storeName.toLowerCase().includes(search.toLowerCase());
+    const matchesSearch =
+      d.title.toLowerCase().includes(search.toLowerCase()) ||
+      (d.stores?.name || "").toLowerCase().includes(search.toLowerCase());
     const matchesCategory = filterCategory === "all" || d.category === filterCategory;
     return matchesSearch && matchesCategory;
   });
 
-  const toggleField = (dealId: string, field: "featured" | "sponsored") => {
-    setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, [field]: !d[field] } : d)));
-  };
+  const toggleMutation = useMutation({
+    mutationFn: async ({ id, field, value }: { id: string; field: "featured" | "sponsored"; value: boolean }) => {
+      const { error } = await supabase.from("deals").update({ [field]: value }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-deals"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
 
-  const changeVisibility = (dealId: string, visibility: DealVisibility) => {
-    setDeals((prev) => prev.map((d) => (d.id === dealId ? { ...d, visibility } : d)));
-  };
-
-  const simulateAI = () => {
-    setAiLoading(true);
-    setTimeout(() => {
-      setAiResult({
-        storeName: "Figma",
-        title: "Figma Professional – Free for Students",
-        description: "Students get Figma Professional for free with .edu email verification.",
-        discountType: "free_trial",
-        discountValue: "Free",
-        category: "Software",
-        requiresEduEmail: true,
-        aiSummary: "AI extracted: Figma offers free Professional plan for students. Requires .edu email. No expiration listed.",
-      });
-      setAiLoading(false);
-    }, 2000);
-  };
+  const statusMutation = useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: string }) => {
+      const { error } = await supabase.from("deals").update({ status: status as any }).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-deals"] });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
 
   return (
     <AdminLayout>
@@ -87,10 +119,6 @@ const DealsManager = () => {
             <Button onClick={() => setAiModalOpen(true)} variant="outline" className="gap-2 border-gold/30 text-gold hover:bg-gold/10">
               <Sparkles className="h-4 w-4" />
               Add Deal with AI
-            </Button>
-            <Button className="gap-2">
-              <Plus className="h-4 w-4" />
-              Add Deal
             </Button>
           </div>
         </div>
@@ -108,14 +136,10 @@ const DealsManager = () => {
             <SelectContent>
               <SelectItem value="all">All Categories</SelectItem>
               {categories.map((c) => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
+                <SelectItem key={c!} value={c!}>{c}</SelectItem>
               ))}
             </SelectContent>
           </Select>
-          <Button variant="outline" className="gap-2">
-            <ScanSearch className="h-4 w-4" />
-            Batch Scan
-          </Button>
         </div>
 
         {/* Table */}
@@ -125,59 +149,78 @@ const DealsManager = () => {
               <TableRow className="hover:bg-transparent">
                 <TableHead>Deal</TableHead>
                 <TableHead>Category</TableHead>
+                <TableHead>Discount</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Visibility</TableHead>
                 <TableHead className="text-center">Featured</TableHead>
                 <TableHead className="text-center">Sponsored</TableHead>
-                <TableHead>Actions</TableHead>
+                <TableHead>Status Action</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.map((deal) => (
-                <TableRow key={deal.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium text-sm">{deal.title}</div>
-                      <div className="text-xs text-muted-foreground">{deal.storeName}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className="bg-secondary text-muted-foreground border-border text-xs">
-                      {deal.category}
-                    </Badge>
-                  </TableCell>
-                  <TableCell><StatusBadge status={deal.status} /></TableCell>
-                  <TableCell>
-                    <Select value={deal.visibility} onValueChange={(v) => changeVisibility(deal.id, v as DealVisibility)}>
-                      <SelectTrigger className="h-8 w-[100px] text-xs">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="public">Public</SelectItem>
-                        <SelectItem value="premium">Premium</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Switch checked={deal.featured} onCheckedChange={() => toggleField(deal.id, "featured")} />
-                  </TableCell>
-                  <TableCell className="text-center">
-                    <Switch checked={deal.sponsored} onCheckedChange={() => toggleField(deal.id, "sponsored")} />
-                  </TableCell>
-                  <TableCell>
-                    <Button variant="ghost" size="sm" className="gap-1.5 text-xs">
-                      <ScanSearch className="h-3.5 w-3.5" />
-                      Scan
-                    </Button>
-                  </TableCell>
+              {isLoading ? (
+                Array.from({ length: 4 }).map((_, i) => (
+                  <TableRow key={i}>
+                    {Array.from({ length: 7 }).map((_, j) => (
+                      <TableCell key={j}><div className="h-4 w-20 rounded bg-muted animate-pulse" /></TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : filtered.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">No deals found.</TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filtered.map((deal) => (
+                  <TableRow key={deal.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium text-sm">{deal.title}</div>
+                        <div className="text-xs text-muted-foreground">{deal.stores?.name || "—"}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="bg-secondary text-muted-foreground border-border text-xs">
+                        {deal.category || "—"}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="text-sm font-medium">{deal.discount_value || "—"}</TableCell>
+                    <TableCell><StatusBadge status={deal.status} /></TableCell>
+                    <TableCell className="text-center">
+                      <Switch
+                        checked={deal.featured}
+                        onCheckedChange={(v) => toggleMutation.mutate({ id: deal.id, field: "featured", value: v })}
+                      />
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <Switch
+                        checked={deal.sponsored}
+                        onCheckedChange={(v) => toggleMutation.mutate({ id: deal.id, field: "sponsored", value: v })}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Select
+                        value={deal.status}
+                        onValueChange={(v) => statusMutation.mutate({ id: deal.id, status: v })}
+                      >
+                        <SelectTrigger className="h-8 w-[120px] text-xs">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="expired">Expired</SelectItem>
+                          <SelectItem value="coming_soon">Coming Soon</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </div>
       </div>
 
-      {/* AI Modal */}
+      {/* AI Modal — placeholder for future AI integration */}
       <Dialog open={aiModalOpen} onOpenChange={setAiModalOpen}>
         <DialogContent className="sm:max-w-lg bg-card border-border">
           <DialogHeader>
@@ -200,29 +243,10 @@ const DealsManager = () => {
               <Textarea placeholder="Paste the deal description here..." value={aiText} onChange={(e) => setAiText(e.target.value)} rows={4} />
             </div>
 
-            <Button onClick={simulateAI} disabled={aiLoading || (!aiUrl && !aiText)} className="w-full gap-2 bg-gold hover:bg-gold/90 text-background font-semibold">
-              {aiLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-              {aiLoading ? "Extracting..." : "Extract with AI"}
+            <Button disabled={!aiUrl && !aiText} className="w-full gap-2 bg-gold hover:bg-gold/90 text-background font-semibold">
+              <Sparkles className="h-4 w-4" />
+              Extract with AI (Coming Soon)
             </Button>
-
-            {aiResult && (
-              <div className="rounded-xl border border-accent/30 bg-accent/5 p-4 space-y-2">
-                <div className="flex items-center gap-2 text-accent text-sm font-medium">
-                  <Sparkles className="h-4 w-4" /> AI Extraction Result
-                </div>
-                <div className="text-sm space-y-1">
-                  <p><span className="text-muted-foreground">Store:</span> {aiResult.storeName}</p>
-                  <p><span className="text-muted-foreground">Title:</span> {aiResult.title}</p>
-                  <p><span className="text-muted-foreground">Discount:</span> {aiResult.discountValue}</p>
-                  <p><span className="text-muted-foreground">Category:</span> {aiResult.category}</p>
-                  <p><span className="text-muted-foreground">Requires .edu:</span> {aiResult.requiresEduEmail ? "Yes" : "No"}</p>
-                </div>
-                <p className="text-xs text-muted-foreground italic mt-2">{aiResult.aiSummary}</p>
-                <Button size="sm" className="mt-3 gap-1.5">
-                  <Plus className="h-3.5 w-3.5" /> Create Deal from Result
-                </Button>
-              </div>
-            )}
           </div>
         </DialogContent>
       </Dialog>

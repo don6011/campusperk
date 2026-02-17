@@ -35,7 +35,9 @@ import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { VerifiedStudentBadge } from "@/components/VerifiedStudentBadge";
-import { mockDeals, type Deal } from "@/lib/mock-data";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -46,54 +48,22 @@ const fadeUp = {
   }),
 };
 
-// Mock favorites
-const favoriteIds = new Set(["d1", "d2", "d5"]);
-
-// Mock alerts
-const mockAlerts = [
-  { id: 1, text: "New deal added in Software", type: "new", time: "2h ago" },
-  { id: 2, text: "Adobe Creative Cloud expiring in 4 months", type: "expiring", time: "5h ago" },
-  { id: 3, text: "Price drop on Samsung Education Store", type: "price_drop", premium: true, time: "1d ago" },
-  { id: 4, text: "Your saved Spotify deal was updated", type: "updated", time: "3h ago" },
-  { id: 5, text: "New Clothing deals this week", type: "new", time: "6h ago" },
-];
-
-function getStatusBadge(deal: Deal) {
-  if (deal.visibility === "premium") {
-    return (
-      <Tooltip>
-        <TooltipTrigger>
-          <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] font-semibold gap-1">
-            <Crown className="h-2.5 w-2.5" /> Premium
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent>Available to Premium members only</TooltipContent>
-      </Tooltip>
-    );
-  }
-  if (deal.expiresAt && new Date(deal.expiresAt) < new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)) {
-    return (
-      <Tooltip>
-        <TooltipTrigger>
-          <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-[10px] font-semibold gap-1">
-            <AlertTriangle className="h-2.5 w-2.5" /> Expiring Soon
-          </Badge>
-        </TooltipTrigger>
-        <TooltipContent>This deal expires soon</TooltipContent>
-      </Tooltip>
-    );
-  }
-  return (
-    <Tooltip>
-      <TooltipTrigger>
-        <Badge className="bg-accent/15 text-accent border-accent/30 text-[10px] font-semibold gap-1">
-          <Shield className="h-2.5 w-2.5" /> Verified
-        </Badge>
-      </TooltipTrigger>
-      <TooltipContent>Verified student deal via .edu or partner validation.</TooltipContent>
-    </Tooltip>
-  );
-}
+type DealRow = {
+  id: string;
+  title: string;
+  description: string | null;
+  discount_value: string | null;
+  status: string;
+  featured: boolean;
+  sponsored: boolean;
+  requires_edu_email: boolean;
+  expires_at: string | null;
+  affiliate_link_url: string | null;
+  direct_link_url: string | null;
+  updated_at: string;
+  category: string | null;
+  stores: { name: string; logo_url: string | null } | null;
+};
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -106,24 +76,40 @@ function timeAgo(dateStr: string) {
 function freshnessColor(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const days = diff / (1000 * 60 * 60 * 24);
-  if (days <= 1) return "text-accent";       // green — fresh
-  if (days <= 7) return "text-gold";         // yellow — aging
-  return "text-destructive";                 // red — stale
+  if (days <= 1) return "text-accent";
+  if (days <= 7) return "text-gold";
+  return "text-destructive";
 }
 
-function DealCard({ deal, index, compact, featured: isFeatured }: { deal: Deal; index: number; compact?: boolean; featured?: boolean }) {
-  const [fav, setFav] = useState(favoriteIds.has(deal.id));
+function daysUntil(dateStr: string) {
+  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+}
+
+function DealCard({ deal, index, compact, featured: isFeatured, favIds, onToggleFav }: {
+  deal: DealRow; index: number; compact?: boolean; featured?: boolean;
+  favIds: Set<string>; onToggleFav: (id: string) => void;
+}) {
+  const storeName = deal.stores?.name || "Unknown";
+  const isFav = favIds.has(deal.id);
+
+  const statusBadge = (() => {
+    if (deal.expires_at && daysUntil(deal.expires_at) <= 30 && daysUntil(deal.expires_at) >= 0) {
+      return (
+        <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-[10px] font-semibold gap-1">
+          <AlertTriangle className="h-2.5 w-2.5" /> Expiring Soon
+        </Badge>
+      );
+    }
+    return (
+      <Badge className="bg-accent/15 text-accent border-accent/30 text-[10px] font-semibold gap-1">
+        <Shield className="h-2.5 w-2.5" /> Verified
+      </Badge>
+    );
+  })();
 
   return (
-    <motion.div
-      initial="hidden"
-      animate="visible"
-      variants={fadeUp}
-      custom={index}
-      whileHover={{ y: -4, transition: { duration: 0.2 } }}
-      className="h-full"
-    >
-      <Card className={`group relative overflow-hidden border-border bg-card hover:border-primary/30 transition-all duration-300 h-full ${isFeatured ? "ring-1 ring-primary/30 border-primary/20 shadow-[0_0_30px_-4px_hsl(217_91%_60%/0.3)] hover:shadow-[0_0_40px_-4px_hsl(217_91%_60%/0.4)]" : "hover:shadow-[var(--shadow-glow)]"}`}>
+    <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={index} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="h-full">
+      <Card className={`group relative overflow-hidden border-border bg-card hover:border-primary/30 transition-all duration-300 h-full ${isFeatured ? "ring-1 ring-primary/30 border-primary/20 shadow-[0_0_30px_-4px_hsl(217_91%_60%/0.3)]" : "hover:shadow-[var(--shadow-glow)]"}`}>
         {isFeatured && <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />}
         <CardContent className={`relative z-10 ${compact ? "p-4" : "p-6"}`}>
           <div className="flex items-start justify-between gap-3">
@@ -132,46 +118,40 @@ function DealCard({ deal, index, compact, featured: isFeatured }: { deal: Deal; 
                 <ShoppingBag className="h-5 w-5 text-muted-foreground" />
               </div>
               <div className="min-w-0">
-                <div className="text-xs text-muted-foreground">{deal.storeName}</div>
+                <div className="text-xs text-muted-foreground">{storeName}</div>
                 <div className="font-medium text-sm text-foreground truncate">{deal.title}</div>
               </div>
             </div>
-            <motion.button
-              onClick={() => setFav(!fav)}
-              whileTap={{ scale: 0.85 }}
-              className="shrink-0 p-1 rounded-md hover:bg-secondary transition-colors"
-            >
-              <Heart className={`h-4 w-4 transition-colors ${fav ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+            <motion.button onClick={() => onToggleFav(deal.id)} whileTap={{ scale: 0.85 }} className="shrink-0 p-1 rounded-md hover:bg-secondary transition-colors">
+              <Heart className={`h-4 w-4 transition-colors ${isFav ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
             </motion.button>
           </div>
 
           <div className="mt-3 flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                {deal.discountValue}
+                {deal.discount_value || "Deal"}
               </span>
-              {getStatusBadge(deal)}
+              {statusBadge}
             </div>
           </div>
 
-          {!compact && (
+          {!compact && deal.description && (
             <p className="mt-3 text-xs text-muted-foreground line-clamp-2 leading-relaxed">{deal.description}</p>
           )}
 
           <div className="mt-4 flex items-center justify-between pt-3 border-t border-border/50">
             {!compact && (
-              <span className={`text-[11px] flex items-center gap-1.5 font-medium ${freshnessColor(deal.lastCheckedAt)}`}>
-                <span className={`h-1.5 w-1.5 rounded-full ${freshnessColor(deal.lastCheckedAt).replace('text-', 'bg-')}`} />
-                <Clock className="h-3 w-3" /> {timeAgo(deal.lastCheckedAt)}
+              <span className={`text-[11px] flex items-center gap-1.5 font-medium ${freshnessColor(deal.updated_at)}`}>
+                <span className={`h-1.5 w-1.5 rounded-full ${freshnessColor(deal.updated_at).replace('text-', 'bg-')}`} />
+                <Clock className="h-3 w-3" /> {timeAgo(deal.updated_at)}
               </span>
             )}
             <div className="flex items-center gap-1 ml-auto">
-              {deal.affiliateLinkUrl && (
+              {deal.affiliate_link_url && (
                 <Tooltip>
-                  <TooltipTrigger>
-                    <Info className="h-3 w-3 text-muted-foreground/50" />
-                  </TooltipTrigger>
-                  <TooltipContent className="max-w-[200px] text-[11px]">CampusPerk may earn commissions from purchases.</TooltipContent>
+                  <TooltipTrigger><Info className="h-3 w-3 text-muted-foreground/50" /></TooltipTrigger>
+                  <TooltipContent className="max-w-[200px] text-[11px]">CampusPerk may earn commissions.</TooltipContent>
                 </Tooltip>
               )}
               <Link to={`/deals/${deal.id}`}>
@@ -187,53 +167,86 @@ function DealCard({ deal, index, compact, featured: isFeatured }: { deal: Deal; 
   );
 }
 
-// Categories for quick access
-const categories = [
-  { name: "Clothing", icon: ShoppingBag, deals: 24 },
-  { name: "Software", icon: Monitor, deals: 31 },
-  { name: "Tech & Computers", icon: Cpu, deals: 18 },
-  { name: "Subscriptions", icon: CreditCard, deals: 27 },
-  { name: "Travel", icon: Plane, deals: 9 },
-  { name: "Food", icon: Utensils, deals: 12 },
+const categoryIcons = [
+  { name: "Clothing", icon: ShoppingBag },
+  { name: "Software", icon: Monitor },
+  { name: "Tech & Computers", icon: Cpu },
+  { name: "Subscriptions", icon: CreditCard },
+  { name: "Travel", icon: Plane },
+  { name: "Food", icon: Utensils },
 ];
 
-// Seeded savings insights
-const savingsInsights = {
-  dealsViewed: 47,
-  favoritesSaved: 12,
-  estimatedSavings: "$384",
-};
-
-function daysUntil(dateStr: string) {
-  const diff = new Date(dateStr).getTime() - Date.now();
-  const days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-  return days;
-}
-
 export default function Dashboard() {
-  const featuredDeals = mockDeals.filter((d) => d.featured && d.status === "active");
-  const recentDeals = [...mockDeals]
-    .filter((d) => d.status === "active")
-    .sort((a, b) => new Date(b.lastCheckedAt).getTime() - new Date(a.lastCheckedAt).getTime())
-    .slice(0, 6);
-  const expiringDeals = mockDeals
-    .filter((d) => {
-      if (!d.expiresAt || d.status === "expired") return false;
-      const days = daysUntil(d.expiresAt);
-      return days >= 0 && days <= 30;
-    })
-    .sort((a, b) => new Date(a.expiresAt!).getTime() - new Date(b.expiresAt!).getTime());
-  const favDeals = mockDeals.filter((d) => favoriteIds.has(d.id));
+  const { profile, user } = useAuth();
 
-  const activeCount = mockDeals.filter((d) => d.status === "active").length;
-  const verifiedBrands = new Set(mockDeals.map((d) => d.storeName)).size;
+  // Fetch active deals with store info
+  const { data: deals = [] } = useQuery({
+    queryKey: ["dashboard-deals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deals")
+        .select("id, title, description, discount_value, status, featured, sponsored, requires_edu_email, expires_at, affiliate_link_url, direct_link_url, updated_at, category, stores(name, logo_url)")
+        .eq("status", "active")
+        .order("updated_at", { ascending: false })
+        .limit(50);
+      if (error) throw error;
+      return data as DealRow[];
+    },
+  });
+
+  // Fetch user favorites
+  const { data: favorites = [] } = useQuery({
+    queryKey: ["dashboard-favorites", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("favorites")
+        .select("deal_id")
+        .eq("user_id", user!.id);
+      return data || [];
+    },
+  });
+
+  // Fetch category deal counts
+  const { data: categoryCounts = {} } = useQuery({
+    queryKey: ["dashboard-category-counts"],
+    queryFn: async () => {
+      const { data } = await supabase.from("deals").select("category").eq("status", "active");
+      const counts: Record<string, number> = {};
+      data?.forEach((d) => { if (d.category) counts[d.category] = (counts[d.category] || 0) + 1; });
+      return counts;
+    },
+  });
+
+  const favIds = new Set(favorites.map((f) => f.deal_id));
+
+  const toggleFav = async (dealId: string) => {
+    if (!user) return;
+    if (favIds.has(dealId)) {
+      await supabase.from("favorites").delete().eq("user_id", user.id).eq("deal_id", dealId);
+    } else {
+      await supabase.from("favorites").insert({ user_id: user.id, deal_id: dealId });
+    }
+    // Optimistic — will refetch
+  };
+
+  const featuredDeals = deals.filter((d) => d.featured);
+  const recentDeals = deals.slice(0, 6);
+  const expiringDeals = deals
+    .filter((d) => d.expires_at && daysUntil(d.expires_at) >= 0 && daysUntil(d.expires_at) <= 30)
+    .sort((a, b) => new Date(a.expires_at!).getTime() - new Date(b.expires_at!).getTime());
+  const favDeals = deals.filter((d) => favIds.has(d.id));
+
+  const verifiedBrands = new Set(deals.map((d) => d.stores?.name).filter(Boolean)).size;
 
   return (
     <DashboardLayout>
       <div className="space-y-10 max-w-7xl mx-auto">
         {/* Welcome */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
-          <h1 className="font-display text-2xl font-bold text-foreground">Welcome back, Alex 👋</h1>
+          <h1 className="font-display text-2xl font-bold text-foreground">
+            Welcome back{profile?.name ? `, ${profile.name}` : ""} 👋
+          </h1>
           <div className="flex items-center gap-3 mt-1">
             <p className="text-sm text-muted-foreground">Here's what's new in student discounts today.</p>
             <VerifiedStudentBadge />
@@ -243,8 +256,8 @@ export default function Dashboard() {
         {/* Stats Row */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1} className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: "Active Deals", value: activeCount, icon: Tag, color: "text-primary" },
-            { label: "Student Savings", value: "$2.4M+", icon: TrendingUp, color: "text-accent" },
+            { label: "Active Deals", value: deals.length, icon: Tag, color: "text-primary" },
+            { label: "Your Favorites", value: favIds.size, icon: Heart, color: "text-destructive" },
             { label: "Verified Brands", value: verifiedBrands, icon: Shield, color: "text-gold" },
           ].map((stat) => (
             <Card key={stat.label} className="border-border bg-card">
@@ -261,63 +274,58 @@ export default function Dashboard() {
           ))}
         </motion.div>
 
-        {/* Featured Deals Carousel */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" /> Featured Deals
-            </h2>
-            <Link to="/explore" className="text-xs text-primary hover:underline flex items-center gap-1">
-              View all <ChevronRight className="h-3 w-3" />
-            </Link>
-          </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth scrollbar-thin scrollbar-track-transparent scrollbar-thumb-border">
-            {featuredDeals.map((deal, i) => (
-              <motion.div
-                key={deal.id}
-                className="min-w-[280px] max-w-[320px] snap-start shrink-0"
-                initial={{ opacity: 0, x: 40 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-              >
-                <DealCard deal={deal} index={i} featured />
-              </motion.div>
-            ))}
-          </div>
-        </section>
+        {/* Featured Deals */}
+        {featuredDeals.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" /> Featured Deals
+              </h2>
+              <Link to="/explore" className="text-xs text-primary hover:underline flex items-center gap-1">
+                View all <ChevronRight className="h-3 w-3" />
+              </Link>
+            </div>
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth">
+              {featuredDeals.map((deal, i) => (
+                <motion.div key={deal.id} className="min-w-[280px] max-w-[320px] snap-start shrink-0" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
+                  <DealCard deal={deal} index={i} featured favIds={favIds} onToggleFav={toggleFav} />
+                </motion.div>
+              ))}
+            </div>
+          </section>
+        )}
 
-        {/* Expiring Soon — right after Featured */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-destructive" /> Expiring Soon
-            </h2>
-          </div>
-          {expiringDeals.length > 0 ? (
+        {/* Expiring Soon */}
+        {expiringDeals.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+                <AlertTriangle className="h-5 w-5 text-destructive" /> Expiring Soon
+              </h2>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {expiringDeals.map((deal, i) => {
-                const days = daysUntil(deal.expiresAt!);
+                const days = daysUntil(deal.expires_at!);
                 return (
                   <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
-                    <Card className="border-border bg-card hover:border-destructive/30 transition-all duration-300 overflow-hidden hover:shadow-[0_0_24px_-4px_hsl(0_84%_60%/0.2)]">
+                    <Card className="border-border bg-card hover:border-destructive/30 transition-all duration-300 overflow-hidden">
                       <CardContent className="p-5">
                         <div className="flex items-center gap-3 mb-3">
                           <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
                             <ShoppingBag className="h-5 w-5 text-muted-foreground" />
                           </div>
                           <div className="min-w-0">
-                            <div className="text-xs text-muted-foreground">{deal.storeName}</div>
+                            <div className="text-xs text-muted-foreground">{deal.stores?.name}</div>
                             <div className="font-medium text-sm text-foreground truncate">{deal.title}</div>
                           </div>
                         </div>
                         <div className="flex items-center justify-between">
                           <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                            {deal.discountValue}
+                            {deal.discount_value || "Deal"}
                           </span>
                           <Badge className={`text-[10px] font-semibold gap-1 ${
                             days < 3 ? "bg-destructive/15 text-destructive border-destructive/30" :
-                            days <= 7 ? "bg-[hsl(25_95%_53%)]/15 text-[hsl(25_95%_53%)] border-[hsl(25_95%_53%)]/30" :
-                            days <= 14 ? "bg-gold/15 text-gold border-gold/30" :
+                            days <= 7 ? "bg-gold/15 text-gold border-gold/30" :
                             "bg-accent/15 text-accent border-accent/30"
                           }`}>
                             <Clock className="h-2.5 w-2.5" />
@@ -337,14 +345,8 @@ export default function Dashboard() {
                 );
               })}
             </div>
-          ) : (
-            <Card className="border-border bg-card">
-              <CardContent className="p-8 text-center text-muted-foreground text-sm">
-                No deals expiring soon. You're all set!
-              </CardContent>
-            </Card>
-          )}
-        </section>
+          </section>
+        )}
 
         {/* Recently Updated */}
         <section>
@@ -353,11 +355,17 @@ export default function Dashboard() {
               <Clock className="h-5 w-5 text-muted-foreground" /> Recently Updated
             </h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {recentDeals.map((deal, i) => (
-              <DealCard key={deal.id} deal={deal} index={i} />
-            ))}
-          </div>
+          {recentDeals.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {recentDeals.map((deal, i) => (
+                <DealCard key={deal.id} deal={deal} index={i} favIds={favIds} onToggleFav={toggleFav} />
+              ))}
+            </div>
+          ) : (
+            <Card className="border-border bg-card">
+              <CardContent className="p-8 text-center text-muted-foreground text-sm">No deals yet.</CardContent>
+            </Card>
+          )}
         </section>
 
         {/* Categories Quick Access */}
@@ -368,21 +376,14 @@ export default function Dashboard() {
             </h2>
           </div>
           <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-            {categories.map((cat, i) => (
-              <motion.div
-                key={cat.name}
-                initial="hidden"
-                animate="visible"
-                variants={fadeUp}
-                custom={i}
-                whileHover={{ y: -3, transition: { duration: 0.2 } }}
-              >
-                <Link to={`/explore?category=${encodeURIComponent(cat.name)}`}>
+            {categoryIcons.map((cat, i) => (
+              <motion.div key={cat.name} initial="hidden" animate="visible" variants={fadeUp} custom={i} whileHover={{ y: -3, transition: { duration: 0.2 } }}>
+                <Link to={`/categories/${cat.name.toLowerCase().replace(/[^a-z]+/g, '-').replace(/-$/, '')}`}>
                   <Card className="border-border bg-card hover:border-primary/30 transition-all duration-300 cursor-pointer hover:shadow-[var(--shadow-glow)]">
                     <CardContent className="p-4 text-center">
-                      <cat.icon className="h-6 w-6 mx-auto text-muted-foreground group-hover:text-primary transition-colors" />
+                      <cat.icon className="h-6 w-6 mx-auto text-muted-foreground" />
                       <div className="mt-2 text-xs font-medium text-foreground">{cat.name}</div>
-                      <div className="text-[10px] text-muted-foreground">{cat.deals} deals</div>
+                      <div className="text-[10px] text-muted-foreground">{categoryCounts[cat.name] || 0} deals</div>
                     </CardContent>
                   </Card>
                 </Link>
@@ -390,8 +391,6 @@ export default function Dashboard() {
             ))}
           </div>
         </section>
-
-
 
         {/* Favorites */}
         <section>
@@ -404,7 +403,7 @@ export default function Dashboard() {
             <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth">
               {favDeals.map((deal, i) => (
                 <div key={deal.id} className="min-w-[280px] max-w-[320px] snap-start shrink-0">
-                  <DealCard deal={deal} index={i} compact />
+                  <DealCard deal={deal} index={i} compact favIds={favIds} onToggleFav={toggleFav} />
                 </div>
               ))}
             </div>
@@ -418,20 +417,19 @@ export default function Dashboard() {
           )}
         </section>
 
-        {/* Savings Insights + Alerts + Premium Upsell */}
+        {/* Premium Upsell */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Savings Insights */}
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card lg:col-span-2">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" /> Your Savings Insights
+                <BarChart3 className="h-4 w-4 text-primary" /> Quick Stats
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {[
-                { label: "Deals Viewed", value: savingsInsights.dealsViewed, icon: Eye, color: "text-primary" },
-                { label: "Favorites Saved", value: savingsInsights.favoritesSaved, icon: Bookmark, color: "text-destructive" },
-                { label: "Est. Savings Unlocked", value: savingsInsights.estimatedSavings, icon: DollarSign, color: "text-accent" },
+                { label: "Active Deals", value: deals.length, icon: Eye, color: "text-primary" },
+                { label: "Favorites Saved", value: favIds.size, icon: Bookmark, color: "text-destructive" },
+                { label: "Verified Brands", value: verifiedBrands, icon: Shield, color: "text-accent" },
               ].map((item) => (
                 <div key={item.label} className="flex items-center justify-between">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -444,52 +442,12 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          {/* Alerts Preview */}
-          <Card className="border-border bg-card">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <Bell className="h-4 w-4 text-primary" /> Alerts
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {mockAlerts.length > 0 ? (
-                <div className="divide-y divide-border">
-                  {mockAlerts.map((alert) => (
-                    <div key={alert.id} className="flex items-center gap-3 px-6 py-3 hover:bg-secondary/50 transition-colors">
-                      <div className={`h-2 w-2 rounded-full shrink-0 ${
-                        alert.type === "new" ? "bg-accent" : alert.type === "expiring" ? "bg-destructive" : alert.type === "updated" ? "bg-primary" : "bg-gold"
-                      }`} />
-                      <span className="text-xs text-foreground flex-1">{alert.text}</span>
-                      {alert.premium && (
-                        <Badge className="bg-gold/15 text-gold border-gold/30 text-[9px] gap-0.5 px-1.5 py-0">
-                          <Crown className="h-2 w-2" /> Pro
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="px-6 py-8 text-center">
-                  <BellRing className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                  <p className="text-xs text-muted-foreground">Subscribe to categories to get alerts.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Premium Upsell */}
           <Card className="border-gold/20 bg-card relative overflow-hidden shadow-[0_0_30px_-8px_hsl(45_93%_56%/0.15)]">
             <div className="absolute inset-0 bg-gradient-to-br from-gold/8 via-gold/3 to-transparent pointer-events-none" />
-            <div className="absolute -top-20 -right-20 h-40 w-40 rounded-full bg-gold/5 blur-3xl pointer-events-none" />
             <CardHeader className="pb-2 relative z-10">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-gold">
-                  <Crown className="h-4 w-4" /> Upgrade to Premium
-                </CardTitle>
-                <Badge className="bg-gold/15 text-gold border-gold/30 text-[9px] font-semibold px-2">
-                  Most Popular
-                </Badge>
-              </div>
+              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-gold">
+                <Crown className="h-4 w-4" /> Upgrade to Premium
+              </CardTitle>
             </CardHeader>
             <CardContent className="relative z-10 space-y-3">
               {[
@@ -505,13 +463,10 @@ export default function Dashboard() {
                   <span>{item.text}</span>
                 </div>
               ))}
-              <p className="text-[10px] text-muted-foreground italic">Most students upgrade for unlimited alerts.</p>
               <Link to="/pricing">
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button size="sm" className="w-full mt-1 bg-gold/20 text-gold hover:bg-gold/30 hover:shadow-[0_0_24px_-2px_hsl(45_93%_56%/0.4)] border border-gold/30 text-xs gap-1 font-semibold transition-all duration-300 animate-pulse-glow">
-                    <Crown className="h-3.5 w-3.5" /> Upgrade Now
-                  </Button>
-                </motion.div>
+                <Button size="sm" className="w-full mt-1 bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 text-xs gap-1 font-semibold">
+                  <Crown className="h-3.5 w-3.5" /> Upgrade Now
+                </Button>
               </Link>
             </CardContent>
           </Card>

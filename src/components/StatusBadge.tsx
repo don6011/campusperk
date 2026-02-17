@@ -1,21 +1,21 @@
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { DealStatus, DealVisibility } from "@/lib/mock-data";
+
+type DealStatus = "active" | "expired" | "coming_soon";
 
 interface StatusBadgeProps {
-  status: DealStatus;
+  status: DealStatus | string;
   className?: string;
 }
 
-const statusConfig: Record<DealStatus, { label: string; classes: string }> = {
+const statusConfig: Record<string, { label: string; classes: string }> = {
   active: { label: "Active", classes: "bg-accent/15 text-accent border-accent/30" },
   expired: { label: "Expired", classes: "bg-destructive/15 text-destructive border-destructive/30" },
   coming_soon: { label: "Coming Soon", classes: "bg-primary/15 text-primary border-primary/30" },
-  needs_review: { label: "Needs Review", classes: "bg-gold/15 text-gold border-gold/30" },
 };
 
 export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
-  const config = statusConfig[status];
+  const config = statusConfig[status] || { label: status, classes: "bg-secondary text-muted-foreground border-border" };
   return (
     <Badge variant="outline" className={cn("font-medium text-xs", config.classes, className)}>
       {config.label}
@@ -23,7 +23,7 @@ export const StatusBadge = ({ status, className }: StatusBadgeProps) => {
   );
 };
 
-export const VisibilityBadge = ({ visibility }: { visibility: DealVisibility }) => (
+export const VisibilityBadge = ({ visibility }: { visibility: string }) => (
   <Badge
     variant="outline"
     className={cn(
