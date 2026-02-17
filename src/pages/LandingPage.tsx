@@ -96,9 +96,9 @@ const LandingPage = () => {
       {/* Nav */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-8 w-auto" />
-          </div>
+          <Link to="/" className="flex items-center gap-2">
+            <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto" />
+          </Link>
           <div className="hidden md:flex items-center gap-8">
             <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#categories" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Categories</a>
@@ -364,9 +364,9 @@ const LandingPage = () => {
       <footer className="border-t border-border/50 py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
-            <div className="flex items-center gap-2">
-              <img src={campusperkLogo} alt="CampusPerk" className="h-6 w-auto" />
-            </div>
+            <Link to="/" className="flex items-center gap-2">
+              <img src={campusperkLogo} alt="CampusPerk" className="h-8 w-auto" />
+            </Link>
             <div className="flex gap-8 text-sm text-muted-foreground">
               <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
               <a href="#" className="hover:text-foreground transition-colors">Terms</a>

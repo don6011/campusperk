@@ -59,12 +59,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }`}
       >
         {/* Logo */}
-        <div className="flex h-16 items-center gap-2 border-b border-border px-4">
-          <img src={campusperkLogo} alt="CampusPerk" className="h-7 w-auto shrink-0" />
+        <Link to="/" className="flex h-16 items-center gap-2 border-b border-border px-4">
+          <img src={campusperkLogo} alt="CampusPerk" className="h-9 w-auto shrink-0" />
           {sidebarOpen && (
             <span className="font-display font-semibold text-foreground text-sm truncate">CampusPerk</span>
           )}
-        </div>
+        </Link>
 
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">

@@ -35,7 +35,7 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-7 w-auto" />
+            <img src={campusperkLogo} alt="CampusPerk" className="h-9 w-auto" />
           </Link>
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />
