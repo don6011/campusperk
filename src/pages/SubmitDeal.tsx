@@ -14,6 +14,10 @@ import {
   Calendar,
   Globe,
   Link2,
+  Sparkles,
+  Loader2,
+  ShieldCheck,
+  XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -109,6 +113,76 @@ export default function SubmitDeal() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [step, setStep] = useState(0); // 0=basics, 1=details, 2=media
+
+  // AI extraction
+  const [extracting, setExtracting] = useState(false);
+  const [aiResult, setAiResult] = useState<{
+    urlValidation: { isLive: boolean; finalUrl: string; redirectChain: string[]; statusCode: number };
+    scrapeSuccess: boolean;
+    extraction: any;
+  } | null>(null);
+
+  const handleAiExtract = async () => {
+    if (!form.dealUrl) {
+      toast({ title: "Enter a URL first", variant: "destructive" });
+      return;
+    }
+    try {
+      new URL(form.dealUrl);
+    } catch {
+      toast({ title: "Invalid URL", variant: "destructive" });
+      return;
+    }
+
+    setExtracting(true);
+    setAiResult(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke("extract-deal", {
+        body: { url: form.dealUrl },
+      });
+
+      if (error) {
+        toast({ title: "Extraction failed", description: error.message, variant: "destructive" });
+        setExtracting(false);
+        return;
+      }
+
+      if (data?.error) {
+        toast({ title: "Extraction error", description: data.error, variant: "destructive" });
+        setExtracting(false);
+        return;
+      }
+
+      setAiResult(data);
+
+      // Auto-fill form from extraction
+      const ex = data?.extraction;
+      if (ex) {
+        setForm((prev) => ({
+          ...prev,
+          storeName: ex.store_name || prev.storeName,
+          dealTitle: ex.deal_title || prev.dealTitle,
+          description: ex.description || prev.description,
+          discountValue: ex.discount_value || prev.discountValue,
+          dealType: ex.deal_type || prev.dealType,
+          category: ex.category || prev.category,
+          requiresEdu: ex.requires_edu ?? prev.requiresEdu,
+          verificationProvider: ex.verification_provider && ex.verification_provider !== "none" ? ex.verification_provider : prev.verificationProvider,
+          redemptionSteps: ex.redemption_steps || prev.redemptionSteps,
+          expirationDate: ex.expiration_date || prev.expirationDate,
+        }));
+        toast({ title: "AI extracted deal details!", description: `Confidence: ${ex.confidence}%` });
+      } else {
+        toast({ title: "Could not extract deal details", description: "Try filling in manually.", variant: "destructive" });
+      }
+    } catch (err) {
+      console.error("AI extract error:", err);
+      toast({ title: "Extraction failed", variant: "destructive" });
+    } finally {
+      setExtracting(false);
+    }
+  };
 
   // Media uploads
   const [logo, setLogo] = useState<MediaFile | null>(null);
@@ -358,8 +432,58 @@ export default function SubmitDeal() {
 
                 <div className="space-y-1.5">
                   <Label htmlFor="dealUrl">Deal URL *</Label>
-                  <Input id="dealUrl" placeholder="https://example.com/student-discount" value={form.dealUrl} onChange={(e) => updateField("dealUrl", e.target.value)} className={errors.dealUrl ? "border-destructive" : ""} maxLength={500} />
+                  <div className="flex gap-2">
+                    <Input id="dealUrl" placeholder="https://example.com/student-discount" value={form.dealUrl} onChange={(e) => updateField("dealUrl", e.target.value)} className={`flex-1 ${errors.dealUrl ? "border-destructive" : ""}`} maxLength={500} />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={handleAiExtract}
+                      disabled={extracting || !form.dealUrl}
+                      className="gap-1.5 shrink-0 border-primary/30 text-primary hover:bg-primary/10"
+                    >
+                      {extracting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+                      {extracting ? "Scanning…" : "AI Extract"}
+                    </Button>
+                  </div>
                   {errors.dealUrl && <p className="text-xs text-destructive">{errors.dealUrl}</p>}
+
+                  {/* AI Result Summary */}
+                  {aiResult && (
+                    <div className="mt-2 rounded-lg border border-border bg-secondary/50 p-3 space-y-2 text-xs">
+                      <div className="flex items-center gap-2 font-semibold text-sm">
+                        <Sparkles className="h-3.5 w-3.5 text-primary" /> AI Scan Results
+                      </div>
+                      <div className="flex flex-wrap gap-2">
+                        {aiResult.urlValidation.isLive ? (
+                          <Badge className="bg-accent/15 text-accent border-accent/30 gap-1 text-[10px]">
+                            <ShieldCheck className="h-3 w-3" /> URL Live ({aiResult.urlValidation.statusCode})
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-destructive/15 text-destructive border-destructive/30 gap-1 text-[10px]">
+                            <XCircle className="h-3 w-3" /> URL Down
+                          </Badge>
+                        )}
+                        {aiResult.urlValidation.redirectChain.length > 0 && (
+                          <Badge className="bg-gold/15 text-gold border-gold/30 gap-1 text-[10px]">
+                            <AlertTriangle className="h-3 w-3" /> Redirects detected
+                          </Badge>
+                        )}
+                        {aiResult.scrapeSuccess && (
+                          <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px]">Scraped ✓</Badge>
+                        )}
+                        {aiResult.extraction && (
+                          <Badge className="bg-accent/15 text-accent border-accent/30 text-[10px]">
+                            Confidence: {aiResult.extraction.confidence}%
+                          </Badge>
+                        )}
+                      </div>
+                      {aiResult.extraction && (
+                        <p className="text-muted-foreground">
+                          Form auto-filled from extracted data. Review and adjust as needed.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

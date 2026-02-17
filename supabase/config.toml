@@ -2,3 +2,6 @@ project_id = "jttcpewdibbczdnutmme"
 
 [functions.verify-student]
 verify_jwt = false
+
+[functions.extract-deal]
+verify_jwt = false
