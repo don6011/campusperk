@@ -22,6 +22,8 @@ import AffiliateAnalytics from "./pages/admin/AffiliateAnalytics";
 import UsersManager from "./pages/admin/UsersManager";
 import Favorites from "./pages/Favorites";
 import SubmitDeal from "./pages/SubmitDeal";
+import Categories from "./pages/Categories";
+import CategoryDetail from "./pages/CategoryDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -49,6 +51,8 @@ const App = () => (
             <Route path="/explore" element={<ProtectedRoute><ExploreDeals /></ProtectedRoute>} />
             <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
             <Route path="/submit" element={<ProtectedRoute><SubmitDeal /></ProtectedRoute>} />
+            <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+            <Route path="/categories/:slug" element={<ProtectedRoute><CategoryDetail /></ProtectedRoute>} />
 
             {/* Admin routes (protected) */}
             <Route path="/admin/deals" element={<ProtectedRoute><DealsManager /></ProtectedRoute>} />
