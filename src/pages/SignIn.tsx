@@ -53,13 +53,15 @@ export default function SignIn() {
           initial="hidden"
           animate="visible"
         >
-          <motion.img
-            src={campusperkLogo}
-            alt="CampusPerk"
-            className="h-12 w-auto mx-auto mb-8"
-            variants={fadeUp}
-            custom={0}
-          />
+          <Link to="/">
+            <motion.img
+              src={campusperkLogo}
+              alt="CampusPerk"
+              className="h-14 w-auto mx-auto mb-8"
+              variants={fadeUp}
+              custom={0}
+            />
+          </Link>
           <motion.h2 variants={fadeUp} custom={1} className="font-display text-3xl font-bold text-foreground">
             Every Student Discount.{" "}
             <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
@@ -90,7 +92,9 @@ export default function SignIn() {
         <motion.div className="w-full max-w-md" initial="hidden" animate="visible">
           {/* Mobile logo */}
           <motion.div variants={fadeUp} custom={0} className="lg:hidden flex justify-center mb-8">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto" />
+            <Link to="/">
+              <img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto" />
+            </Link>
           </motion.div>
 
           <motion.div variants={fadeUp} custom={0}>

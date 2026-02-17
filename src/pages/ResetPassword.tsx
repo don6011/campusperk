@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -72,7 +72,7 @@ export default function ResetPassword() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <motion.div className="text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto mx-auto mb-6" />
+          <Link to="/"><img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto mx-auto mb-6" /></Link>
           <h1 className="font-display text-xl font-bold text-foreground">Invalid Reset Link</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             This link is invalid or has expired.{" "}
@@ -89,7 +89,7 @@ export default function ResetPassword() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
       <motion.div className="w-full max-w-md" initial="hidden" animate="visible">
         <motion.div variants={fadeUp} custom={0} className="flex justify-center mb-8">
-          <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto" />
+          <Link to="/"><img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto" /></Link>
         </motion.div>
 
         {!success ? (

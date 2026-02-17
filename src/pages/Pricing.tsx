@@ -31,7 +31,7 @@ const Pricing = () => {
       <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-8 w-auto" />
+            <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto" />
           </Link>
           <Button asChild variant="ghost" size="sm">
             <Link to="/"><ArrowLeft className="h-4 w-4 mr-1" /> Back</Link>
