@@ -14,16 +14,268 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      alert_subscriptions: {
+        Row: {
+          alert_type: string
+          categories: string[] | null
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          alert_type?: string
+          categories?: string[] | null
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          alert_type?: string
+          categories?: string[] | null
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      deals: {
+        Row: {
+          affiliate_link_url: string | null
+          ai_summary: string | null
+          category: string | null
+          commission_rate: number | null
+          created_at: string
+          description: string | null
+          direct_link_url: string | null
+          discount_type: Database["public"]["Enums"]["discount_type"]
+          discount_value: string | null
+          expires_at: string | null
+          featured: boolean
+          id: string
+          last_checked_at: string | null
+          requires_edu_email: boolean
+          sponsored: boolean
+          status: Database["public"]["Enums"]["deal_status"]
+          store_id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          affiliate_link_url?: string | null
+          ai_summary?: string | null
+          category?: string | null
+          commission_rate?: number | null
+          created_at?: string
+          description?: string | null
+          direct_link_url?: string | null
+          discount_type?: Database["public"]["Enums"]["discount_type"]
+          discount_value?: string | null
+          expires_at?: string | null
+          featured?: boolean
+          id?: string
+          last_checked_at?: string | null
+          requires_edu_email?: boolean
+          sponsored?: boolean
+          status?: Database["public"]["Enums"]["deal_status"]
+          store_id: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          affiliate_link_url?: string | null
+          ai_summary?: string | null
+          category?: string | null
+          commission_rate?: number | null
+          created_at?: string
+          description?: string | null
+          direct_link_url?: string | null
+          discount_type?: Database["public"]["Enums"]["discount_type"]
+          discount_value?: string | null
+          expires_at?: string | null
+          featured?: boolean
+          id?: string
+          last_checked_at?: string | null
+          requires_edu_email?: boolean
+          sponsored?: boolean
+          status?: Database["public"]["Enums"]["deal_status"]
+          store_id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deals_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      favorites: {
+        Row: {
+          created_at: string
+          deal_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          deal_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          deal_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "favorites_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string | null
+          id: string
+          name: string | null
+          premium_status: boolean
+          student_verified: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string | null
+          id: string
+          name?: string | null
+          premium_status?: boolean
+          student_verified?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string | null
+          id?: string
+          name?: string | null
+          premium_status?: boolean
+          student_verified?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      stores: {
+        Row: {
+          categories: string[] | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          name: string
+          student_discount_available: boolean
+          website_url: string | null
+        }
+        Insert: {
+          categories?: string[] | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name: string
+          student_discount_available?: boolean
+          website_url?: string | null
+        }
+        Update: {
+          categories?: string[] | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          name?: string
+          student_discount_available?: boolean
+          website_url?: string | null
+        }
+        Relationships: []
+      }
+      submissions: {
+        Row: {
+          admin_notes: string | null
+          category: string | null
+          created_at: string
+          deal_info: string | null
+          deal_title: string | null
+          deal_url: string | null
+          id: string
+          status: Database["public"]["Enums"]["submission_status"]
+          store_name: string
+          submitted_by: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          category?: string | null
+          created_at?: string
+          deal_info?: string | null
+          deal_title?: string | null
+          deal_url?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["submission_status"]
+          store_name: string
+          submitted_by?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          category?: string | null
+          created_at?: string
+          deal_info?: string | null
+          deal_title?: string | null
+          deal_url?: string | null
+          id?: string
+          status?: Database["public"]["Enums"]["submission_status"]
+          store_name?: string
+          submitted_by?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "user" | "premium_user" | "admin"
+      deal_status: "active" | "expired" | "coming_soon"
+      discount_type: "percentage" | "fixed" | "free_trial" | "bogo" | "other"
+      submission_status: "pending" | "approved" | "rejected"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +402,11 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["user", "premium_user", "admin"],
+      deal_status: ["active", "expired", "coming_soon"],
+      discount_type: ["percentage", "fixed", "free_trial", "bogo", "other"],
+      submission_status: ["pending", "approved", "rejected"],
+    },
   },
 } as const
