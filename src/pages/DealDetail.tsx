@@ -88,25 +88,8 @@ export default function DealDetail() {
       setUpgradeOpen(true);
       return;
     }
-
-    // Mock: log affiliate click
-    const clickRecord = {
-      dealId: deal.id,
-      userId: "mock-user-123",
-      timestamp: new Date().toISOString(),
-    };
-    console.log("AffiliateClick logged:", clickRecord);
-
-    toast({
-      title: "Redirecting…",
-      description: `Taking you to ${deal.storeName}`,
-    });
-
-    // Redirect after brief delay
-    setTimeout(() => {
-      const url = deal.affiliateLinkUrl || deal.directLinkUrl;
-      window.open(url, "_blank", "noopener,noreferrer");
-    }, 800);
+    // Route through /out/:dealId for affiliate tracking
+    navigate(`/out/${deal.id}`);
   };
 
   const handleCopyLink = () => {
