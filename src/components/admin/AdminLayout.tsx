@@ -67,7 +67,7 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
         </nav>
         <div className="p-4 border-t border-sidebar-border">
           <Button asChild variant="ghost" size="sm" className="w-full justify-start text-muted-foreground">
-            <Link to="/">← Back to Site</Link>
+            <Link to="/dashboard">← Back to Dashboard</Link>
           </Button>
         </div>
       </aside>
