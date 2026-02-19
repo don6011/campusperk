@@ -147,7 +147,7 @@ export default function ExploreDeals() {
   const [favorites, setFavorites] = useState<Set<string>>(new Set());
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
-  const { isStudentVerified, isPremium, user } = useAuth();
+  const { isStudentVerified, isPremium, isCampusVerified, campusRole, user } = useAuth();
   const carouselRef = useRef<HTMLDivElement>(null);
 
   const { data: deals = [], isLoading } = useQuery({
@@ -405,9 +405,14 @@ export default function ExploreDeals() {
         {visible.length > 0 ? (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {visible.map((deal, i) => {
+              {visible.map((deal: any, i) => {
                 const needsVerification = deal.requires_edu_email && !isStudentVerified;
                 const isPremiumDeal = isDealPremium(deal) && !isPremium;
+                // Role-based gate: deal has eligible_roles set and user's role isn't included
+                const eligibleRoles: string[] | null = deal.eligible_roles ?? null;
+                const roleGated = eligibleRoles && eligibleRoles.length > 0 && isCampusVerified && campusRole && !eligibleRoles.includes(campusRole);
+                // Campus verification gate: deal requires campus verification and user not verified
+                const campusGated = deal.requires_campus_verification && !isCampusVerified && !isPremiumDeal;
                 const days = deal.expires_at ? daysUntil(deal.expires_at) : null;
                 const savings = seededSavings(deal.id);
                 const refDate = deal.last_checked_at || deal.updated_at;
@@ -424,8 +429,24 @@ export default function ExploreDeals() {
                           <span className="text-[11px] text-muted-foreground">Upgrade to unlock</span>
                         </div>
                       )}
-                      {/* Verification gate overlay */}
-                      {needsVerification && !isPremiumDeal && (
+                      {/* Campus verification gate overlay */}
+                      {campusGated && !isPremiumDeal && (
+                        <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => setVerifyOpen(true)}>
+                          <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center"><Shield className="h-5 w-5 text-primary" /></div>
+                          <span className="text-sm font-semibold text-foreground text-center px-4">Campus Verification Required</span>
+                          <span className="text-[11px] text-muted-foreground">Verify campus access</span>
+                        </div>
+                      )}
+                      {/* Role not eligible overlay */}
+                      {roleGated && !isPremiumDeal && !campusGated && (
+                        <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5">
+                          <div className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center"><Shield className="h-5 w-5 text-muted-foreground" /></div>
+                          <span className="text-sm font-semibold text-foreground text-center px-4">Not eligible for your role</span>
+                          <span className="text-[11px] text-muted-foreground">Available to: {eligibleRoles!.join(", ")}</span>
+                        </div>
+                      )}
+                      {/* Verification gate overlay (legacy edu) */}
+                      {needsVerification && !isPremiumDeal && !campusGated && !roleGated && (
                         <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => setVerifyOpen(true)}>
                           <div className="h-10 w-10 rounded-full bg-primary/15 flex items-center justify-center"><GraduationCap className="h-5 w-5 text-primary" /></div>
                           <span className="text-sm font-semibold text-foreground text-center px-4">Verify your .edu email</span>

@@ -29,7 +29,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import campusperkLogo from "@/assets/campusperk-logo.png";
-import { VerifiedStudentBadge } from "@/components/VerifiedStudentBadge";
+import { CampusRoleBadge } from "@/components/CampusRoleBadge";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -169,7 +169,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="flex items-center gap-2 ml-auto">
             {/* Verified Student Badge */}
-            <VerifiedStudentBadge />
+            <CampusRoleBadge />
 
             {/* Notifications */}
             <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
@@ -188,8 +188,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem className="gap-2">
-                  <User className="h-4 w-4" /> Account
+                <DropdownMenuItem className="gap-2" onClick={() => navigate("/settings")}>
+                  <User className="h-4 w-4" /> Account Settings
                 </DropdownMenuItem>
                 <DropdownMenuItem className="gap-2">
                   <Crown className="h-4 w-4" /> Premium

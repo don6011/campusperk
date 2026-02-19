@@ -13,6 +13,7 @@ import {
   X,
   ChevronRight,
   Grid3X3,
+  ShieldCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -21,6 +22,7 @@ const navItems = [
   { label: "Categories", href: "/admin/categories", icon: Grid3X3 },
   { label: "Submissions", href: "/admin/submissions", icon: Inbox },
   { label: "Users", href: "/admin/users", icon: Users },
+  { label: "Verification", href: "/admin/verification", icon: ShieldCheck },
   { label: "Scans", href: "/admin/scans", icon: ScanSearch },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
 ];

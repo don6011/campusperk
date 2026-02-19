@@ -2,12 +2,23 @@ import { createContext, useContext, useState, useEffect, ReactNode } from "react
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
+export type CampusRole = "student" | "faculty" | "staff" | "alumni";
+export type CampusRoleStatus = "unselected" | "pending" | "verified" | "rejected";
+export type CampusVerificationMethod = "edu_email" | "manual_admin" | "partner_provider";
+
 interface Profile {
   id: string;
   name: string | null;
   email: string | null;
   student_verified: boolean;
   premium_status: boolean;
+  campus_role: CampusRole | null;
+  campus_role_status: CampusRoleStatus;
+  campus_verification_method: CampusVerificationMethod | null;
+  campus_domain: string | null;
+  campus_name: string | null;
+  verification_notes: string | null;
+  campus_verified: boolean;
 }
 
 interface AuthContextType {
@@ -16,6 +27,9 @@ interface AuthContextType {
   profile: Profile | null;
   isLoggedIn: boolean;
   isStudentVerified: boolean;
+  isCampusVerified: boolean;
+  campusRole: CampusRole | null;
+  campusRoleStatus: CampusRoleStatus;
   isPremium: boolean;
   isLoading: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
@@ -40,10 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, name, email, student_verified, premium_status")
+      .select("id, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verification_method, campus_domain, campus_name, verification_notes, campus_verified")
       .eq("id", userId)
       .single();
-    setProfile(data);
+    setProfile(data as Profile | null);
   };
 
   const refreshProfile = async () => {
@@ -114,6 +128,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         isLoggedIn: !!user,
         isStudentVerified: profile?.student_verified ?? false,
+        isCampusVerified: profile?.campus_verified ?? false,
+        campusRole: (profile?.campus_role as CampusRole | null) ?? null,
+        campusRoleStatus: (profile?.campus_role_status as CampusRoleStatus) ?? "unselected",
         isPremium: profile?.premium_status ?? false,
         isLoading,
         signUp,

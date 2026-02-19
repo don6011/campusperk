@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { AdminLayout } from "@/components/admin/AdminLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -11,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Search, ShieldCheck, History } from "lucide-react";
+import { Search, ShieldCheck, History, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 
 type Profile = {
@@ -20,6 +21,9 @@ type Profile = {
   email: string | null;
   student_verified: boolean;
   premium_status: boolean;
+  campus_role: string | null;
+  campus_role_status: string;
+  campus_verified: boolean;
   created_at: string;
 };
 
@@ -44,7 +48,7 @@ const UsersManager = () => {
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users", search],
     queryFn: async () => {
-      let query = supabase.from("profiles").select("*").order("created_at", { ascending: false });
+      let query = supabase.from("profiles").select("id, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verified, created_at").order("created_at", { ascending: false });
       if (search.trim()) {
         query = query.or(`email.ilike.%${search}%,name.ilike.%${search}%`);
       }
@@ -120,6 +124,11 @@ const UsersManager = () => {
               className="pl-9"
             />
           </div>
+          <Button asChild variant="outline" size="sm" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10">
+            <Link to="/admin/verification">
+              <ShieldCheck className="h-4 w-4" /> Verification Queue
+            </Link>
+          </Button>
         </div>
 
         <div className="rounded-lg border">
@@ -127,7 +136,8 @@ const UsersManager = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>User</TableHead>
-                <TableHead>Verified</TableHead>
+                <TableHead>Campus Role</TableHead>
+                <TableHead>Student Verified</TableHead>
                 <TableHead>Premium</TableHead>
                 <TableHead>Joined</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
@@ -136,11 +146,11 @@ const UsersManager = () => {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading…</TableCell>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">Loading…</TableCell>
                 </TableRow>
               ) : users.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No users found</TableCell>
+                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No users found</TableCell>
                 </TableRow>
               ) : (
                 users.map((user) => (
@@ -150,6 +160,21 @@ const UsersManager = () => {
                         <p className="font-medium">{user.name || "—"}</p>
                         <p className="text-xs text-muted-foreground">{user.email}</p>
                       </div>
+                    </TableCell>
+                    <TableCell>
+                      {user.campus_role ? (
+                        <div className="space-y-0.5">
+                          <Badge variant="outline" className="text-xs capitalize">{user.campus_role}</Badge>
+                          {user.campus_verified && (
+                            <div className="text-[10px] text-accent flex items-center gap-0.5"><ShieldCheck className="h-2.5 w-2.5" /> Verified</div>
+                          )}
+                          {!user.campus_verified && user.campus_role_status === "pending" && (
+                            <div className="text-[10px] text-gold">Pending</div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">—</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Badge variant={user.student_verified ? "default" : "secondary"}>
