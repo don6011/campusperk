@@ -21,10 +21,12 @@ import ScansPage from "./pages/admin/ScansPage";
 import AffiliateAnalytics from "./pages/admin/AffiliateAnalytics";
 import UsersManager from "./pages/admin/UsersManager";
 import CategoryManager from "./pages/admin/CategoryManager";
+import VerificationQueue from "./pages/admin/VerificationQueue";
 import Favorites from "./pages/Favorites";
 import SubmitDeal from "./pages/SubmitDeal";
 import Categories from "./pages/Categories";
 import CategoryDetail from "./pages/CategoryDetail";
+import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -55,6 +57,7 @@ const App = () => (
             <Route path="/submit" element={<ProtectedRoute><SubmitDeal /></ProtectedRoute>} />
             <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
             <Route path="/categories/:slug" element={<ProtectedRoute><CategoryDetail /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Account /></ProtectedRoute>} />
 
             {/* Admin routes (protected) */}
             <Route path="/admin/deals" element={<ProtectedRoute><DealsManager /></ProtectedRoute>} />
@@ -63,6 +66,7 @@ const App = () => (
             <Route path="/admin/analytics" element={<ProtectedRoute><AffiliateAnalytics /></ProtectedRoute>} />
             <Route path="/admin/users" element={<ProtectedRoute><UsersManager /></ProtectedRoute>} />
             <Route path="/admin/categories" element={<ProtectedRoute><CategoryManager /></ProtectedRoute>} />
+            <Route path="/admin/verification" element={<ProtectedRoute><VerificationQueue /></ProtectedRoute>} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

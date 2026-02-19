@@ -191,16 +191,23 @@ export type Database = {
           category: string | null
           commission_rate: number | null
           created_at: string
+          deal_scope: Database["public"]["Enums"]["deal_scope"]
           description: string | null
           direct_link_url: string | null
           discount_type: Database["public"]["Enums"]["discount_type"]
           discount_value: string | null
           early_access: boolean
+          eligible_campuses: string[] | null
+          eligible_cities: string[] | null
+          eligible_regions: string[] | null
+          eligible_roles: Database["public"]["Enums"]["campus_role"][] | null
           expires_at: string | null
           featured: boolean
           id: string
           last_checked_at: string | null
+          requires_campus_verification: boolean
           requires_edu_email: boolean
+          requires_role_verification: boolean
           sponsor_end_at: string | null
           sponsor_start_at: string | null
           sponsor_tier: number | null
@@ -217,16 +224,23 @@ export type Database = {
           category?: string | null
           commission_rate?: number | null
           created_at?: string
+          deal_scope?: Database["public"]["Enums"]["deal_scope"]
           description?: string | null
           direct_link_url?: string | null
           discount_type?: Database["public"]["Enums"]["discount_type"]
           discount_value?: string | null
           early_access?: boolean
+          eligible_campuses?: string[] | null
+          eligible_cities?: string[] | null
+          eligible_regions?: string[] | null
+          eligible_roles?: Database["public"]["Enums"]["campus_role"][] | null
           expires_at?: string | null
           featured?: boolean
           id?: string
           last_checked_at?: string | null
+          requires_campus_verification?: boolean
           requires_edu_email?: boolean
+          requires_role_verification?: boolean
           sponsor_end_at?: string | null
           sponsor_start_at?: string | null
           sponsor_tier?: number | null
@@ -243,16 +257,23 @@ export type Database = {
           category?: string | null
           commission_rate?: number | null
           created_at?: string
+          deal_scope?: Database["public"]["Enums"]["deal_scope"]
           description?: string | null
           direct_link_url?: string | null
           discount_type?: Database["public"]["Enums"]["discount_type"]
           discount_value?: string | null
           early_access?: boolean
+          eligible_campuses?: string[] | null
+          eligible_cities?: string[] | null
+          eligible_regions?: string[] | null
+          eligible_roles?: Database["public"]["Enums"]["campus_role"][] | null
           expires_at?: string | null
           featured?: boolean
           id?: string
           last_checked_at?: string | null
+          requires_campus_verification?: boolean
           requires_edu_email?: boolean
+          requires_role_verification?: boolean
           sponsor_end_at?: string | null
           sponsor_start_at?: string | null
           sponsor_tier?: number | null
@@ -328,6 +349,14 @@ export type Database = {
       }
       profiles: {
         Row: {
+          campus_domain: string | null
+          campus_name: string | null
+          campus_role: Database["public"]["Enums"]["campus_role"] | null
+          campus_role_status: Database["public"]["Enums"]["campus_role_status"]
+          campus_verification_method:
+            | Database["public"]["Enums"]["campus_verification_method"]
+            | null
+          campus_verified: boolean
           created_at: string
           email: string | null
           id: string
@@ -335,8 +364,17 @@ export type Database = {
           premium_status: boolean
           student_verified: boolean
           updated_at: string
+          verification_notes: string | null
         }
         Insert: {
+          campus_domain?: string | null
+          campus_name?: string | null
+          campus_role?: Database["public"]["Enums"]["campus_role"] | null
+          campus_role_status?: Database["public"]["Enums"]["campus_role_status"]
+          campus_verification_method?:
+            | Database["public"]["Enums"]["campus_verification_method"]
+            | null
+          campus_verified?: boolean
           created_at?: string
           email?: string | null
           id: string
@@ -344,8 +382,17 @@ export type Database = {
           premium_status?: boolean
           student_verified?: boolean
           updated_at?: string
+          verification_notes?: string | null
         }
         Update: {
+          campus_domain?: string | null
+          campus_name?: string | null
+          campus_role?: Database["public"]["Enums"]["campus_role"] | null
+          campus_role_status?: Database["public"]["Enums"]["campus_role_status"]
+          campus_verification_method?:
+            | Database["public"]["Enums"]["campus_verification_method"]
+            | null
+          campus_verified?: boolean
           created_at?: string
           email?: string | null
           id?: string
@@ -353,6 +400,7 @@ export type Database = {
           premium_status?: boolean
           student_verified?: boolean
           updated_at?: string
+          verification_notes?: string | null
         }
         Relationships: []
       }
@@ -508,34 +556,118 @@ export type Database = {
       }
       verification_audit_log: {
         Row: {
+          action_type:
+            | Database["public"]["Enums"]["verification_action_type"]
+            | null
           admin_id: string
+          campus_verification_method:
+            | Database["public"]["Enums"]["campus_verification_method"]
+            | null
           created_at: string
           id: string
+          new_campus_status:
+            | Database["public"]["Enums"]["campus_role_status"]
+            | null
+          new_role: Database["public"]["Enums"]["campus_role"] | null
           new_status: boolean
+          previous_campus_status:
+            | Database["public"]["Enums"]["campus_role_status"]
+            | null
+          previous_role: Database["public"]["Enums"]["campus_role"] | null
           previous_status: boolean
           reason: string
           user_id: string
           verification_method: Database["public"]["Enums"]["verification_method"]
         }
         Insert: {
+          action_type?:
+            | Database["public"]["Enums"]["verification_action_type"]
+            | null
           admin_id: string
+          campus_verification_method?:
+            | Database["public"]["Enums"]["campus_verification_method"]
+            | null
           created_at?: string
           id?: string
+          new_campus_status?:
+            | Database["public"]["Enums"]["campus_role_status"]
+            | null
+          new_role?: Database["public"]["Enums"]["campus_role"] | null
           new_status: boolean
+          previous_campus_status?:
+            | Database["public"]["Enums"]["campus_role_status"]
+            | null
+          previous_role?: Database["public"]["Enums"]["campus_role"] | null
           previous_status: boolean
           reason: string
           user_id: string
           verification_method?: Database["public"]["Enums"]["verification_method"]
         }
         Update: {
+          action_type?:
+            | Database["public"]["Enums"]["verification_action_type"]
+            | null
           admin_id?: string
+          campus_verification_method?:
+            | Database["public"]["Enums"]["campus_verification_method"]
+            | null
           created_at?: string
           id?: string
+          new_campus_status?:
+            | Database["public"]["Enums"]["campus_role_status"]
+            | null
+          new_role?: Database["public"]["Enums"]["campus_role"] | null
           new_status?: boolean
+          previous_campus_status?:
+            | Database["public"]["Enums"]["campus_role_status"]
+            | null
+          previous_role?: Database["public"]["Enums"]["campus_role"] | null
           previous_status?: boolean
           reason?: string
           user_id?: string
           verification_method?: Database["public"]["Enums"]["verification_method"]
+        }
+        Relationships: []
+      }
+      verification_requests: {
+        Row: {
+          admin_decision_reason: string | null
+          admin_id: string | null
+          campus_role_requested: Database["public"]["Enums"]["campus_role"]
+          created_at: string
+          email_domain: string
+          id: string
+          proof_upload_urls: string[] | null
+          reviewed_at: string | null
+          status: Database["public"]["Enums"]["campus_role_status"]
+          user_id: string
+          user_message: string | null
+        }
+        Insert: {
+          admin_decision_reason?: string | null
+          admin_id?: string | null
+          campus_role_requested: Database["public"]["Enums"]["campus_role"]
+          created_at?: string
+          email_domain: string
+          id?: string
+          proof_upload_urls?: string[] | null
+          reviewed_at?: string | null
+          status?: Database["public"]["Enums"]["campus_role_status"]
+          user_id: string
+          user_message?: string | null
+        }
+        Update: {
+          admin_decision_reason?: string | null
+          admin_id?: string | null
+          campus_role_requested?: Database["public"]["Enums"]["campus_role"]
+          created_at?: string
+          email_domain?: string
+          id?: string
+          proof_upload_urls?: string[] | null
+          reviewed_at?: string | null
+          status?: Database["public"]["Enums"]["campus_role_status"]
+          user_id?: string
+          user_message?: string | null
         }
         Relationships: []
       }
@@ -560,6 +692,14 @@ export type Database = {
         }
         Returns: boolean
       }
+      check_verification_request_rate_limit: {
+        Args: {
+          p_max_requests?: number
+          p_user_id: string
+          p_window_hours?: number
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -570,10 +710,23 @@ export type Database = {
     }
     Enums: {
       app_role: "user" | "premium_user" | "admin"
+      campus_role: "student" | "faculty" | "staff" | "alumni"
+      campus_role_status: "unselected" | "pending" | "verified" | "rejected"
+      campus_verification_method:
+        | "edu_email"
+        | "manual_admin"
+        | "partner_provider"
       conversion_status: "pending" | "confirmed" | "paid"
+      deal_scope: "national" | "regional" | "local"
       deal_status: "active" | "expired" | "coming_soon"
       discount_type: "percentage" | "fixed" | "free_trial" | "bogo" | "other"
       submission_status: "pending" | "approved" | "rejected"
+      verification_action_type:
+        | "role_selected"
+        | "verification_requested"
+        | "verification_approved"
+        | "verification_rejected"
+        | "verification_revoked"
       verification_method: "edu" | "manual" | "partner"
     }
     CompositeTypes: {
@@ -703,10 +856,25 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["user", "premium_user", "admin"],
+      campus_role: ["student", "faculty", "staff", "alumni"],
+      campus_role_status: ["unselected", "pending", "verified", "rejected"],
+      campus_verification_method: [
+        "edu_email",
+        "manual_admin",
+        "partner_provider",
+      ],
       conversion_status: ["pending", "confirmed", "paid"],
+      deal_scope: ["national", "regional", "local"],
       deal_status: ["active", "expired", "coming_soon"],
       discount_type: ["percentage", "fixed", "free_trial", "bogo", "other"],
       submission_status: ["pending", "approved", "rejected"],
+      verification_action_type: [
+        "role_selected",
+        "verification_requested",
+        "verification_approved",
+        "verification_rejected",
+        "verification_revoked",
+      ],
       verification_method: ["edu", "manual", "partner"],
     },
   },
