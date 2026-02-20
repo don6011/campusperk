@@ -22,6 +22,7 @@ import AffiliateAnalytics from "./pages/admin/AffiliateAnalytics";
 import UsersManager from "./pages/admin/UsersManager";
 import CategoryManager from "./pages/admin/CategoryManager";
 import VerificationQueue from "./pages/admin/VerificationQueue";
+import CampusDomainsManager from "./pages/admin/CampusDomainsManager";
 import Favorites from "./pages/Favorites";
 import SubmitDeal from "./pages/SubmitDeal";
 import Categories from "./pages/Categories";
@@ -67,6 +68,7 @@ const App = () => (
             <Route path="/admin/users" element={<ProtectedRoute><UsersManager /></ProtectedRoute>} />
             <Route path="/admin/categories" element={<ProtectedRoute><CategoryManager /></ProtectedRoute>} />
             <Route path="/admin/verification" element={<ProtectedRoute><VerificationQueue /></ProtectedRoute>} />
+            <Route path="/admin/domains" element={<ProtectedRoute><CampusDomainsManager /></ProtectedRoute>} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

@@ -19,6 +19,7 @@ interface Profile {
   campus_name: string | null;
   verification_notes: string | null;
   campus_verified: boolean;
+  verification_strength_score: number;
 }
 
 interface AuthContextType {
@@ -54,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verification_method, campus_domain, campus_name, verification_notes, campus_verified")
+      .select("id, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verification_method, campus_domain, campus_name, verification_notes, campus_verified, verification_strength_score")
       .eq("id", userId)
       .single();
     setProfile(data as Profile | null);

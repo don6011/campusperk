@@ -3,18 +3,21 @@ import { motion } from "framer-motion";
 import {
   GraduationCap, BookOpen, Briefcase, Users, ShieldCheck, ShieldX,
   Clock, Upload, FileText, AlertTriangle, CheckCircle2, Loader2, Info,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, type CampusRole } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
+import { normalizeCampusDomain, isEduDomain, computeVerificationScore, scoreLabel } from "@/lib/campus-domain";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -70,17 +73,50 @@ export default function Account() {
     },
   });
 
-  const domain = user?.email?.split("@")[1]?.toLowerCase() ?? "";
-  const hasEdu = domain.endsWith(".edu");
+  const normalizedDomain = user?.email ? normalizeCampusDomain(user.email) : "";
+  const rawDomain = user?.email?.split("@")[1]?.toLowerCase() ?? "";
+  const hasEdu = isEduDomain(normalizedDomain);
   const hasPendingRequest = requests.some((r: any) => r.status === "pending");
-  const canAutoVerify = hasEdu;
+
+  // Fetch domain info for approval status
+  const { data: domainInfo } = useQuery({
+    queryKey: ["campus-domain", normalizedDomain],
+    enabled: !!normalizedDomain,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("campus_domains")
+        .select("*")
+        .eq("domain_root", normalizedDomain)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const domainApproved = domainInfo?.is_approved ?? false;
+  const domainBlocked = domainInfo?.is_blocked ?? false;
+
+  // Role-based auto-verification rules
+  const canAutoVerify = (role: CampusRole): boolean => {
+    if (domainBlocked) return false;
+    switch (role) {
+      case "student":
+        return hasEdu;
+      case "faculty":
+        return (hasEdu && rawDomain.includes("faculty")) || domainApproved;
+      case "staff":
+        return domainApproved;
+      case "alumni":
+        return rawDomain.startsWith("alumni.") || (domainApproved && rawDomain.includes("alumni"));
+      default:
+        return false;
+    }
+  };
 
   const handleRoleSelect = async (role: CampusRole) => {
     if (!user) return;
     setSelectedRole(role);
 
-    // If auto-verifiable (.edu) and selecting student, or any role with .edu
-    if (canAutoVerify && role === "student" && !isCampusVerified) {
+    if (canAutoVerify(role) && !isCampusVerified) {
       await performAutoVerify(role);
       return;
     }
@@ -90,14 +126,25 @@ export default function Account() {
     if (!user) return;
     setSubmitting(true);
     try {
-      // Write audit log: role_selected
+      // Ensure campus domain entry exists
+      await supabase.rpc("ensure_campus_domain", { p_domain_root: normalizedDomain } as any);
+
+      // Compute verification score
+      const score = computeVerificationScore({
+        hasEdu,
+        domainApproved,
+        adminVerified: false,
+        hasProof: false,
+      });
+
+      // Write audit log
       await supabase.from("verification_audit_log").insert({
         user_id: user.id,
         admin_id: user.id,
         previous_status: false,
         new_status: true,
         verification_method: "edu" as any,
-        reason: "Automatic .edu email verification",
+        reason: `Automatic verification (score: ${score})`,
         action_type: "verification_approved" as any,
         new_role: role as any,
         new_campus_status: "verified" as any,
@@ -109,14 +156,15 @@ export default function Account() {
         campus_role: role as any,
         campus_role_status: "verified" as any,
         campus_verification_method: "edu_email" as any,
-        campus_domain: domain,
+        campus_domain: normalizedDomain,
         campus_verified: true,
         student_verified: role === "student",
+        verification_strength_score: score,
       }).eq("id", user.id);
 
       if (error) throw error;
       await refreshProfile();
-      toast({ title: "✓ Campus Verified!", description: `Your ${role} status has been auto-verified via .edu email.` });
+      toast({ title: "✓ Campus Verified!", description: `Your ${role} status has been auto-verified (score: ${score}).` });
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -179,14 +227,14 @@ export default function Account() {
       await supabase.from("profiles").update({
         campus_role: selectedRole as any,
         campus_role_status: "pending" as any,
-        campus_domain: domain,
+        campus_domain: normalizedDomain,
       }).eq("id", user.id);
 
       // Insert verification request
       const { error } = await supabase.from("verification_requests").insert({
         user_id: user.id,
         campus_role_requested: selectedRole as any,
-        email_domain: domain,
+        email_domain: normalizedDomain,
         proof_upload_urls: uploadedUrls,
         user_message: message.trim() || null,
       } as any);
@@ -236,7 +284,7 @@ export default function Account() {
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Campus Domain</span>
-                <span className="text-sm font-medium">{profile?.campus_domain || domain || "—"}</span>
+                <span className="text-sm font-medium">{profile?.campus_domain || normalizedDomain || "—"}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">Campus Status</span>
@@ -246,6 +294,20 @@ export default function Account() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Role</span>
                   <span className="text-sm font-medium capitalize">{campusRole}</span>
+                </div>
+              )}
+              {/* Verification Strength Score */}
+              {profile?.verification_strength_score != null && profile.verification_strength_score > 0 && (
+                <div className="space-y-1.5 pt-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground flex items-center gap-1">
+                      <TrendingUp className="h-3.5 w-3.5" /> Trust Score
+                    </span>
+                    <span className={`text-sm font-semibold ${scoreLabel(profile.verification_strength_score).color}`}>
+                      {profile.verification_strength_score}/100 — {scoreLabel(profile.verification_strength_score).label}
+                    </span>
+                  </div>
+                  <Progress value={profile.verification_strength_score} className="h-1.5" />
                 </div>
               )}
             </CardContent>
@@ -266,11 +328,19 @@ export default function Account() {
             </CardHeader>
             <CardContent className="space-y-5">
               {/* Auto-verify notice */}
-              {canAutoVerify && !isCampusVerified && (
+              {hasEdu && !isCampusVerified && (
                 <div className="flex items-start gap-2 p-3 rounded-lg bg-accent/8 border border-accent/20">
                   <CheckCircle2 className="h-4 w-4 text-accent shrink-0 mt-0.5" />
                   <p className="text-xs text-muted-foreground">
-                    Your <strong className="text-foreground">.edu email</strong> enables instant auto-verification. Select your role below to get verified immediately.
+                    Your <strong className="text-foreground">.edu email</strong> ({normalizedDomain}) enables auto-verification for eligible roles. Select your role below.
+                  </p>
+                </div>
+              )}
+              {domainBlocked && (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-destructive/8 border border-destructive/20">
+                  <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+                  <p className="text-xs text-muted-foreground">
+                    Your domain <strong className="text-foreground">{normalizedDomain}</strong> has been blocked. Contact support for help.
                   </p>
                 </div>
               )}
@@ -315,7 +385,7 @@ export default function Account() {
                   )}
 
                   {/* Manual verification panel — shown when non-.edu or non-student role selected */}
-                  {selectedRole && !isCampusVerified && !hasPendingRequest && !(canAutoVerify && selectedRole === "student") && (
+                  {selectedRole && !isCampusVerified && !hasPendingRequest && !canAutoVerify(selectedRole) && (
                     <div className="space-y-4 pt-2">
                       <Separator />
                       <div>
@@ -381,16 +451,16 @@ export default function Account() {
                     </div>
                   )}
 
-                  {/* .edu non-student: still allow auto but with manual option */}
-                  {selectedRole && selectedRole !== "student" && canAutoVerify && !isCampusVerified && !hasPendingRequest && (
+                  {/* .edu non-student with auto-verify available: show auto-verify button */}
+                  {selectedRole && selectedRole !== "student" && canAutoVerify(selectedRole) && !isCampusVerified && !hasPendingRequest && (
                     <div className="space-y-3 pt-2">
                       <Separator />
                       <p className="text-xs text-muted-foreground">
-                        Faculty, staff, and alumni with a .edu email can be verified, but may require admin confirmation.
+                        Your domain <strong className="text-foreground">{normalizedDomain}</strong> qualifies for auto-verification as {selectedRole}.
                       </p>
-                      <Button onClick={handleSubmitRequest} disabled={submitting} className="w-full gap-2">
+                      <Button onClick={() => performAutoVerify(selectedRole)} disabled={submitting} className="w-full gap-2">
                         {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <ShieldCheck className="h-4 w-4" />}
-                        {submitting ? "Submitting…" : "Request Verification"}
+                        {submitting ? "Verifying…" : "Auto-Verify Now"}
                       </Button>
                     </div>
                   )}
