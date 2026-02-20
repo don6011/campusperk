@@ -148,6 +148,39 @@ export type Database = {
         }
         Relationships: []
       }
+      campus_domains: {
+        Row: {
+          campus_name: string | null
+          created_at: string
+          domain_root: string
+          id: string
+          is_approved: boolean
+          is_blocked: boolean
+          updated_at: string
+          verification_confidence: number
+        }
+        Insert: {
+          campus_name?: string | null
+          created_at?: string
+          domain_root: string
+          id?: string
+          is_approved?: boolean
+          is_blocked?: boolean
+          updated_at?: string
+          verification_confidence?: number
+        }
+        Update: {
+          campus_name?: string | null
+          created_at?: string
+          domain_root?: string
+          id?: string
+          is_approved?: boolean
+          is_blocked?: boolean
+          updated_at?: string
+          verification_confidence?: number
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -365,6 +398,7 @@ export type Database = {
           student_verified: boolean
           updated_at: string
           verification_notes: string | null
+          verification_strength_score: number
         }
         Insert: {
           campus_domain?: string | null
@@ -383,6 +417,7 @@ export type Database = {
           student_verified?: boolean
           updated_at?: string
           verification_notes?: string | null
+          verification_strength_score?: number
         }
         Update: {
           campus_domain?: string | null
@@ -401,6 +436,7 @@ export type Database = {
           student_verified?: boolean
           updated_at?: string
           verification_notes?: string | null
+          verification_strength_score?: number
         }
         Relationships: []
       }
@@ -700,12 +736,29 @@ export type Database = {
         }
         Returns: boolean
       }
+      compute_verification_score: {
+        Args: {
+          p_admin_verified?: boolean
+          p_domain_approved?: boolean
+          p_has_edu?: boolean
+          p_has_proof?: boolean
+        }
+        Returns: number
+      }
+      ensure_campus_domain: {
+        Args: { p_campus_name?: string; p_domain_root: string }
+        Returns: string
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      normalize_campus_domain: {
+        Args: { email_address: string }
+        Returns: string
       }
     }
     Enums: {
