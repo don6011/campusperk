@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight,
   Heart,
@@ -28,7 +28,9 @@ import {
   BellRing,
   BarChart3,
   Info,
+  MapPin,
 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -191,6 +193,7 @@ const categoryIcons = [
 
 export default function Dashboard() {
   const { profile, user, isPremium } = useAuth();
+  const navigate = useNavigate();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // Fetch active deals with store info
@@ -429,6 +432,17 @@ export default function Dashboard() {
           </motion.section>
         )}
 
+        {/* Local Near Campus */}
+        <LocalNearCampusSection
+          deals={deals}
+          profile={profile}
+          favIds={favIds}
+          onToggleFav={toggleFav}
+          isPremium={isPremium}
+          userId={user?.id}
+          onUpgrade={() => setUpgradeOpen(true)}
+        />
+
         {/* Featured Deals */}
         {featuredDeals.length > 0 && (
           <section>
@@ -629,5 +643,77 @@ export default function Dashboard() {
       </div>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </DashboardLayout>
+  );
+}
+
+function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium, userId, onUpgrade }: {
+  deals: DealRow[];
+  profile: any;
+  favIds: Set<string>;
+  onToggleFav: (id: string) => void;
+  isPremium: boolean;
+  userId?: string;
+  onUpgrade: () => void;
+}) {
+  const navigate = useNavigate();
+  const locationEnabled = profile?.location_opt_in ?? false;
+  const userCity = profile?.user_city || profile?.campus_city;
+  const userState = profile?.user_state || profile?.campus_state;
+
+  // Filter local/regional deals matching user location
+  const localDeals = deals.filter((d: any) => {
+    if (d.deal_scope !== "local" && d.deal_scope !== "regional") return false;
+    if (!locationEnabled) return false;
+    const cities: string[] = d.eligible_cities ?? [];
+    const regions: string[] = d.eligible_regions ?? [];
+    if (cities.length > 0 && userCity && cities.some((c: string) => c.toLowerCase() === userCity.toLowerCase())) return true;
+    if (regions.length > 0 && userState && regions.some((r: string) => r.toLowerCase() === userState.toLowerCase())) return true;
+    // If deal has no geo constraints but is local, show it
+    if (cities.length === 0 && regions.length === 0) return true;
+    return false;
+  }).slice(0, 6);
+
+  if (!locationEnabled) {
+    return (
+      <section>
+        <Card className="border-primary/20 bg-card relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+          <CardContent className="relative z-10 p-6 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+              <MapPin className="h-6 w-6 text-primary" />
+            </div>
+            <div className="flex-1">
+              <h3 className="font-display text-base font-semibold text-foreground">Enable Local Deals</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Get deals from businesses near your campus. No GPS required.</p>
+            </div>
+            <Button size="sm" onClick={() => navigate("/settings")} className="gap-1.5 shrink-0">
+              <MapPin className="h-3.5 w-3.5" /> Enable
+            </Button>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
+
+  if (localDeals.length === 0) return null;
+
+  return (
+    <section>
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+          <MapPin className="h-5 w-5 text-accent" /> Local Near Campus
+        </h2>
+        <Link to="/explore" className="text-xs text-primary hover:underline flex items-center gap-1">
+          View all <ChevronRight className="h-3 w-3" />
+        </Link>
+      </div>
+      <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth">
+        {localDeals.map((deal, i) => (
+          <motion.div key={deal.id} className="min-w-[280px] max-w-[320px] snap-start shrink-0" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08, duration: 0.4 }}>
+            <DealCard deal={deal} index={i} favIds={favIds} onToggleFav={onToggleFav} isPremiumUser={isPremium} userId={userId} onUpgrade={onUpgrade} />
+          </motion.div>
+        ))}
+      </div>
+    </section>
   );
 }

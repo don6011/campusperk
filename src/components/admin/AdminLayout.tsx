@@ -15,6 +15,7 @@ import {
   Grid3X3,
   ShieldCheck,
   Globe,
+  Building2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -25,6 +26,7 @@ const navItems = [
   { label: "Users", href: "/admin/users", icon: Users },
   { label: "Verification", href: "/admin/verification", icon: ShieldCheck },
   { label: "Campus Domains", href: "/admin/domains", icon: Globe },
+  { label: "Partners", href: "/admin/partners", icon: Building2 },
   { label: "Scans", href: "/admin/scans", icon: ScanSearch },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
 ];

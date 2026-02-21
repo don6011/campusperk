@@ -5,7 +5,7 @@ import { useQuery } from "@tanstack/react-query";
 import {
   Search, Filter, ChevronDown, ChevronLeft, ChevronRight, Heart,
   ExternalLink, Shield, Crown, Clock, Lock, ShoppingBag, GraduationCap,
-  AlertTriangle, Tag, X, RotateCcw, Flame, Sparkles, Zap, TrendingUp,
+  AlertTriangle, Tag, X, RotateCcw, Flame, Sparkles, Zap, TrendingUp, MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -138,6 +138,7 @@ export default function ExploreDeals() {
   const [sortBy, setSortBy] = useState("newest");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
+  const [selectedScope, setSelectedScope] = useState<string>("all");
   const [eduOnly, setEduOnly] = useState(false);
   const [premiumOnly, setPremiumOnly] = useState(false);
   const [freshnessDays, setFreshnessDays] = useState<number | null>(null);
@@ -169,11 +170,11 @@ export default function ExploreDeals() {
   const toggleFav = (id: string) =>
     setFavorites((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
   const resetFilters = () => {
-    setSearch(""); setSelectedCategories([]); setSelectedStatuses([]); setEduOnly(false);
+    setSearch(""); setSelectedCategories([]); setSelectedStatuses([]); setSelectedScope("all"); setEduOnly(false);
     setPremiumOnly(false); setFreshnessDays(null); setVerifiedRecently(false); setVisibleCount(PAGE_SIZE);
   };
 
-  const hasFilters = search || selectedCategories.length || selectedStatuses.length || eduOnly || premiumOnly || freshnessDays || verifiedRecently;
+  const hasFilters = search || selectedCategories.length || selectedStatuses.length || selectedScope !== "all" || eduOnly || premiumOnly || freshnessDays || verifiedRecently;
 
   const trendingDeals = useMemo(() => {
     return [...deals].filter((d) => d.status === "active").sort((a, b) => engagementScore(b) - engagementScore(a)).slice(0, 6);
@@ -205,6 +206,7 @@ export default function ExploreDeals() {
       );
     }
     if (selectedCategories.length) list = list.filter((d) => d.category && selectedCategories.includes(d.category));
+    if (selectedScope !== "all") list = list.filter((d: any) => d.deal_scope === selectedScope);
     if (selectedStatuses.length) {
       list = list.filter((d) => {
         if (selectedStatuses.includes("expiring") && d.expires_at) {
@@ -246,7 +248,7 @@ export default function ExploreDeals() {
         break;
     }
     return list;
-  }, [deals, search, selectedCategories, selectedStatuses, eduOnly, premiumOnly, freshnessDays, verifiedRecently, sortBy]);
+  }, [deals, search, selectedCategories, selectedStatuses, selectedScope, eduOnly, premiumOnly, freshnessDays, verifiedRecently, sortBy]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
@@ -363,6 +365,17 @@ export default function ExploreDeals() {
               <div className="flex flex-wrap gap-2">
                 {CATEGORIES.map((cat) => (
                   <Button key={cat} variant={selectedCategories.includes(cat) ? "default" : "outline"} size="sm" className="text-xs h-8" onClick={() => { toggleCategory(cat); setVisibleCount(PAGE_SIZE); }}>{cat}</Button>
+                ))}
+              </div>
+            </div>
+            <div>
+              <h3 className="text-xs font-semibold text-foreground mb-2.5 uppercase tracking-wider">Scope</h3>
+              <div className="flex flex-wrap gap-2">
+                {[{ value: "all", label: "All" }, { value: "national", label: "National" }, { value: "regional", label: "Regional" }, { value: "local", label: "Local" }].map((s) => (
+                  <Button key={s.value} variant={selectedScope === s.value ? "default" : "outline"} size="sm" className="text-xs h-8 gap-1" onClick={() => { setSelectedScope(s.value); setVisibleCount(PAGE_SIZE); }}>
+                    {s.value === "local" && <MapPin className="h-3 w-3" />}
+                    {s.label}
+                  </Button>
                 ))}
               </div>
             </div>

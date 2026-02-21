@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   GraduationCap, BookOpen, Briefcase, Users, ShieldCheck, ShieldX,
   Clock, Upload, FileText, AlertTriangle, CheckCircle2, Loader2, Info,
-  TrendingUp,
+  TrendingUp, MapPin,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth, type CampusRole } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -505,7 +507,104 @@ export default function Account() {
             </Card>
           </motion.div>
         )}
+
+        {/* Location & Local Deals */}
+        <LocationOptInCard />
       </div>
     </DashboardLayout>
+  );
+}
+
+function LocationOptInCard() {
+  const { user, profile, refreshProfile } = useAuth();
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [optIn, setOptIn] = useState(profile?.location_opt_in ?? false);
+  const [city, setCity] = useState(profile?.user_city ?? profile?.campus_city ?? "");
+  const [state, setState] = useState(profile?.user_state ?? profile?.campus_state ?? "");
+  const [useCampus, setUseCampus] = useState(!profile?.user_city);
+
+  const handleSave = async () => {
+    if (!user) return;
+    setSaving(true);
+    try {
+      const { error } = await supabase.from("profiles").update({
+        location_opt_in: optIn,
+        user_city: useCampus ? null : (city.trim() || null),
+        user_state: useCampus ? null : (state.trim() || null),
+      }).eq("id", user.id);
+      if (error) throw error;
+      await refreshProfile();
+      toast({ title: "Location preferences saved" });
+    } catch (e: any) {
+      toast({ title: "Error", description: e.message, variant: "destructive" });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <motion.div initial="hidden" animate="visible" variants={{ hidden: { opacity: 0, y: 16 }, visible: { opacity: 1, y: 0, transition: { delay: 0.28, duration: 0.4 } } }}>
+      <Card className="border-border bg-card">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-primary" />
+            Local Deals
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Enable location-based deals near your campus. We use city/state only to filter offers — no GPS.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-foreground">Enable local deals</span>
+            <Switch checked={optIn} onCheckedChange={setOptIn} />
+          </div>
+
+          {optIn && (
+            <>
+              <Separator />
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="useCampus"
+                  checked={useCampus}
+                  onChange={(e) => setUseCampus(e.target.checked)}
+                  className="rounded border-border"
+                />
+                <label htmlFor="useCampus" className="text-xs text-muted-foreground">
+                  Use my campus location ({profile?.campus_city || "unknown"}, {profile?.campus_state || "unknown"})
+                </label>
+              </div>
+
+              {!useCampus && (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-foreground">City</label>
+                    <Input value={city} onChange={(e) => setCity(e.target.value)} placeholder="e.g. Phoenix" className="h-9 text-sm" />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-foreground">State</label>
+                    <Input value={state} onChange={(e) => setState(e.target.value)} placeholder="e.g. AZ" className="h-9 text-sm" />
+                  </div>
+                </div>
+              )}
+
+              <Button onClick={handleSave} disabled={saving} size="sm" className="gap-2">
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MapPin className="h-3.5 w-3.5" />}
+                {saving ? "Saving…" : "Save Location Preferences"}
+              </Button>
+            </>
+          )}
+
+          {!optIn && (
+            <Button onClick={handleSave} disabled={saving} variant="outline" size="sm" className="gap-2">
+              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+              Save
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }

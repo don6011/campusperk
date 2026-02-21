@@ -23,6 +23,7 @@ import UsersManager from "./pages/admin/UsersManager";
 import CategoryManager from "./pages/admin/CategoryManager";
 import VerificationQueue from "./pages/admin/VerificationQueue";
 import CampusDomainsManager from "./pages/admin/CampusDomainsManager";
+import PartnersManager from "./pages/admin/PartnersManager";
 import Favorites from "./pages/Favorites";
 import SubmitDeal from "./pages/SubmitDeal";
 import Categories from "./pages/Categories";
@@ -69,6 +70,7 @@ const App = () => (
             <Route path="/admin/categories" element={<ProtectedRoute><CategoryManager /></ProtectedRoute>} />
             <Route path="/admin/verification" element={<ProtectedRoute><VerificationQueue /></ProtectedRoute>} />
             <Route path="/admin/domains" element={<ProtectedRoute><CampusDomainsManager /></ProtectedRoute>} />
+            <Route path="/admin/partners" element={<ProtectedRoute><PartnersManager /></ProtectedRoute>} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
