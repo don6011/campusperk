@@ -151,35 +151,100 @@ export type Database = {
       campus_domains: {
         Row: {
           campus_name: string | null
+          city: string | null
+          country: string | null
           created_at: string
           domain_root: string
           id: string
           is_approved: boolean
           is_blocked: boolean
+          latitude: number | null
+          longitude: number | null
+          state: string | null
           updated_at: string
           verification_confidence: number
         }
         Insert: {
           campus_name?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           domain_root: string
           id?: string
           is_approved?: boolean
           is_blocked?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          state?: string | null
           updated_at?: string
           verification_confidence?: number
         }
         Update: {
           campus_name?: string | null
+          city?: string | null
+          country?: string | null
           created_at?: string
           domain_root?: string
           id?: string
           is_approved?: boolean
           is_blocked?: boolean
+          latitude?: number | null
+          longitude?: number | null
+          state?: string | null
           updated_at?: string
           verification_confidence?: number
         }
         Relationships: []
+      }
+      campus_locations: {
+        Row: {
+          address: string | null
+          campus_id: string
+          city: string | null
+          created_at: string
+          id: string
+          is_primary: boolean
+          latitude: number | null
+          location_name: string
+          longitude: number | null
+          state: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          campus_id: string
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          latitude?: number | null
+          location_name?: string
+          longitude?: number | null
+          state?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          campus_id?: string
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_primary?: boolean
+          latitude?: number | null
+          location_name?: string
+          longitude?: number | null
+          state?: string | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campus_locations_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campus_domains"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {
@@ -236,8 +301,11 @@ export type Database = {
           eligible_roles: Database["public"]["Enums"]["campus_role"][] | null
           expires_at: string | null
           featured: boolean
+          geo_radius_miles: number | null
           id: string
           last_checked_at: string | null
+          partner_id: string | null
+          partner_offer_id: string | null
           requires_campus_verification: boolean
           requires_edu_email: boolean
           requires_role_verification: boolean
@@ -269,8 +337,11 @@ export type Database = {
           eligible_roles?: Database["public"]["Enums"]["campus_role"][] | null
           expires_at?: string | null
           featured?: boolean
+          geo_radius_miles?: number | null
           id?: string
           last_checked_at?: string | null
+          partner_id?: string | null
+          partner_offer_id?: string | null
           requires_campus_verification?: boolean
           requires_edu_email?: boolean
           requires_role_verification?: boolean
@@ -302,8 +373,11 @@ export type Database = {
           eligible_roles?: Database["public"]["Enums"]["campus_role"][] | null
           expires_at?: string | null
           featured?: boolean
+          geo_radius_miles?: number | null
           id?: string
           last_checked_at?: string | null
+          partner_id?: string | null
+          partner_offer_id?: string | null
           requires_campus_verification?: boolean
           requires_edu_email?: boolean
           requires_role_verification?: boolean
@@ -318,6 +392,20 @@ export type Database = {
           visibility?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "deals_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deals_partner_offer_id_fkey"
+            columns: ["partner_offer_id"]
+            isOneToOne: false
+            referencedRelation: "partner_offers"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "deals_store_id_fkey"
             columns: ["store_id"]
@@ -356,6 +444,157 @@ export type Database = {
           },
         ]
       }
+      partner_locations: {
+        Row: {
+          address: string | null
+          city: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          latitude: number | null
+          location_name: string | null
+          longitude: number | null
+          partner_id: string
+          radius_miles: number
+          state: string | null
+          zip: string | null
+        }
+        Insert: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          partner_id: string
+          radius_miles?: number
+          state?: string | null
+          zip?: string | null
+        }
+        Update: {
+          address?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number | null
+          location_name?: string | null
+          longitude?: number | null
+          partner_id?: string
+          radius_miles?: number
+          state?: string | null
+          zip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_locations_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partner_offers: {
+        Row: {
+          created_at: string
+          deal_type: Database["public"]["Enums"]["discount_type"]
+          discount_value: string | null
+          eligible_roles: Database["public"]["Enums"]["campus_role"][] | null
+          end_at: string | null
+          id: string
+          offer_description: string | null
+          offer_title: string
+          partner_id: string
+          redemption_instructions: string | null
+          requires_campus_verification: boolean
+          start_at: string | null
+          status: Database["public"]["Enums"]["offer_status"]
+          terms: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deal_type?: Database["public"]["Enums"]["discount_type"]
+          discount_value?: string | null
+          eligible_roles?: Database["public"]["Enums"]["campus_role"][] | null
+          end_at?: string | null
+          id?: string
+          offer_description?: string | null
+          offer_title: string
+          partner_id: string
+          redemption_instructions?: string | null
+          requires_campus_verification?: boolean
+          start_at?: string | null
+          status?: Database["public"]["Enums"]["offer_status"]
+          terms?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deal_type?: Database["public"]["Enums"]["discount_type"]
+          discount_value?: string | null
+          eligible_roles?: Database["public"]["Enums"]["campus_role"][] | null
+          end_at?: string | null
+          id?: string
+          offer_description?: string | null
+          offer_title?: string
+          partner_id?: string
+          redemption_instructions?: string | null
+          requires_campus_verification?: boolean
+          start_at?: string | null
+          status?: Database["public"]["Enums"]["offer_status"]
+          terms?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "partner_offers_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      partners: {
+        Row: {
+          contact_email: string | null
+          created_at: string
+          id: string
+          logo_url: string | null
+          partner_name: string
+          partner_type: Database["public"]["Enums"]["partner_type"]
+          status: Database["public"]["Enums"]["partner_status"]
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          partner_name: string
+          partner_type?: Database["public"]["Enums"]["partner_type"]
+          status?: Database["public"]["Enums"]["partner_status"]
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          contact_email?: string | null
+          created_at?: string
+          id?: string
+          logo_url?: string | null
+          partner_name?: string
+          partner_type?: Database["public"]["Enums"]["partner_type"]
+          status?: Database["public"]["Enums"]["partner_status"]
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
+      }
       paywall_views: {
         Row: {
           created_at: string
@@ -382,10 +621,13 @@ export type Database = {
       }
       profiles: {
         Row: {
+          campus_city: string | null
           campus_domain: string | null
+          campus_id: string | null
           campus_name: string | null
           campus_role: Database["public"]["Enums"]["campus_role"] | null
           campus_role_status: Database["public"]["Enums"]["campus_role_status"]
+          campus_state: string | null
           campus_verification_method:
             | Database["public"]["Enums"]["campus_verification_method"]
             | null
@@ -393,18 +635,24 @@ export type Database = {
           created_at: string
           email: string | null
           id: string
+          location_opt_in: boolean
           name: string | null
           premium_status: boolean
           student_verified: boolean
           updated_at: string
+          user_city: string | null
+          user_state: string | null
           verification_notes: string | null
           verification_strength_score: number
         }
         Insert: {
+          campus_city?: string | null
           campus_domain?: string | null
+          campus_id?: string | null
           campus_name?: string | null
           campus_role?: Database["public"]["Enums"]["campus_role"] | null
           campus_role_status?: Database["public"]["Enums"]["campus_role_status"]
+          campus_state?: string | null
           campus_verification_method?:
             | Database["public"]["Enums"]["campus_verification_method"]
             | null
@@ -412,18 +660,24 @@ export type Database = {
           created_at?: string
           email?: string | null
           id: string
+          location_opt_in?: boolean
           name?: string | null
           premium_status?: boolean
           student_verified?: boolean
           updated_at?: string
+          user_city?: string | null
+          user_state?: string | null
           verification_notes?: string | null
           verification_strength_score?: number
         }
         Update: {
+          campus_city?: string | null
           campus_domain?: string | null
+          campus_id?: string | null
           campus_name?: string | null
           campus_role?: Database["public"]["Enums"]["campus_role"] | null
           campus_role_status?: Database["public"]["Enums"]["campus_role_status"]
+          campus_state?: string | null
           campus_verification_method?:
             | Database["public"]["Enums"]["campus_verification_method"]
             | null
@@ -431,14 +685,25 @@ export type Database = {
           created_at?: string
           email?: string | null
           id?: string
+          location_opt_in?: boolean
           name?: string | null
           premium_status?: boolean
           student_verified?: boolean
           updated_at?: string
+          user_city?: string | null
+          user_state?: string | null
           verification_notes?: string | null
           verification_strength_score?: number
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campus_domains"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stores: {
         Row: {
@@ -773,6 +1038,13 @@ export type Database = {
       deal_scope: "national" | "regional" | "local"
       deal_status: "active" | "expired" | "coming_soon"
       discount_type: "percentage" | "fixed" | "free_trial" | "bogo" | "other"
+      offer_status: "pending" | "active" | "expired"
+      partner_status: "lead" | "active" | "paused"
+      partner_type:
+        | "local_business"
+        | "regional_chain"
+        | "national_brand"
+        | "affiliate_network"
       submission_status: "pending" | "approved" | "rejected"
       verification_action_type:
         | "role_selected"
@@ -920,6 +1192,14 @@ export const Constants = {
       deal_scope: ["national", "regional", "local"],
       deal_status: ["active", "expired", "coming_soon"],
       discount_type: ["percentage", "fixed", "free_trial", "bogo", "other"],
+      offer_status: ["pending", "active", "expired"],
+      partner_status: ["lead", "active", "paused"],
+      partner_type: [
+        "local_business",
+        "regional_chain",
+        "national_brand",
+        "affiliate_network",
+      ],
       submission_status: ["pending", "approved", "rejected"],
       verification_action_type: [
         "role_selected",
