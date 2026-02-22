@@ -68,6 +68,7 @@ import {
   Radio,
   BarChart3,
   HelpCircle,
+  MapPin,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -227,6 +228,9 @@ type DealPerf = {
   healthScore: number;
   freshnessDays: number;
   lastCheckedAt: string | null;
+  dealScope: string;
+  partnerId: string | null;
+  partnerName: string | null;
 };
 
 type FilterState = {
@@ -235,6 +239,8 @@ type FilterState = {
   studentStatus: "all" | "verified" | "unverified";
   category: string;
   store: string;
+  scope: string;
+  partner: string;
 };
 
 // ── Main Component ──
@@ -250,6 +256,8 @@ export default function AffiliateAnalytics() {
     studentStatus: "all",
     category: "all",
     store: "all",
+    scope: "all",
+    partner: "all",
   });
   const [convForm, setConvForm] = useState({
     deal_id: "",
@@ -271,7 +279,7 @@ export default function AffiliateAnalytics() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("id, title, category, commission_rate, sponsored, visibility, last_checked_at, store_id, stores(id, name)")
+        .select("id, title, category, commission_rate, sponsored, visibility, last_checked_at, store_id, deal_scope, partner_id, stores(id, name), partners:partner_id(id, partner_name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as {
@@ -284,6 +292,9 @@ export default function AffiliateAnalytics() {
         last_checked_at: string | null;
         store_id: string;
         stores: { id: string; name: string } | null;
+        deal_scope: string;
+        partner_id: string | null;
+        partners: { id: string; partner_name: string } | null;
       }[];
     },
   });
@@ -428,6 +439,8 @@ export default function AffiliateAnalytics() {
         if (filters.sponsored === "organic" && d.sponsored) return false;
         if (filters.category !== "all" && d.category !== filters.category) return false;
         if (filters.store !== "all" && d.stores?.id !== filters.store) return false;
+        if (filters.scope !== "all" && d.deal_scope !== filters.scope) return false;
+        if (filters.partner !== "all" && d.partner_id !== filters.partner) return false;
         return true;
       })
       .map((d) => {
@@ -473,6 +486,9 @@ export default function AffiliateAnalytics() {
           healthScore,
           freshnessDays,
           lastCheckedAt: d.last_checked_at,
+          dealScope: d.deal_scope ?? "national",
+          partnerId: d.partner_id,
+          partnerName: (d as any).partners?.partner_name ?? null,
         };
       })
       .sort((a, b) => b.clicks - a.clicks);
@@ -589,10 +605,12 @@ export default function AffiliateAnalytics() {
     filters.studentStatus !== "all",
     filters.category !== "all",
     filters.store !== "all",
+    filters.scope !== "all",
+    filters.partner !== "all",
   ].filter(Boolean).length;
 
   function resetFilters() {
-    setFilters({ sponsored: "all", userType: "all", studentStatus: "all", category: "all", store: "all" });
+    setFilters({ sponsored: "all", userType: "all", studentStatus: "all", category: "all", store: "all", scope: "all", partner: "all" });
   }
 
   return (
@@ -681,7 +699,7 @@ export default function AffiliateAnalytics() {
               )}
             </CardHeader>
             <CardContent className="pt-0">
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
                 {/* Sponsored */}
                 <div>
                   <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Deal Type</label>
@@ -758,6 +776,38 @@ export default function AffiliateAnalytics() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Scope */}
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Scope</label>
+                  <Select value={filters.scope} onValueChange={(v) => setFilters((f) => ({ ...f, scope: v }))}>
+                    <SelectTrigger className="h-8 text-xs bg-secondary border-border">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All scopes</SelectItem>
+                      <SelectItem value="national">National</SelectItem>
+                      <SelectItem value="regional">Regional</SelectItem>
+                      <SelectItem value="local">Local</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Partner */}
+                <div>
+                  <label className="text-xs font-medium text-muted-foreground mb-1.5 block">Partner</label>
+                  <Select value={filters.partner} onValueChange={(v) => setFilters((f) => ({ ...f, partner: v }))}>
+                    <SelectTrigger className="h-8 text-xs bg-secondary border-border">
+                      <SelectValue placeholder="All partners" />
+                    </SelectTrigger>
+                    <SelectContent className="max-h-[200px]">
+                      <SelectItem value="all">All partners</SelectItem>
+                      {Array.from(new Map(deals.filter(d => d.partners).map(d => [d.partner_id!, (d as any).partners?.partner_name ?? "Unknown"])).entries()).map(([id, name]) => (
+                        <SelectItem key={id} value={id}>{name as string}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Active filter chips */}
@@ -786,6 +836,16 @@ export default function AffiliateAnalytics() {
                   {filters.store !== "all" && (
                     <Badge className="text-[11px] bg-primary/10 text-primary border-primary/20 cursor-pointer" onClick={() => setFilters((f) => ({ ...f, store: "all" }))}>
                       {allStores.find((s) => s.id === filters.store)?.name ?? "Store"} ×
+                    </Badge>
+                  )}
+                  {filters.scope !== "all" && (
+                    <Badge className="text-[11px] bg-primary/10 text-primary border-primary/20 cursor-pointer" onClick={() => setFilters((f) => ({ ...f, scope: "all" }))}>
+                      {filters.scope} scope ×
+                    </Badge>
+                  )}
+                  {filters.partner !== "all" && (
+                    <Badge className="text-[11px] bg-primary/10 text-primary border-primary/20 cursor-pointer" onClick={() => setFilters((f) => ({ ...f, partner: "all" }))}>
+                      Partner ×
                     </Badge>
                   )}
                 </div>
@@ -836,6 +896,41 @@ export default function AffiliateAnalytics() {
             tooltip="Percentage of total affiliate revenue attributed to sponsored deal placements."
           />
         </div>
+
+        {/* ── Row 3: Local KPIs ── */}
+        {(() => {
+          const localDealPerf = dealPerf.filter(d => d.dealScope === "local");
+          const localClicks = localDealPerf.reduce((s, d) => s + d.clicks, 0);
+          const localConvs = localDealPerf.reduce((s, d) => s + d.conversions, 0);
+          const localRev = localDealPerf.reduce((s, d) => s + d.totalRevenue, 0);
+          const localEpc = localClicks > 0 ? localRev / localClicks : 0;
+          const topPartners = Array.from(
+            localDealPerf.reduce((map, d) => {
+              if (d.partnerName) map.set(d.partnerName, (map.get(d.partnerName) ?? 0) + d.clicks);
+              return map;
+            }, new Map<string, number>())
+          ).sort((a, b) => b[1] - a[1]).slice(0, 3);
+          return (
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <KPICard title="Local Clicks" value={localClicks.toLocaleString()} icon={MapPin} tooltip="Clicks on local-scope deals" />
+              <KPICard title="Local Conversions" value={localConvs.toLocaleString()} icon={TrendingUp} tooltip="Conversions from local-scope deals" />
+              <KPICard title="Local EPC" value={`$${localEpc.toFixed(4)}`} icon={Zap} tooltip="Earnings per click for local deals" />
+              <Card className="border-border bg-card">
+                <CardContent className="p-5">
+                  <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">Top Partners by Clicks</p>
+                  {topPartners.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No local partner data</p>
+                  ) : topPartners.map(([name, clicks]) => (
+                    <div key={name} className="flex justify-between text-xs py-1">
+                      <span className="text-foreground font-medium truncate">{name}</span>
+                      <span className="text-muted-foreground">{clicks} clicks</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+          );
+        })()}
 
         {/* ── Conversion Funnel + Premium Revenue + Fraud ── */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1322,6 +1417,8 @@ export default function AffiliateAnalytics() {
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="text-xs">Deal</TableHead>
                     <TableHead className="text-xs">Category</TableHead>
+                    <TableHead className="text-xs">Scope</TableHead>
+                    <TableHead className="text-xs">Partner</TableHead>
                     <TableHead className="text-xs text-center">Health</TableHead>
                     <TableHead className="text-xs text-right">Clicks</TableHead>
                     <TableHead className="text-xs text-right">Conv.</TableHead>
@@ -1352,6 +1449,12 @@ export default function AffiliateAnalytics() {
                         <TableCell>
                           <Badge variant="outline" className="text-[10px] bg-secondary border-border">{d.category ?? "—"}</Badge>
                         </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={`text-[10px] ${d.dealScope === "local" ? "bg-accent/10 text-accent border-accent/30" : d.dealScope === "regional" ? "bg-gold/10 text-gold border-gold/30" : "bg-secondary border-border"}`}>
+                            {d.dealScope}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground truncate max-w-[100px]">{d.partnerName ?? "—"}</TableCell>
                         <TableCell className="text-center">
                           <Badge className={`text-[10px] font-bold ${hb.className}`}>
                             <Activity className="h-3 w-3 mr-0.5" /> {hb.label}
@@ -1370,7 +1473,7 @@ export default function AffiliateAnalytics() {
                     );
                   })}
                   {dealPerf.length === 0 && (
-                    <TableRow><TableCell colSpan={9} className="text-center text-sm text-muted-foreground py-8">No deals match the current filters</TableCell></TableRow>
+                    <TableRow><TableCell colSpan={11} className="text-center text-sm text-muted-foreground py-8">No deals match the current filters</TableCell></TableRow>
                   )}
                 </TableBody>
               </Table>

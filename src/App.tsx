@@ -30,6 +30,8 @@ import Categories from "./pages/Categories";
 import CategoryDetail from "./pages/CategoryDetail";
 import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
+import PartnerApply from "./pages/PartnerApply";
+import PartnerRequest from "./pages/PartnerRequest";
 
 const queryClient = new QueryClient();
 
@@ -51,6 +53,8 @@ const App = () => (
             <Route path="/out/:dealId" element={<OutboundRedirect />} />
             <Route path="/go/:dealId" element={<OutboundRedirect />} />
             <Route path="/deals/:dealId" element={<DealDetail />} />
+            <Route path="/partners/apply" element={<PartnerApply />} />
+            <Route path="/partners/request" element={<PartnerRequest />} />
 
             {/* Protected routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

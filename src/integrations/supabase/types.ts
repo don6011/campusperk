@@ -510,6 +510,11 @@ export type Database = {
           partner_id: string
           redemption_instructions: string | null
           requires_campus_verification: boolean
+          sponsor_end_at: string | null
+          sponsor_notes: string | null
+          sponsor_start_at: string | null
+          sponsor_tier: number | null
+          sponsored: boolean
           start_at: string | null
           status: Database["public"]["Enums"]["offer_status"]
           terms: string | null
@@ -527,6 +532,11 @@ export type Database = {
           partner_id: string
           redemption_instructions?: string | null
           requires_campus_verification?: boolean
+          sponsor_end_at?: string | null
+          sponsor_notes?: string | null
+          sponsor_start_at?: string | null
+          sponsor_tier?: number | null
+          sponsored?: boolean
           start_at?: string | null
           status?: Database["public"]["Enums"]["offer_status"]
           terms?: string | null
@@ -544,6 +554,11 @@ export type Database = {
           partner_id?: string
           redemption_instructions?: string | null
           requires_campus_verification?: boolean
+          sponsor_end_at?: string | null
+          sponsor_notes?: string | null
+          sponsor_start_at?: string | null
+          sponsor_tier?: number | null
+          sponsored?: boolean
           start_at?: string | null
           status?: Database["public"]["Enums"]["offer_status"]
           terms?: string | null

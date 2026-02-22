@@ -598,10 +598,19 @@ function LocationOptInCard() {
           )}
 
           {!optIn && (
-            <Button onClick={handleSave} disabled={saving} variant="outline" size="sm" className="gap-2">
-              {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
-              Save
-            </Button>
+            <div className="space-y-3">
+              <div className="grid grid-cols-2 gap-2">
+                {["🍔 Campus dining", "💪 Local gyms", "🏠 Student housing perks", "🚌 Transit discounts"].map(item => (
+                  <div key={item} className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-2">
+                    {item}
+                  </div>
+                ))}
+              </div>
+              <Button onClick={handleSave} disabled={saving} variant="outline" size="sm" className="gap-2">
+                {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
+                Save
+              </Button>
+            </div>
           )}
         </CardContent>
       </Card>
