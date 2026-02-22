@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Search, Plus, Building2, MapPin, Tag, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Search, Plus, Building2, MapPin, Tag, Loader2, Pencil, Trash2, Sparkles } from "lucide-react";
 import { format } from "date-fns";
 
 const PARTNER_TYPES = ["local_business", "regional_chain", "national_brand", "affiliate_network"] as const;
@@ -104,6 +104,7 @@ export default function PartnersManager() {
     offer_title: "", offer_description: "", discount_value: "", deal_type: "percentage" as string,
     requires_campus_verification: false, eligible_roles: [] as string[],
     start_at: "", end_at: "", redemption_instructions: "", terms: "", status: "pending" as string,
+    sponsored: false, sponsor_tier: 1, sponsor_start_at: "", sponsor_end_at: "", sponsor_notes: "",
   });
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
 
@@ -200,6 +201,11 @@ export default function PartnersManager() {
         start_at: oForm.start_at || null, end_at: oForm.end_at || null,
         redemption_instructions: oForm.redemption_instructions || null,
         terms: oForm.terms || null, status: oForm.status as any,
+        sponsored: oForm.sponsored,
+        sponsor_tier: oForm.sponsored ? oForm.sponsor_tier : null,
+        sponsor_start_at: oForm.sponsored && oForm.sponsor_start_at ? oForm.sponsor_start_at : null,
+        sponsor_end_at: oForm.sponsored && oForm.sponsor_end_at ? oForm.sponsor_end_at : null,
+        sponsor_notes: oForm.sponsor_notes || null,
       };
       if (editingOfferId) {
         const { error } = await supabase.from("partner_offers").update(payload).eq("id", editingOfferId);
@@ -247,7 +253,7 @@ export default function PartnersManager() {
   };
 
   const openNewOffer = () => {
-    setOForm({ offer_title: "", offer_description: "", discount_value: "", deal_type: "percentage", requires_campus_verification: false, eligible_roles: [], start_at: "", end_at: "", redemption_instructions: "", terms: "", status: "pending" });
+    setOForm({ offer_title: "", offer_description: "", discount_value: "", deal_type: "percentage", requires_campus_verification: false, eligible_roles: [], start_at: "", end_at: "", redemption_instructions: "", terms: "", status: "pending", sponsored: false, sponsor_tier: 1, sponsor_start_at: "", sponsor_end_at: "", sponsor_notes: "" });
     setEditingOfferId(null);
     setOfferDialog(true);
   };
@@ -258,6 +264,9 @@ export default function PartnersManager() {
       deal_type: o.deal_type, requires_campus_verification: o.requires_campus_verification,
       eligible_roles: o.eligible_roles || [], start_at: o.start_at?.slice(0, 16) || "", end_at: o.end_at?.slice(0, 16) || "",
       redemption_instructions: o.redemption_instructions || "", terms: o.terms || "", status: o.status,
+      sponsored: (o as any).sponsored ?? false, sponsor_tier: (o as any).sponsor_tier ?? 1,
+      sponsor_start_at: (o as any).sponsor_start_at?.slice(0, 16) || "", sponsor_end_at: (o as any).sponsor_end_at?.slice(0, 16) || "",
+      sponsor_notes: (o as any).sponsor_notes || "",
     });
     setEditingOfferId(o.id);
     setOfferDialog(true);
@@ -601,6 +610,47 @@ export default function PartnersManager() {
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Terms</label>
               <Textarea value={oForm.terms} onChange={e => setOForm(o => ({ ...o, terms: e.target.value }))} rows={2} />
+            </div>
+
+            {/* Sponsored Controls */}
+            <div className="space-y-3 pt-2 border-t border-border">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium flex items-center gap-2">
+                  <Sparkles className="h-3.5 w-3.5 text-gold" /> Sponsored
+                </label>
+                <Switch checked={oForm.sponsored} onCheckedChange={v => setOForm(o => ({ ...o, sponsored: v }))} />
+              </div>
+              {oForm.sponsored && (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">Tier (1-3)</label>
+                      <Select value={String(oForm.sponsor_tier)} onValueChange={v => setOForm(o => ({ ...o, sponsor_tier: Number(v) }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="1">Tier 1 (Basic)</SelectItem>
+                          <SelectItem value="2">Tier 2 (Featured)</SelectItem>
+                          <SelectItem value="3">Tier 3 (Premium)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">Sponsor Notes</label>
+                      <Input value={oForm.sponsor_notes} onChange={e => setOForm(o => ({ ...o, sponsor_notes: e.target.value }))} placeholder="Internal notes" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">Sponsor Start</label>
+                      <Input type="datetime-local" value={oForm.sponsor_start_at} onChange={e => setOForm(o => ({ ...o, sponsor_start_at: e.target.value }))} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">Sponsor End</label>
+                      <Input type="datetime-local" value={oForm.sponsor_end_at} onChange={e => setOForm(o => ({ ...o, sponsor_end_at: e.target.value }))} />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
           <DialogFooter>

@@ -42,6 +42,8 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
+import { toast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -659,6 +661,7 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
   const locationEnabled = profile?.location_opt_in ?? false;
   const userCity = profile?.user_city || profile?.campus_city;
   const userState = profile?.user_state || profile?.campus_state;
+  const [subscribing, setSubscribing] = useState(false);
 
   // Filter local/regional deals matching user location
   const localDeals = deals.filter((d: any) => {
@@ -668,34 +671,90 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
     const regions: string[] = d.eligible_regions ?? [];
     if (cities.length > 0 && userCity && cities.some((c: string) => c.toLowerCase() === userCity.toLowerCase())) return true;
     if (regions.length > 0 && userState && regions.some((r: string) => r.toLowerCase() === userState.toLowerCase())) return true;
-    // If deal has no geo constraints but is local, show it
     if (cities.length === 0 && regions.length === 0) return true;
     return false;
   }).slice(0, 6);
+
+  const handleLocalAlert = async () => {
+    if (!userId) return;
+    setSubscribing(true);
+    try {
+      await supabase.from("alert_subscriptions").insert({
+        user_id: userId,
+        alert_type: "local_deals",
+        categories: [],
+      });
+      toast({ title: "You're subscribed!", description: "We'll notify you when local deals drop near your campus." });
+    } catch {
+      toast({ title: "Already subscribed or error", variant: "destructive" });
+    } finally {
+      setSubscribing(false);
+    }
+  };
 
   if (!locationEnabled) {
     return (
       <section>
         <Card className="border-primary/20 bg-card relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
-          <CardContent className="relative z-10 p-6 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-              <MapPin className="h-6 w-6 text-primary" />
+          <CardContent className="relative z-10 p-6 space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <MapPin className="h-6 w-6 text-primary" />
+              </div>
+              <div className="flex-1">
+                <h3 className="font-display text-base font-semibold text-foreground">Enable Local Deals</h3>
+                <p className="text-xs text-muted-foreground mt-0.5">Get deals from businesses near your campus.</p>
+              </div>
+              <Button size="sm" onClick={() => navigate("/settings")} className="gap-1.5 shrink-0">
+                <MapPin className="h-3.5 w-3.5" /> Enable
+              </Button>
             </div>
-            <div className="flex-1">
-              <h3 className="font-display text-base font-semibold text-foreground">Enable Local Deals</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">Get deals from businesses near your campus. No GPS required.</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+              {["🍔 Campus dining", "💪 Local gyms", "🏠 Student housing perks", "🚌 Transit discounts"].map(item => (
+                <div key={item} className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-2">
+                  {item}
+                </div>
+              ))}
             </div>
-            <Button size="sm" onClick={() => navigate("/settings")} className="gap-1.5 shrink-0">
-              <MapPin className="h-3.5 w-3.5" /> Enable
-            </Button>
           </CardContent>
         </Card>
       </section>
     );
   }
 
-  if (localDeals.length === 0) return null;
+  if (localDeals.length === 0) {
+    return (
+      <section>
+        <Card className="border-border bg-card">
+          <CardContent className="p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+                <MapPin className="h-5 w-5 text-muted-foreground" />
+              </div>
+              <div>
+                <h3 className="font-display text-sm font-semibold text-foreground">
+                  No local deals yet in {userCity || "your area"}{userState ? `, ${userState}` : ""} — we're adding partners weekly.
+                </h3>
+                <p className="text-[11px] text-muted-foreground mt-0.5">We use city/state only. No GPS required.</p>
+              </div>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Link to="/partners/request">
+                <Button size="sm" variant="outline" className="gap-1.5 text-xs">
+                  <MapPin className="h-3.5 w-3.5" /> Request a local partner
+                </Button>
+              </Link>
+              <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={handleLocalAlert} disabled={subscribing}>
+                {subscribing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BellRing className="h-3.5 w-3.5" />}
+                Notify me when local deals drop
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+    );
+  }
 
   return (
     <section>
