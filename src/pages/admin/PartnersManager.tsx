@@ -104,7 +104,7 @@ export default function PartnersManager() {
     offer_title: "", offer_description: "", discount_value: "", deal_type: "percentage" as string,
     requires_campus_verification: false, eligible_roles: [] as string[],
     start_at: "", end_at: "", redemption_instructions: "", terms: "", status: "pending" as string,
-    sponsored: false, sponsor_tier: 1, sponsor_start_at: "", sponsor_end_at: "", sponsor_notes: "",
+    sponsored: false, sponsor_tier: 1, sponsor_priority: 0, sponsor_start_at: "", sponsor_end_at: "", sponsor_notes: "",
   });
   const [editingOfferId, setEditingOfferId] = useState<string | null>(null);
 
@@ -203,6 +203,7 @@ export default function PartnersManager() {
         terms: oForm.terms || null, status: oForm.status as any,
         sponsored: oForm.sponsored,
         sponsor_tier: oForm.sponsored ? oForm.sponsor_tier : null,
+        sponsor_priority: oForm.sponsored ? oForm.sponsor_priority : 0,
         sponsor_start_at: oForm.sponsored && oForm.sponsor_start_at ? oForm.sponsor_start_at : null,
         sponsor_end_at: oForm.sponsored && oForm.sponsor_end_at ? oForm.sponsor_end_at : null,
         sponsor_notes: oForm.sponsor_notes || null,
@@ -253,7 +254,7 @@ export default function PartnersManager() {
   };
 
   const openNewOffer = () => {
-    setOForm({ offer_title: "", offer_description: "", discount_value: "", deal_type: "percentage", requires_campus_verification: false, eligible_roles: [], start_at: "", end_at: "", redemption_instructions: "", terms: "", status: "pending", sponsored: false, sponsor_tier: 1, sponsor_start_at: "", sponsor_end_at: "", sponsor_notes: "" });
+    setOForm({ offer_title: "", offer_description: "", discount_value: "", deal_type: "percentage", requires_campus_verification: false, eligible_roles: [], start_at: "", end_at: "", redemption_instructions: "", terms: "", status: "pending", sponsored: false, sponsor_tier: 1, sponsor_priority: 0, sponsor_start_at: "", sponsor_end_at: "", sponsor_notes: "" });
     setEditingOfferId(null);
     setOfferDialog(true);
   };
@@ -265,6 +266,7 @@ export default function PartnersManager() {
       eligible_roles: o.eligible_roles || [], start_at: o.start_at?.slice(0, 16) || "", end_at: o.end_at?.slice(0, 16) || "",
       redemption_instructions: o.redemption_instructions || "", terms: o.terms || "", status: o.status,
       sponsored: (o as any).sponsored ?? false, sponsor_tier: (o as any).sponsor_tier ?? 1,
+      sponsor_priority: (o as any).sponsor_priority ?? 0,
       sponsor_start_at: (o as any).sponsor_start_at?.slice(0, 16) || "", sponsor_end_at: (o as any).sponsor_end_at?.slice(0, 16) || "",
       sponsor_notes: (o as any).sponsor_notes || "",
     });
@@ -412,20 +414,30 @@ export default function PartnersManager() {
                           <TableHead>Offer</TableHead>
                           <TableHead>Discount</TableHead>
                           <TableHead>Type</TableHead>
-                          <TableHead>Status</TableHead>
-                          <TableHead>End</TableHead>
-                          <TableHead className="text-right">Actions</TableHead>
+            <TableHead>Status</TableHead>
+            <TableHead>Sponsored</TableHead>
+            <TableHead>End</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {offers.length === 0 ? (
-                          <TableRow><TableCell colSpan={6} className="text-center py-6 text-muted-foreground text-sm">No offers.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground text-sm">No offers.</TableCell></TableRow>
                         ) : offers.map(o => (
                           <TableRow key={o.id}>
                             <TableCell className="text-sm font-medium">{o.offer_title}</TableCell>
                             <TableCell className="text-sm">{o.discount_value || "—"}</TableCell>
                             <TableCell className="text-sm capitalize">{o.deal_type.replace("_", " ")}</TableCell>
                             <TableCell>{statusBadge(o.status)}</TableCell>
+                            <TableCell>
+                              {(o as any).sponsored ? (
+                                <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] gap-1">
+                                  <Sparkles className="h-2.5 w-2.5" /> T{(o as any).sponsor_tier ?? 1} / P{(o as any).sponsor_priority ?? 0}
+                                </Badge>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
                             <TableCell className="text-sm text-muted-foreground">{o.end_at ? format(new Date(o.end_at), "MMM d, yyyy") : "—"}</TableCell>
                             <TableCell className="text-right space-x-1">
                               <Button variant="ghost" size="sm" onClick={() => openEditOffer(o)}><Pencil className="h-3 w-3" /></Button>
@@ -622,7 +634,7 @@ export default function PartnersManager() {
               </div>
               {oForm.sponsored && (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-3 gap-3">
                     <div className="space-y-1.5">
                       <label className="text-sm font-medium">Tier (1-3)</label>
                       <Select value={String(oForm.sponsor_tier)} onValueChange={v => setOForm(o => ({ ...o, sponsor_tier: Number(v) }))}>
@@ -633,6 +645,10 @@ export default function PartnersManager() {
                           <SelectItem value="3">Tier 3 (Premium)</SelectItem>
                         </SelectContent>
                       </Select>
+                    </div>
+                    <div className="space-y-1.5">
+                      <label className="text-sm font-medium">Priority</label>
+                      <Input type="number" min={0} value={oForm.sponsor_priority} onChange={e => setOForm(o => ({ ...o, sponsor_priority: Number(e.target.value) }))} placeholder="0" />
                     </div>
                     <div className="space-y-1.5">
                       <label className="text-sm font-medium">Sponsor Notes</label>

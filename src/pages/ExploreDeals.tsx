@@ -24,7 +24,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
-import { SponsoredDealRow } from "@/components/SponsoredDealRow";
+import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealRow";
 
 // Types for the joined query result
 interface DealWithStore {
@@ -181,14 +181,17 @@ export default function ExploreDeals() {
   }, [deals]);
 
   const sponsoredDeals = useMemo(() => {
-    const now = new Date();
     return deals.filter((d) => {
-      if (!d.sponsored || d.status !== "active") return false;
-      if (d.sponsor_start_at && new Date(d.sponsor_start_at) > now) return false;
-      if (d.sponsor_end_at && new Date(d.sponsor_end_at) < now) return false;
+      if (!isSponsoredActive(d) || d.status !== "active") return false;
+      // If scope filter is local/regional, only show matching
+      if (selectedScope === "local" && (d as any).deal_scope !== "local") return false;
+      if (selectedScope === "regional" && (d as any).deal_scope !== "regional") return false;
       return true;
-    });
-  }, [deals]);
+    }).sort((a, b) =>
+      ((b as any).sponsor_priority ?? 0) - ((a as any).sponsor_priority ?? 0) ||
+      (b.sponsor_tier ?? 0) - (a.sponsor_tier ?? 0)
+    );
+  }, [deals, selectedScope]);
 
   const scrollCarousel = (dir: "left" | "right") => {
     if (!carouselRef.current) return;
@@ -333,7 +336,7 @@ export default function ExploreDeals() {
         {/* Sponsored Placements */}
         {sponsoredDeals.length > 0 && (
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
-            <SponsoredDealRow deals={sponsoredDeals} />
+            <SponsoredDealRow deals={sponsoredDeals} scope={selectedScope !== "all" ? selectedScope : undefined} />
           </motion.div>
         )}
 
