@@ -2,33 +2,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import {
-  ArrowRight,
-  Heart,
-  Clock,
-  Shield,
-  Crown,
-  TrendingUp,
-  Bell,
-  Tag,
-  ChevronRight,
-  ExternalLink,
-  Sparkles,
-  AlertTriangle,
-  ShoppingBag,
-  Monitor,
-  Cpu,
-  CreditCard,
-  Utensils,
-  Plane,
-  Eye,
-  Bookmark,
-  DollarSign,
-  Zap,
-  Lock,
-  BellRing,
-  BarChart3,
-  Info,
-  MapPin,
+  ArrowRight, Heart, Clock, Shield, Crown, TrendingUp, Bell, Tag, ChevronRight,
+  ExternalLink, Sparkles, AlertTriangle, ShoppingBag, Monitor, Cpu, CreditCard,
+  Utensils, Plane, Eye, Bookmark, DollarSign, Zap, Lock, BellRing, BarChart3,
+  Info, MapPin,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -44,6 +21,7 @@ import { useQuery } from "@tanstack/react-query";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
+import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealRow";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -62,6 +40,13 @@ type DealRow = {
   status: string;
   featured: boolean;
   sponsored: boolean;
+  sponsor_tier: number | null;
+  sponsor_start_at: string | null;
+  sponsor_end_at: string | null;
+  sponsor_priority: number | null;
+  deal_scope: string | null;
+  eligible_cities: string[] | null;
+  eligible_regions: string[] | null;
   requires_edu_email: boolean;
   expires_at: string | null;
   affiliate_link_url: string | null;
@@ -204,7 +189,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("id, title, description, discount_value, status, featured, sponsored, requires_edu_email, expires_at, affiliate_link_url, direct_link_url, updated_at, category, visibility, stores(name, logo_url)")
+        .select("id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, requires_edu_email, expires_at, affiliate_link_url, direct_link_url, updated_at, category, visibility, stores(name, logo_url)")
         .eq("status", "active")
         .order("updated_at", { ascending: false })
         .limit(50);
@@ -756,8 +741,23 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
     );
   }
 
+  // Get sponsored local deals
+  const sponsoredLocalDeals = deals.filter((d: any) => {
+    if (!isSponsoredActive(d)) return false;
+    if (d.deal_scope !== "local" && d.deal_scope !== "regional") return false;
+    if (!locationEnabled) return false;
+    const cities: string[] = d.eligible_cities ?? [];
+    const regions: string[] = d.eligible_regions ?? [];
+    if (cities.length > 0 && userCity && cities.some((c: string) => c.toLowerCase() === userCity.toLowerCase())) return true;
+    if (regions.length > 0 && userState && regions.some((r: string) => r.toLowerCase() === userState.toLowerCase())) return true;
+    if (cities.length === 0 && regions.length === 0) return true;
+    return false;
+  });
+
+  const nonSponsoredLocalDeals = localDeals.filter((d: any) => !isSponsoredActive(d));
+
   return (
-    <section>
+    <section className="space-y-4">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
           <MapPin className="h-5 w-5 text-accent" /> Local Near Campus
@@ -766,8 +766,25 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
           View all <ChevronRight className="h-3 w-3" />
         </Link>
       </div>
+
+      {/* Sponsored row first */}
+      {sponsoredLocalDeals.length > 0 && (
+        <SponsoredDealRow
+          deals={sponsoredLocalDeals.map(d => ({
+            id: d.id,
+            title: d.title,
+            discount_value: d.discount_value,
+            sponsor_tier: (d as any).sponsor_tier,
+            sponsor_priority: (d as any).sponsor_priority,
+            stores: d.stores ?? { name: "Unknown", logo_url: null },
+          }))}
+          label="Sponsored Local"
+          scope="local"
+        />
+      )}
+
       <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth">
-        {localDeals.map((deal, i) => (
+        {(nonSponsoredLocalDeals.length > 0 ? nonSponsoredLocalDeals : localDeals).map((deal, i) => (
           <motion.div key={deal.id} className="min-w-[280px] max-w-[320px] snap-start shrink-0" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08, duration: 0.4 }}>
             <DealCard deal={deal} index={i} favIds={favIds} onToggleFav={onToggleFav} isPremiumUser={isPremium} userId={userId} onUpgrade={onUpgrade} />
           </motion.div>

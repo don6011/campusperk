@@ -26,6 +26,7 @@ export type Database = {
           id: string
           ip_hint: string | null
           is_premium_user: boolean | null
+          is_sponsored: boolean | null
           is_verified_student: boolean | null
           referrer: string | null
           user_id: string | null
@@ -41,6 +42,7 @@ export type Database = {
           id?: string
           ip_hint?: string | null
           is_premium_user?: boolean | null
+          is_sponsored?: boolean | null
           is_verified_student?: boolean | null
           referrer?: string | null
           user_id?: string | null
@@ -56,6 +58,7 @@ export type Database = {
           id?: string
           ip_hint?: string | null
           is_premium_user?: boolean | null
+          is_sponsored?: boolean | null
           is_verified_student?: boolean | null
           referrer?: string | null
           user_id?: string | null
@@ -310,6 +313,8 @@ export type Database = {
           requires_edu_email: boolean
           requires_role_verification: boolean
           sponsor_end_at: string | null
+          sponsor_priority: number
+          sponsor_source: string | null
           sponsor_start_at: string | null
           sponsor_tier: number | null
           sponsored: boolean
@@ -346,6 +351,8 @@ export type Database = {
           requires_edu_email?: boolean
           requires_role_verification?: boolean
           sponsor_end_at?: string | null
+          sponsor_priority?: number
+          sponsor_source?: string | null
           sponsor_start_at?: string | null
           sponsor_tier?: number | null
           sponsored?: boolean
@@ -382,6 +389,8 @@ export type Database = {
           requires_edu_email?: boolean
           requires_role_verification?: boolean
           sponsor_end_at?: string | null
+          sponsor_priority?: number
+          sponsor_source?: string | null
           sponsor_start_at?: string | null
           sponsor_tier?: number | null
           sponsored?: boolean
@@ -512,6 +521,7 @@ export type Database = {
           requires_campus_verification: boolean
           sponsor_end_at: string | null
           sponsor_notes: string | null
+          sponsor_priority: number
           sponsor_start_at: string | null
           sponsor_tier: number | null
           sponsored: boolean
@@ -534,6 +544,7 @@ export type Database = {
           requires_campus_verification?: boolean
           sponsor_end_at?: string | null
           sponsor_notes?: string | null
+          sponsor_priority?: number
           sponsor_start_at?: string | null
           sponsor_tier?: number | null
           sponsored?: boolean
@@ -556,6 +567,7 @@ export type Database = {
           requires_campus_verification?: boolean
           sponsor_end_at?: string | null
           sponsor_notes?: string | null
+          sponsor_priority?: number
           sponsor_start_at?: string | null
           sponsor_tier?: number | null
           sponsored?: boolean
@@ -719,6 +731,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sponsored_impressions: {
+        Row: {
+          campus_id: string | null
+          created_at: string
+          deal_id: string | null
+          id: string
+          offer_id: string | null
+          scope: string | null
+          user_id: string | null
+        }
+        Insert: {
+          campus_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          offer_id?: string | null
+          scope?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          campus_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          offer_id?: string | null
+          scope?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       stores: {
         Row: {
@@ -1060,6 +1102,7 @@ export type Database = {
         | "regional_chain"
         | "national_brand"
         | "affiliate_network"
+      sponsor_source_type: "manual" | "partner_offer"
       submission_status: "pending" | "approved" | "rejected"
       verification_action_type:
         | "role_selected"
@@ -1215,6 +1258,7 @@ export const Constants = {
         "national_brand",
         "affiliate_network",
       ],
+      sponsor_source_type: ["manual", "partner_offer"],
       submission_status: ["pending", "approved", "rejected"],
       verification_action_type: [
         "role_selected",

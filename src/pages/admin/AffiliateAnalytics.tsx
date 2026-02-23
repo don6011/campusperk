@@ -568,18 +568,68 @@ export default function AffiliateAnalytics() {
     .map(([name, v]) => ({ name, ...v }))
     .sort((a, b) => b.revenue - a.revenue);
 
-  const dailyMap = new Map<string, { clicks: number; revenue: number; conversions: number }>();
+  // Daily data with scope and sponsored breakdown
+  const dailyMap = new Map<string, { clicks: number; revenue: number; conversions: number; nationalClicks: number; regionalClicks: number; localClicks: number; sponsoredRevenue: number; organicRevenue: number }>();
+  const dealScopeMap = new Map<string, string>();
+  const dealSponsoredMap = new Map<string, boolean>();
+  deals.forEach((d) => {
+    dealScopeMap.set(d.id, d.deal_scope ?? "national");
+    dealSponsoredMap.set(d.id, d.sponsored);
+  });
+
   filteredClicks.forEach((c) => {
     const day = new Date(c.clicked_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    const prev = dailyMap.get(day) ?? { clicks: 0, revenue: 0, conversions: 0 };
-    dailyMap.set(day, { clicks: prev.clicks + 1, revenue: prev.revenue, conversions: prev.conversions });
+    const prev = dailyMap.get(day) ?? { clicks: 0, revenue: 0, conversions: 0, nationalClicks: 0, regionalClicks: 0, localClicks: 0, sponsoredRevenue: 0, organicRevenue: 0 };
+    const scope = dealScopeMap.get(c.deal_id) ?? "national";
+    dailyMap.set(day, {
+      clicks: prev.clicks + 1,
+      revenue: prev.revenue,
+      conversions: prev.conversions,
+      nationalClicks: prev.nationalClicks + (scope === "national" ? 1 : 0),
+      regionalClicks: prev.regionalClicks + (scope === "regional" ? 1 : 0),
+      localClicks: prev.localClicks + (scope === "local" ? 1 : 0),
+      sponsoredRevenue: prev.sponsoredRevenue,
+      organicRevenue: prev.organicRevenue,
+    });
   });
   conversions.forEach((c) => {
     const day = new Date(c.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-    const prev = dailyMap.get(day) ?? { clicks: 0, revenue: 0, conversions: 0 };
-    dailyMap.set(day, { clicks: prev.clicks, revenue: prev.revenue + (c.commission_earned ?? 0), conversions: prev.conversions + 1 });
+    const prev = dailyMap.get(day) ?? { clicks: 0, revenue: 0, conversions: 0, nationalClicks: 0, regionalClicks: 0, localClicks: 0, sponsoredRevenue: 0, organicRevenue: 0 };
+    const isSponsored = dealSponsoredMap.get(c.deal_id) ?? false;
+    const rev = c.commission_earned ?? 0;
+    dailyMap.set(day, {
+      ...prev,
+      revenue: prev.revenue + rev,
+      conversions: prev.conversions + 1,
+      sponsoredRevenue: prev.sponsoredRevenue + (isSponsored ? rev : 0),
+      organicRevenue: prev.organicRevenue + (!isSponsored ? rev : 0),
+    });
   });
   const dailyClicks = Array.from(dailyMap.entries()).map(([date, v]) => ({ date, ...v }));
+
+  // Top Partners leaderboard
+  const partnerPerfMap = new Map<string, { name: string; clicks: number; epc: number; revenue: number }>();
+  dealPerf.forEach((d) => {
+    if (!d.partnerName) return;
+    const prev = partnerPerfMap.get(d.partnerName) ?? { name: d.partnerName, clicks: 0, epc: 0, revenue: 0 };
+    partnerPerfMap.set(d.partnerName, { name: d.partnerName, clicks: prev.clicks + d.clicks, revenue: prev.revenue + d.totalRevenue, epc: 0 });
+  });
+  const topPartners = Array.from(partnerPerfMap.values()).map(p => ({ ...p, epc: p.clicks > 0 ? p.revenue / p.clicks : 0 })).sort((a, b) => b.clicks - a.clicks).slice(0, 10);
+
+  // Top Campuses (from clicks user campus data — approximated from deals)
+  // We derive campus engagement from deal scope breakdowns
+  const campusPerfMap = new Map<string, { name: string; clicks: number; localClicks: number; revenue: number }>();
+  dealPerf.forEach((d) => {
+    const key = d.dealScope === "local" ? (d.partnerName ?? "Local") : (d.dealScope === "regional" ? "Regional" : "National");
+    const prev = campusPerfMap.get(key) ?? { name: key, clicks: 0, localClicks: 0, revenue: 0 };
+    campusPerfMap.set(key, {
+      name: key,
+      clicks: prev.clicks + d.clicks,
+      localClicks: prev.localClicks + (d.dealScope === "local" ? d.clicks : 0),
+      revenue: prev.revenue + d.totalRevenue,
+    });
+  });
+  const topCampuses = Array.from(campusPerfMap.values()).sort((a, b) => b.clicks - a.clicks).slice(0, 10);
 
   const revenueLeaderboard = [...dealPerf].sort((a, b) => b.totalRevenue - a.totalRevenue).slice(0, 5);
 
@@ -666,6 +716,8 @@ export default function AffiliateAnalytics() {
                     Deal: d.title,
                     Store: d.storeName,
                     Category: d.category ?? "",
+                    Scope: d.dealScope,
+                    Partner: d.partnerName ?? "",
                     Clicks: d.clicks,
                     Conversions: d.conversions,
                     ConfirmedRevenue: d.confirmedRevenue.toFixed(2),
@@ -1335,7 +1387,142 @@ export default function AffiliateAnalytics() {
           </Card>
         </div>
 
-        {/* ── Underperforming Deals ── */}
+        {/* ── Top Partners & Top Campuses Leaderboards ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Store className="h-4 w-4 text-primary" /> Top Partners
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => exportCSV(topPartners.map(p => ({ Partner: p.name, Clicks: p.clicks, EPC: p.epc.toFixed(4), Revenue: p.revenue.toFixed(2) })), "top-partners")}>
+                <Download className="h-3.5 w-3.5" /> Export
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs">Partner</TableHead>
+                    <TableHead className="text-xs text-right">Clicks</TableHead>
+                    <TableHead className="text-xs text-right">EPC</TableHead>
+                    <TableHead className="text-xs text-right">Est. Revenue</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topPartners.map((p) => (
+                    <TableRow key={p.name}>
+                      <TableCell className="text-sm font-medium">{p.name}</TableCell>
+                      <TableCell className="text-right text-sm">{p.clicks}</TableCell>
+                      <TableCell className="text-right text-sm text-muted-foreground">${p.epc.toFixed(4)}</TableCell>
+                      <TableCell className="text-right text-sm font-semibold text-accent">${p.revenue.toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {topPartners.length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-4">No partner data</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-accent" /> Top Campuses / Scopes
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => exportCSV(topCampuses.map(c => ({ Scope: c.name, Clicks: c.clicks, LocalClicks: c.localClicks, Revenue: c.revenue.toFixed(2) })), "top-campuses")}>
+                <Download className="h-3.5 w-3.5" /> Export
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs">Campus / Scope</TableHead>
+                    <TableHead className="text-xs text-right">Clicks</TableHead>
+                    <TableHead className="text-xs text-right">Local Clicks</TableHead>
+                    <TableHead className="text-xs text-right">Est. Revenue</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {topCampuses.map((c) => (
+                    <TableRow key={c.name}>
+                      <TableCell className="text-sm font-medium">{c.name}</TableCell>
+                      <TableCell className="text-right text-sm">{c.clicks}</TableCell>
+                      <TableCell className="text-right text-sm text-muted-foreground">{c.localClicks}</TableCell>
+                      <TableCell className="text-right text-sm font-semibold text-accent">${c.revenue.toFixed(2)}</TableCell>
+                    </TableRow>
+                  ))}
+                  {topCampuses.length === 0 && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-4">No campus data</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Daily Clicks by Scope + Daily Revenue Sponsored vs Organic ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Daily Clicks by Scope</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="h-[280px]">
+                {dailyClicks.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-sm text-muted-foreground">No data</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={dailyClicks}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                      <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                      <RechartsTooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                      <Bar dataKey="nationalClicks" name="National" stackId="scope" fill="hsl(var(--primary))" />
+                      <Bar dataKey="regionalClicks" name="Regional" stackId="scope" fill="hsl(var(--gold))" />
+                      <Bar dataKey="localClicks" name="Local" stackId="scope" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5"><span className="h-2 w-4 rounded-full bg-primary" /> National</span>
+                <span className="flex items-center gap-1.5"><span className="h-2 w-4 rounded-full bg-gold" /> Regional</span>
+                <span className="flex items-center gap-1.5"><span className="h-2 w-4 rounded-full bg-accent" /> Local</span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold">Daily Revenue: Sponsored vs Organic</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <div className="h-[280px]">
+                {dailyClicks.length === 0 ? (
+                  <div className="flex items-center justify-center h-full text-sm text-muted-foreground">No data</div>
+                ) : (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={dailyClicks}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                      <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                      <RechartsTooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "8px", fontSize: "12px" }} />
+                      <Bar dataKey="sponsoredRevenue" name="Sponsored" stackId="rev" fill="hsl(var(--gold))" />
+                      <Bar dataKey="organicRevenue" name="Organic" stackId="rev" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                )}
+              </div>
+              <div className="flex items-center gap-4 mt-2 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1.5"><span className="h-2 w-4 rounded-full bg-gold" /> Sponsored</span>
+                <span className="flex items-center gap-1.5"><span className="h-2 w-4 rounded-full bg-primary" /> Organic</span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {underperformingDeals.length > 0 && (
           <Card className="border-destructive/30 bg-card">
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
@@ -1406,7 +1593,7 @@ export default function AffiliateAnalytics() {
         <Card className="border-border bg-card">
           <CardHeader className="pb-2 flex flex-row items-center justify-between">
             <CardTitle className="text-sm font-semibold">All Deals Performance</CardTitle>
-            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => exportCSV(dealPerf.map((d) => ({ Deal: d.title, Store: d.storeName, Category: d.category ?? "", Clicks: d.clicks, Conversions: d.conversions, ConvRate: `${(d.convRate * 100).toFixed(1)}%`, ConfirmedRev: d.confirmedRevenue.toFixed(2), EstimatedRev: d.estimatedRevenue.toFixed(2), EPC: d.epc.toFixed(4), RPM: (d.epc * 1000).toFixed(2), Commission: `${d.commissionRate}%`, HealthScore: d.healthScore, Sponsored: d.sponsored ? "Yes" : "No" })), "all-deals-performance")}>
+            <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => exportCSV(dealPerf.map((d) => ({ Deal: d.title, Store: d.storeName, Category: d.category ?? "", Scope: d.dealScope, Partner: d.partnerName ?? "", Clicks: d.clicks, Conversions: d.conversions, ConvRate: `${(d.convRate * 100).toFixed(1)}%`, ConfirmedRev: d.confirmedRevenue.toFixed(2), EstimatedRev: d.estimatedRevenue.toFixed(2), EPC: d.epc.toFixed(4), RPM: (d.epc * 1000).toFixed(2), Commission: `${d.commissionRate}%`, HealthScore: d.healthScore, Sponsored: d.sponsored ? "Yes" : "No" })), "all-deals-performance")}>
               <Download className="h-3.5 w-3.5" /> Export
             </Button>
           </CardHeader>

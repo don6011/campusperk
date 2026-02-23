@@ -27,7 +27,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
-import { SponsoredDealRow } from "@/components/SponsoredDealRow";
+import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealRow";
 
 interface DealWithStore {
   id: string;
@@ -244,13 +244,13 @@ export default function CategoryDetail() {
   }, [deals]);
 
   const sponsoredDeals = useMemo(() => {
-    const now = new Date();
     return deals.filter((d) => {
-      if (!d.sponsored || d.status !== "active") return false;
-      if (d.sponsor_start_at && new Date(d.sponsor_start_at) > now) return false;
-      if (d.sponsor_end_at && new Date(d.sponsor_end_at) < now) return false;
+      if (!isSponsoredActive(d) || d.status !== "active") return false;
       return true;
-    });
+    }).sort((a, b) =>
+      ((b as any).sponsor_priority ?? 0) - ((a as any).sponsor_priority ?? 0) ||
+      (b.sponsor_tier ?? 0) - (a.sponsor_tier ?? 0)
+    );
   }, [deals]);
 
   const filtered = useMemo(() => {
@@ -405,7 +405,7 @@ export default function CategoryDetail() {
         {/* Sponsored Placements */}
         {sponsoredDeals.length > 0 && (
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2}>
-            <SponsoredDealRow deals={sponsoredDeals} />
+            <SponsoredDealRow deals={sponsoredDeals} scope={slug} />
           </motion.div>
         )}
 
