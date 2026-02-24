@@ -164,6 +164,7 @@ export type Database = {
           latitude: number | null
           longitude: number | null
           state: string | null
+          state_code: string | null
           updated_at: string
           verification_confidence: number
         }
@@ -179,6 +180,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           state?: string | null
+          state_code?: string | null
           updated_at?: string
           verification_confidence?: number
         }
@@ -194,6 +196,7 @@ export type Database = {
           latitude?: number | null
           longitude?: number | null
           state?: string | null
+          state_code?: string | null
           updated_at?: string
           verification_confidence?: number
         }
@@ -466,6 +469,7 @@ export type Database = {
           partner_id: string
           radius_miles: number
           state: string | null
+          state_code: string | null
           zip: string | null
         }
         Insert: {
@@ -480,6 +484,7 @@ export type Database = {
           partner_id: string
           radius_miles?: number
           state?: string | null
+          state_code?: string | null
           zip?: string | null
         }
         Update: {
@@ -494,6 +499,7 @@ export type Database = {
           partner_id?: string
           radius_miles?: number
           state?: string | null
+          state_code?: string | null
           zip?: string | null
         }
         Relationships: [
@@ -667,8 +673,10 @@ export type Database = {
           premium_status: boolean
           student_verified: boolean
           updated_at: string
+          use_campus_location: boolean
           user_city: string | null
           user_state: string | null
+          user_state_code: string | null
           verification_notes: string | null
           verification_strength_score: number
         }
@@ -692,8 +700,10 @@ export type Database = {
           premium_status?: boolean
           student_verified?: boolean
           updated_at?: string
+          use_campus_location?: boolean
           user_city?: string | null
           user_state?: string | null
+          user_state_code?: string | null
           verification_notes?: string | null
           verification_strength_score?: number
         }
@@ -717,8 +727,10 @@ export type Database = {
           premium_status?: boolean
           student_verified?: boolean
           updated_at?: string
+          use_campus_location?: boolean
           user_city?: string | null
           user_state?: string | null
+          user_state_code?: string | null
           verification_notes?: string | null
           verification_strength_score?: number
         }

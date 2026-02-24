@@ -3,6 +3,8 @@
  * Determines which deals a user can see based on campus, location, role, and scope.
  */
 
+import { citiesMatch, statesMatch, toStateCode } from "./state-codes";
+
 export interface UserEligibility {
   campusVerified: boolean;
   campusRole: string | null;
@@ -14,6 +16,7 @@ export interface UserEligibility {
   userState: string | null;
   locationOptIn: boolean;
   isPremium: boolean;
+  useCampusLocation: boolean;
 }
 
 export interface DealEligibilityFields {
@@ -30,6 +33,32 @@ export type EligibilityResult = {
   eligible: boolean;
   reason?: string;
 };
+
+/**
+ * Resolve the effective city/state for a user based on preference flags.
+ *
+ * Priority:
+ * 1) If use_campus_location AND campus data present → campus
+ * 2) Else if user_city/user_state present → user-provided
+ * 3) Else → null (no local matching)
+ */
+export function resolveLocation(user: Pick<UserEligibility, "useCampusLocation" | "campusCity" | "campusState" | "userCity" | "userState">): {
+  city: string | null;
+  state: string | null;
+  source: "campus" | "user" | "none";
+} {
+  if (user.useCampusLocation && (user.campusCity || user.campusState)) {
+    return { city: user.campusCity, state: user.campusState, source: "campus" };
+  }
+  if (user.userCity || user.userState) {
+    return { city: user.userCity, state: user.userState, source: "user" };
+  }
+  // Fallback: try campus even when flag is off (graceful degradation)
+  if (user.campusCity || user.campusState) {
+    return { city: user.campusCity, state: user.campusState, source: "campus" };
+  }
+  return { city: null, state: null, source: "none" };
+}
 
 export function checkDealEligibility(
   deal: DealEligibilityFields,
@@ -50,25 +79,25 @@ export function checkDealEligibility(
     }
   }
 
+  const loc = resolveLocation(user);
+
   // C) Scope rules
   switch (deal.deal_scope) {
     case "national":
       return { eligible: true };
 
     case "regional": {
-      const effectiveCity = user.userCity || user.campusCity;
-      const effectiveState = user.userState || user.campusState;
       const cities = deal.eligible_cities ?? [];
       const regions = deal.eligible_regions ?? [];
 
-      if (regions.length > 0 && effectiveState && regions.some(r => r.toLowerCase() === effectiveState.toLowerCase())) {
+      if (regions.length > 0 && loc.state && regions.some(r => statesMatch(r, loc.state))) {
         return { eligible: true };
       }
-      if (cities.length > 0 && effectiveCity && cities.some(c => c.toLowerCase() === effectiveCity.toLowerCase())) {
+      if (cities.length > 0 && loc.city && cities.some(c => citiesMatch(c, loc.city))) {
         return { eligible: true };
       }
       // If no location data, still show regionals (graceful degradation)
-      if (!effectiveCity && !effectiveState) {
+      if (!loc.city && !loc.state) {
         return { eligible: true };
       }
       return { eligible: false, reason: "Not available in your region" };
@@ -82,19 +111,17 @@ export function checkDealEligibility(
       const campuses = deal.eligible_campuses ?? [];
       const cities = deal.eligible_cities ?? [];
       const regions = deal.eligible_regions ?? [];
-      const effectiveCity = user.userCity || user.campusCity;
-      const effectiveState = user.userState || user.campusState;
 
       // Campus match
       if (campuses.length > 0 && user.campusId && campuses.includes(user.campusId)) {
         return { eligible: true };
       }
 
-      // City/state match
-      if (cities.length > 0 && effectiveCity && cities.some(c => c.toLowerCase() === effectiveCity.toLowerCase())) {
+      // City/state match using normalized comparison
+      if (cities.length > 0 && loc.city && cities.some(c => citiesMatch(c, loc.city))) {
         return { eligible: true };
       }
-      if (regions.length > 0 && effectiveState && regions.some(r => r.toLowerCase() === effectiveState.toLowerCase())) {
+      if (regions.length > 0 && loc.state && regions.some(r => statesMatch(r, loc.state))) {
         return { eligible: true };
       }
 
