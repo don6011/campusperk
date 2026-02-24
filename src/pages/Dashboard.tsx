@@ -22,6 +22,8 @@ import { logPaywallView, isDealPremium } from "@/lib/paywall";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealRow";
+import { resolveLocation } from "@/lib/deal-eligibility";
+import { citiesMatch, statesMatch } from "@/lib/state-codes";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -644,9 +646,33 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
 }) {
   const navigate = useNavigate();
   const locationEnabled = profile?.location_opt_in ?? false;
-  const userCity = profile?.user_city || profile?.campus_city;
-  const userState = profile?.user_state || profile?.campus_state;
+  const useCampusLocation = profile?.use_campus_location ?? true;
   const [subscribing, setSubscribing] = useState(false);
+
+  // Resolve effective location using priority logic
+  const loc = resolveLocation({
+    useCampusLocation,
+    campusCity: profile?.campus_city ?? null,
+    campusState: profile?.campus_state ?? null,
+    userCity: profile?.user_city ?? null,
+    userState: profile?.user_state ?? null,
+  });
+  const userCity = loc.city;
+  const userState = loc.state;
+
+  // Debug logging in dev mode
+  if (import.meta.env.DEV) {
+    const matchingLocal = deals.filter((d: any) =>
+      (d.deal_scope === "local" || d.deal_scope === "regional") && locationEnabled
+    );
+    console.log("[LocalDeals Debug]", {
+      resolvedLocationSource: loc.source,
+      resolvedCity: loc.city,
+      resolvedState: loc.state,
+      useCampusLocation,
+      numberOfCandidateDeals: matchingLocal.length,
+    });
+  }
 
   // Filter local/regional deals matching user location
   const localDeals = deals.filter((d: any) => {
@@ -654,11 +680,18 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
     if (!locationEnabled) return false;
     const cities: string[] = d.eligible_cities ?? [];
     const regions: string[] = d.eligible_regions ?? [];
-    if (cities.length > 0 && userCity && cities.some((c: string) => c.toLowerCase() === userCity.toLowerCase())) return true;
-    if (regions.length > 0 && userState && regions.some((r: string) => r.toLowerCase() === userState.toLowerCase())) return true;
+    if (cities.length > 0 && userCity && cities.some((c: string) => citiesMatch(c, userCity))) return true;
+    if (regions.length > 0 && userState && regions.some((r: string) => statesMatch(r, userState))) return true;
     if (cities.length === 0 && regions.length === 0) return true;
     return false;
-  }).slice(0, 6);
+  });
+
+  // Log eligible count in dev
+  if (import.meta.env.DEV) {
+    console.log("[LocalDeals Debug] numberOfEligibleLocalDeals:", localDeals.length);
+  }
+
+  const localDealsSliced = localDeals.slice(0, 6);
 
   const handleLocalAlert = async () => {
     if (!userId) return;
@@ -708,7 +741,7 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
     );
   }
 
-  if (localDeals.length === 0) {
+  if (localDealsSliced.length === 0) {
     return (
       <section>
         <Card className="border-border bg-card">
@@ -748,13 +781,13 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
     if (!locationEnabled) return false;
     const cities: string[] = d.eligible_cities ?? [];
     const regions: string[] = d.eligible_regions ?? [];
-    if (cities.length > 0 && userCity && cities.some((c: string) => c.toLowerCase() === userCity.toLowerCase())) return true;
-    if (regions.length > 0 && userState && regions.some((r: string) => r.toLowerCase() === userState.toLowerCase())) return true;
+    if (cities.length > 0 && userCity && cities.some((c: string) => citiesMatch(c, userCity))) return true;
+    if (regions.length > 0 && userState && regions.some((r: string) => statesMatch(r, userState))) return true;
     if (cities.length === 0 && regions.length === 0) return true;
     return false;
   });
 
-  const nonSponsoredLocalDeals = localDeals.filter((d: any) => !isSponsoredActive(d));
+  const nonSponsoredLocalDeals = localDealsSliced.filter((d: any) => !isSponsoredActive(d));
 
   return (
     <section className="space-y-4">
@@ -784,7 +817,7 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
       )}
 
       <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth">
-        {(nonSponsoredLocalDeals.length > 0 ? nonSponsoredLocalDeals : localDeals).map((deal, i) => (
+        {(nonSponsoredLocalDeals.length > 0 ? nonSponsoredLocalDeals : localDealsSliced).map((deal, i) => (
           <motion.div key={deal.id} className="min-w-[280px] max-w-[320px] snap-start shrink-0" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.08, duration: 0.4 }}>
             <DealCard deal={deal} index={i} favIds={favIds} onToggleFav={onToggleFav} isPremiumUser={isPremium} userId={userId} onUpgrade={onUpgrade} />
           </motion.div>

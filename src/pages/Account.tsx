@@ -20,6 +20,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
 import { normalizeCampusDomain, isEduDomain, computeVerificationScore, scoreLabel } from "@/lib/campus-domain";
+import { toStateCode } from "@/lib/state-codes";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -528,11 +529,17 @@ function LocationOptInCard() {
     if (!user) return;
     setSaving(true);
     try {
+      const effectiveCity = useCampus ? null : (city.trim() || null);
+      const effectiveState = useCampus ? null : (state.trim() || null);
+      const stateCode = toStateCode(effectiveState ?? profile?.campus_state);
+
       const { error } = await supabase.from("profiles").update({
         location_opt_in: optIn,
-        user_city: useCampus ? null : (city.trim() || null),
-        user_state: useCampus ? null : (state.trim() || null),
-      }).eq("id", user.id);
+        user_city: effectiveCity,
+        user_state: effectiveState,
+        user_state_code: stateCode,
+        use_campus_location: useCampus,
+      } as any).eq("id", user.id);
       if (error) throw error;
       await refreshProfile();
       toast({ title: "Location preferences saved" });
