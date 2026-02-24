@@ -624,54 +624,66 @@ export default function PartnersManager() {
               <Textarea value={oForm.terms} onChange={e => setOForm(o => ({ ...o, terms: e.target.value }))} rows={2} />
             </div>
 
-            {/* Sponsored Controls */}
-            <div className="space-y-3 pt-2 border-t border-border">
+            {/* Sponsored Placement Section */}
+            <div className="space-y-3 pt-3 border-t border-border">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium flex items-center gap-2">
-                  <Sparkles className="h-3.5 w-3.5 text-gold" /> Sponsored
+                  <Sparkles className="h-3.5 w-3.5 text-gold" /> Sponsored Placement
                 </label>
                 <Switch checked={oForm.sponsored} onCheckedChange={v => setOForm(o => ({ ...o, sponsored: v }))} />
               </div>
               {oForm.sponsored && (
-                <>
-                  <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-3 rounded-md border border-border bg-secondary/30 p-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium">Tier (1-3)</label>
+                      <label className="text-sm font-medium">Tier *</label>
                       <Select value={String(oForm.sponsor_tier)} onValueChange={v => setOForm(o => ({ ...o, sponsor_tier: Number(v) }))}>
                         <SelectTrigger><SelectValue /></SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="1">Tier 1 (Basic)</SelectItem>
-                          <SelectItem value="2">Tier 2 (Featured)</SelectItem>
-                          <SelectItem value="3">Tier 3 (Premium)</SelectItem>
+                          <SelectItem value="1">Tier 1 — Top placement</SelectItem>
+                          <SelectItem value="2">Tier 2 — Secondary placement</SelectItem>
+                          <SelectItem value="3">Tier 3 — Standard sponsored</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium">Priority</label>
+                      <label className="text-sm font-medium">Priority (higher = first)</label>
                       <Input type="number" min={0} value={oForm.sponsor_priority} onChange={e => setOForm(o => ({ ...o, sponsor_priority: Number(e.target.value) }))} placeholder="0" />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label className="text-sm font-medium">Sponsor Notes</label>
-                      <Input value={oForm.sponsor_notes} onChange={e => setOForm(o => ({ ...o, sponsor_notes: e.target.value }))} placeholder="Internal notes" />
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium">Sponsor Start</label>
+                      <label className="text-sm font-medium">Schedule Start</label>
                       <Input type="datetime-local" value={oForm.sponsor_start_at} onChange={e => setOForm(o => ({ ...o, sponsor_start_at: e.target.value }))} />
                     </div>
                     <div className="space-y-1.5">
-                      <label className="text-sm font-medium">Sponsor End</label>
+                      <label className="text-sm font-medium">Schedule End</label>
                       <Input type="datetime-local" value={oForm.sponsor_end_at} onChange={e => setOForm(o => ({ ...o, sponsor_end_at: e.target.value }))} />
+                      {oForm.sponsor_start_at && oForm.sponsor_end_at && new Date(oForm.sponsor_end_at) <= new Date(oForm.sponsor_start_at) && (
+                        <p className="text-xs text-destructive">End must be after start date.</p>
+                      )}
                     </div>
                   </div>
-                </>
+                  <div className="space-y-1.5">
+                    <label className="text-sm font-medium">Internal Notes</label>
+                    <Textarea value={oForm.sponsor_notes} onChange={e => setOForm(o => ({ ...o, sponsor_notes: e.target.value }))} placeholder="Internal sponsorship notes…" rows={2} />
+                  </div>
+                </div>
               )}
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setOfferDialog(false)}>Cancel</Button>
-            <Button onClick={() => saveOffer.mutate()} disabled={!oForm.offer_title.trim() || saveOffer.isPending}>
+            <Button
+              onClick={() => {
+                if (oForm.sponsored && oForm.sponsor_start_at && oForm.sponsor_end_at && new Date(oForm.sponsor_end_at) <= new Date(oForm.sponsor_start_at)) {
+                  toast.error("Sponsor end date must be after start date.");
+                  return;
+                }
+                saveOffer.mutate();
+              }}
+              disabled={!oForm.offer_title.trim() || saveOffer.isPending || (oForm.sponsored && !oForm.sponsor_tier)}
+            >
               {saveOffer.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : null}
               Save
             </Button>
