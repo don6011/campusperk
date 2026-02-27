@@ -21,8 +21,6 @@ import {
   ArrowRight,
   Check,
   Search,
-  Pizza,
-  Coffee,
   DollarSign,
   MapPin,
   Users,
@@ -95,10 +93,11 @@ const testimonials = [
 ];
 
 const exampleDeals = [
-  { icon: Pizza, title: "50% Off Pizza", brand: "Domino's", discount: "50% off", color: "from-destructive/20 to-destructive/5", iconColor: "text-destructive" },
-  { icon: Dumbbell, title: "Student Gym Discount", brand: "Planet Fitness", discount: "$10/mo", color: "from-accent/20 to-accent/5", iconColor: "text-accent" },
-  { icon: Monitor, title: "Software Deals", brand: "Adobe Creative Cloud", discount: "60% off", color: "from-primary/20 to-primary/5", iconColor: "text-primary" },
-  { icon: Coffee, title: "Coffee Shop Discounts", brand: "Local Cafés", discount: "Buy 1 Get 1", color: "from-[hsl(var(--gold))]/20 to-[hsl(var(--gold))]/5", iconColor: "text-[hsl(var(--gold))]" },
+  { icon: BookOpen, title: "Grammarly Premium", brand: "Write A+ papers with AI writing assistance", discount: "Free for Students", color: "from-accent/20 to-accent/5", iconColor: "text-accent" },
+  { icon: Utensils, title: "HelloFresh Student Meals", brand: "Cheap, healthy meals delivered to your dorm", discount: "60% off", color: "from-destructive/20 to-destructive/5", iconColor: "text-destructive" },
+  { icon: Shield, title: "NordVPN Student Discount", brand: "Secure dorm WiFi and streaming", discount: "73% off", color: "from-primary/20 to-primary/5", iconColor: "text-primary" },
+  { icon: Lightbulb, title: "Skillshare Free Trial", brand: "Learn design, video & freelancing skills", discount: "1 Month Free", color: "from-[hsl(var(--gold))]/20 to-[hsl(var(--gold))]/5", iconColor: "text-[hsl(var(--gold))]" },
+  { icon: Cpu, title: "Lenovo Student Laptops", brand: "Campus-ready laptops at student prices", discount: "Up to $500 off", color: "from-accent/20 to-accent/5", iconColor: "text-accent" },
 ];
 
 /* Animated counter hook */
@@ -317,7 +316,7 @@ const LandingPage = () => {
             viewport={{ once: true, margin: "-100px" }}
           >
             <motion.h2 variants={fadeUp} custom={0} className="font-display text-3xl font-bold md:text-5xl">
-              Popular Student{" "}
+              🔥 Popular Student{" "}
               <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Deals</span>
             </motion.h2>
             <motion.p variants={fadeUp} custom={1} className="mx-auto mt-4 max-w-xl text-muted-foreground">
@@ -325,7 +324,7 @@ const LandingPage = () => {
             </motion.p>
           </motion.div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
             {exampleDeals.map((deal, i) => (
               <motion.div
                 key={deal.title}
