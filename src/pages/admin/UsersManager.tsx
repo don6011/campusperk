@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Search, ShieldCheck, History, ExternalLink } from "lucide-react";
+import { Search, ShieldCheck, History, Crown } from "lucide-react";
 import { format } from "date-fns";
 
 type Profile = {
@@ -44,6 +44,8 @@ const UsersManager = () => {
   const [reason, setReason] = useState("");
   const [method, setMethod] = useState<string>("manual");
   const [historyUser, setHistoryUser] = useState<Profile | null>(null);
+  const [premiumUser, setPremiumUser] = useState<Profile | null>(null);
+  const [premiumReason, setPremiumReason] = useState("");
 
   const { data: users = [], isLoading } = useQuery({
     queryKey: ["admin-users", search],
@@ -107,6 +109,57 @@ const UsersManager = () => {
       setToggleUser(null);
       setReason("");
       setMethod("manual");
+    },
+    onError: (err: Error) => toast.error(err.message),
+  });
+
+  const premiumMutation = useMutation({
+    mutationFn: async () => {
+      if (!premiumUser || !premiumReason.trim()) throw new Error("Reason required");
+
+      const { data: { user: admin } } = await supabase.auth.getUser();
+      if (!admin) throw new Error("Not authenticated");
+
+      const newPremium = !premiumUser.premium_status;
+
+      // Update profile premium_status
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ premium_status: newPremium })
+        .eq("id", premiumUser.id);
+      if (updateError) throw updateError;
+
+      // Update user_roles table
+      if (newPremium) {
+        // Add premium_user role (ignore if exists)
+        await supabase.from("user_roles").upsert(
+          { user_id: premiumUser.id, role: "premium_user" as any },
+          { onConflict: "user_id,role" }
+        );
+      } else {
+        // Remove premium_user role
+        await supabase.from("user_roles").delete()
+          .eq("user_id", premiumUser.id)
+          .eq("role", "premium_user" as any);
+      }
+
+      // Log to audit
+      await supabase.from("verification_audit_log").insert({
+        user_id: premiumUser.id,
+        admin_id: admin.id,
+        previous_status: premiumUser.premium_status,
+        new_status: newPremium,
+        verification_method: "manual" as any,
+        reason: `[Premium ${newPremium ? "Grant" : "Revoke"}] ${premiumReason.trim()}`,
+      } as any);
+
+      return newPremium;
+    },
+    onSuccess: (newPremium) => {
+      toast.success(`Premium ${newPremium ? "granted" : "revoked"} successfully`);
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setPremiumUser(null);
+      setPremiumReason("");
     },
     onError: (err: Error) => toast.error(err.message),
   });
@@ -191,10 +244,14 @@ const UsersManager = () => {
                     <TableCell className="text-sm text-muted-foreground">
                       {format(new Date(user.created_at), "MMM d, yyyy")}
                     </TableCell>
-                    <TableCell className="text-right space-x-2">
+                    <TableCell className="text-right space-x-1">
                       <Button variant="ghost" size="sm" onClick={() => setToggleUser(user)}>
                         <ShieldCheck className="h-4 w-4 mr-1" />
-                        Toggle
+                        Verify
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setPremiumUser(user)}>
+                        <Crown className="h-4 w-4 mr-1" />
+                        Premium
                       </Button>
                       <Button variant="ghost" size="sm" onClick={() => setHistoryUser(user)}>
                         <History className="h-4 w-4 mr-1" />
@@ -300,6 +357,48 @@ const UsersManager = () => {
               </Table>
             )}
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Premium Toggle Dialog */}
+      <Dialog open={!!premiumUser} onOpenChange={(open) => { if (!open) { setPremiumUser(null); setPremiumReason(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Crown className="h-5 w-5 text-primary" />
+              {premiumUser?.premium_status ? "Revoke" : "Grant"} Premium Status
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <p className="text-sm text-muted-foreground">User: <strong>{premiumUser?.name || premiumUser?.email}</strong></p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Current status: {premiumUser?.premium_status ? (
+                  <Badge variant="outline" className="border-primary text-primary">Premium</Badge>
+                ) : (
+                  <Badge variant="secondary">Free</Badge>
+                )}
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Reason <span className="text-destructive">*</span></label>
+              <Textarea
+                placeholder={premiumUser?.premium_status ? "Why is premium being revoked?" : "Why is premium being granted? (e.g. comp, support case, promo)"}
+                value={premiumReason}
+                onChange={(e) => setPremiumReason(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setPremiumUser(null); setPremiumReason(""); }}>Cancel</Button>
+            <Button
+              onClick={() => premiumMutation.mutate()}
+              disabled={!premiumReason.trim() || premiumMutation.isPending}
+              className={premiumUser?.premium_status ? "bg-destructive hover:bg-destructive/90" : ""}
+            >
+              {premiumMutation.isPending ? "Saving…" : premiumUser?.premium_status ? "Revoke Premium" : "Grant Premium"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </AdminLayout>
