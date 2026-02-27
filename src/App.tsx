@@ -32,6 +32,8 @@ import Account from "./pages/Account";
 import NotFound from "./pages/NotFound";
 import PartnerApply from "./pages/PartnerApply";
 import PartnerRequest from "./pages/PartnerRequest";
+import AmbassadorApply from "./pages/AmbassadorApply";
+import AmbassadorsManager from "./pages/admin/AmbassadorsManager";
 
 const queryClient = new QueryClient();
 
@@ -54,6 +56,7 @@ const App = () => (
             <Route path="/deals/:dealId" element={<DealDetail />} />
             <Route path="/partners/apply" element={<PartnerApply />} />
             <Route path="/partners/request" element={<PartnerRequest />} />
+            <Route path="/ambassador" element={<AmbassadorApply />} />
 
             {/* Protected routes */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -74,6 +77,7 @@ const App = () => (
             <Route path="/admin/verification" element={<ProtectedRoute><VerificationQueue /></ProtectedRoute>} />
             <Route path="/admin/domains" element={<ProtectedRoute><CampusDomainsManager /></ProtectedRoute>} />
             <Route path="/admin/partners" element={<ProtectedRoute><PartnersManager /></ProtectedRoute>} />
+            <Route path="/admin/ambassadors" element={<ProtectedRoute><AmbassadorsManager /></ProtectedRoute>} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
