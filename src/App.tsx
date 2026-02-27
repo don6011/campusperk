@@ -34,6 +34,7 @@ import PartnerApply from "./pages/PartnerApply";
 import PartnerRequest from "./pages/PartnerRequest";
 import AmbassadorApply from "./pages/AmbassadorApply";
 import AmbassadorsManager from "./pages/admin/AmbassadorsManager";
+import AffiliateSourcesManager from "./pages/admin/AffiliateSourcesManager";
 
 // Redirect /join?ref=CODE to /sign-up?ref=CODE
 function JoinRedirect() {
@@ -86,6 +87,7 @@ const App = () => (
             <Route path="/admin/domains" element={<ProtectedRoute><CampusDomainsManager /></ProtectedRoute>} />
             <Route path="/admin/partners" element={<ProtectedRoute><PartnersManager /></ProtectedRoute>} />
             <Route path="/admin/ambassadors" element={<ProtectedRoute><AmbassadorsManager /></ProtectedRoute>} />
+            <Route path="/admin/affiliate-sources" element={<ProtectedRoute><AffiliateSourcesManager /></ProtectedRoute>} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
