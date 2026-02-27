@@ -13,7 +13,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
-import { Search, Plus, Building2, MapPin, Tag, Loader2, Pencil, Trash2, Sparkles } from "lucide-react";
+import { Search, Plus, Building2, MapPin, Tag, Loader2, Pencil, Trash2, Sparkles, Upload, X as XIcon } from "lucide-react";
 import { format } from "date-fns";
 
 const PARTNER_TYPES = ["local_business", "regional_chain", "national_brand", "affiliate_network"] as const;
@@ -92,8 +92,10 @@ export default function PartnersManager() {
   const [offerDialog, setOfferDialog] = useState(false);
 
   // Form state for partner
-  const [pForm, setPForm] = useState({ partner_name: "", partner_type: "local_business" as string, website_url: "", contact_email: "", status: "lead" as string });
+  const [pForm, setPForm] = useState({ partner_name: "", partner_type: "local_business" as string, website_url: "", contact_email: "", status: "lead" as string, logo_url: "" });
   const [editingPartnerId, setEditingPartnerId] = useState<string | null>(null);
+  const [partnerLogoFile, setPartnerLogoFile] = useState<File | null>(null);
+  const [partnerLogoPreview, setPartnerLogoPreview] = useState<string | null>(null);
 
   // Form state for location
   const [lForm, setLForm] = useState({ location_name: "", city: "", state: "", zip: "", address: "", radius_miles: 10, is_active: true });
@@ -158,7 +160,19 @@ export default function PartnersManager() {
   // Mutations
   const savePartner = useMutation({
     mutationFn: async () => {
-      const payload = { partner_name: pForm.partner_name, partner_type: pForm.partner_type as any, website_url: pForm.website_url || null, contact_email: pForm.contact_email || null, status: pForm.status as any };
+      let logoUrl = pForm.logo_url || null;
+
+      // Upload logo if a new file was selected
+      if (partnerLogoFile) {
+        const ext = partnerLogoFile.name.split(".").pop() || "png";
+        const filePath = `${crypto.randomUUID()}.${ext}`;
+        const { error: uploadErr } = await supabase.storage.from("partner-logos").upload(filePath, partnerLogoFile);
+        if (uploadErr) throw uploadErr;
+        const { data: urlData } = supabase.storage.from("partner-logos").getPublicUrl(filePath);
+        logoUrl = urlData.publicUrl;
+      }
+
+      const payload = { partner_name: pForm.partner_name, partner_type: pForm.partner_type as any, website_url: pForm.website_url || null, contact_email: pForm.contact_email || null, status: pForm.status as any, logo_url: logoUrl };
       if (editingPartnerId) {
         const { error } = await supabase.from("partners").update(payload).eq("id", editingPartnerId);
         if (error) throw error;
@@ -167,7 +181,7 @@ export default function PartnersManager() {
         if (error) throw error;
       }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-partners"] }); setPartnerDialog(false); toast.success("Partner saved"); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-partners"] }); setPartnerDialog(false); setPartnerLogoFile(null); setPartnerLogoPreview(null); toast.success("Partner saved"); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -346,14 +360,18 @@ export default function PartnersManager() {
   });
 
   const openNewPartner = () => {
-    setPForm({ partner_name: "", partner_type: "local_business", website_url: "", contact_email: "", status: "lead" });
+    setPForm({ partner_name: "", partner_type: "local_business", website_url: "", contact_email: "", status: "lead", logo_url: "" });
     setEditingPartnerId(null);
+    setPartnerLogoFile(null);
+    setPartnerLogoPreview(null);
     setPartnerDialog(true);
   };
 
   const openEditPartner = (p: Partner) => {
-    setPForm({ partner_name: p.partner_name, partner_type: p.partner_type, website_url: p.website_url || "", contact_email: p.contact_email || "", status: p.status });
+    setPForm({ partner_name: p.partner_name, partner_type: p.partner_type, website_url: p.website_url || "", contact_email: p.contact_email || "", status: p.status, logo_url: p.logo_url || "" });
     setEditingPartnerId(p.id);
+    setPartnerLogoFile(null);
+    setPartnerLogoPreview(p.logo_url || null);
     setPartnerDialog(true);
   };
 
@@ -435,11 +453,20 @@ export default function PartnersManager() {
                       className={`w-full text-left px-4 py-3 hover:bg-secondary/50 transition-colors ${selectedPartner?.id === p.id ? "bg-secondary" : ""}`}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <div className="min-w-0">
-                          <div className="text-sm font-medium text-foreground truncate">{p.partner_name}</div>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            {typeBadge(p.partner_type)}
-                            {statusBadge(p.status)}
+                        <div className="flex items-center gap-3 min-w-0">
+                          {p.logo_url ? (
+                            <img src={p.logo_url} alt="" className="h-8 w-8 rounded-md object-cover shrink-0 border border-border" />
+                          ) : (
+                            <div className="h-8 w-8 rounded-md bg-secondary flex items-center justify-center shrink-0">
+                              <Building2 className="h-4 w-4 text-muted-foreground" />
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="text-sm font-medium text-foreground truncate">{p.partner_name}</div>
+                            <div className="flex items-center gap-1.5 mt-1">
+                              {typeBadge(p.partner_type)}
+                              {statusBadge(p.status)}
+                            </div>
                           </div>
                         </div>
                         <div className="flex gap-1 shrink-0">
@@ -622,6 +649,37 @@ export default function PartnersManager() {
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Contact Email</label>
               <Input value={pForm.contact_email} onChange={e => setPForm(p => ({ ...p, contact_email: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Logo / Image</label>
+              {partnerLogoPreview && (
+                <div className="relative w-20 h-20 rounded-lg border border-border overflow-hidden group">
+                  <img src={partnerLogoPreview} alt="Logo preview" className="w-full h-full object-cover" />
+                  <button
+                    type="button"
+                    onClick={() => { setPartnerLogoFile(null); setPartnerLogoPreview(null); setPForm(p => ({ ...p, logo_url: "" })); }}
+                    className="absolute top-1 right-1 bg-background/80 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    <XIcon className="h-3 w-3" />
+                  </button>
+                </div>
+              )}
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-primary hover:underline">
+                <Upload className="h-4 w-4" />
+                {partnerLogoPreview ? "Change image" : "Upload image"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      setPartnerLogoFile(file);
+                      setPartnerLogoPreview(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+              </label>
             </div>
           </div>
           <DialogFooter>
