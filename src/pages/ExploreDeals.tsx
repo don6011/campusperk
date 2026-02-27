@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Search, Filter, ChevronDown, ChevronLeft, ChevronRight, Heart,
   ExternalLink, Shield, Crown, Clock, Lock, ShoppingBag, GraduationCap,
@@ -25,6 +25,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
 import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealRow";
+import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
 
 // Types for the joined query result
 interface DealWithStore {
@@ -76,30 +77,6 @@ const SORT_OPTIONS = [
 ];
 const PAGE_SIZE = 6;
 
-function daysUntil(dateStr: string) {
-  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-}
-
-function timeAgo(dateStr: string) {
-  const hours = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60));
-  if (hours < 1) return "Just now";
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
-
-function freshnessColor(dateStr: string) {
-  const days = (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24);
-  if (days <= 1) return "text-accent";
-  if (days <= 7) return "text-gold";
-  return "text-destructive";
-}
-
-function urgencyColor(days: number) {
-  if (days < 3) return "bg-destructive/15 text-destructive border-destructive/30";
-  if (days <= 7) return "bg-[hsl(25_95%_53%)]/15 text-[hsl(25_95%_53%)] border-[hsl(25_95%_53%)]/30";
-  if (days <= 14) return "bg-gold/15 text-gold border-gold/30";
-  return "bg-accent/15 text-accent border-accent/30";
-}
 
 function discountNum(deal: DealWithStore) {
   const m = (deal.discount_value ?? "").match(/(\d+)/);
@@ -145,7 +122,7 @@ export default function ExploreDeals() {
   const [verifiedRecently, setVerifiedRecently] = useState(false);
   const [filtersOpen, setFiltersOpen] = useState(true);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
+  const queryClient = useQueryClient();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const { isStudentVerified, isPremium, isCampusVerified, campusRole, user } = useAuth();
@@ -163,12 +140,32 @@ export default function ExploreDeals() {
     },
   });
 
+  // Fetch user favorites from Supabase
+  const { data: favData = [] } = useQuery({
+    queryKey: ["explore-favorites", user?.id],
+    enabled: !!user,
+    queryFn: async () => {
+      const { data } = await supabase.from("favorites").select("deal_id").eq("user_id", user!.id);
+      return data || [];
+    },
+  });
+  const favorites = new Set(favData.map((f) => f.deal_id));
+
   const toggleCategory = (cat: string) =>
     setSelectedCategories((prev) => prev.includes(cat) ? prev.filter((c) => c !== cat) : [...prev, cat]);
   const toggleStatus = (s: string) =>
     setSelectedStatuses((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
-  const toggleFav = (id: string) =>
-    setFavorites((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+  const toggleFav = async (id: string) => {
+    if (!user) return;
+    if (favorites.has(id)) {
+      await supabase.from("favorites").delete().eq("user_id", user.id).eq("deal_id", id);
+    } else {
+      await supabase.from("favorites").insert({ user_id: user.id, deal_id: id });
+    }
+    queryClient.invalidateQueries({ queryKey: ["explore-favorites"] });
+    queryClient.invalidateQueries({ queryKey: ["dashboard-favorites"] });
+    queryClient.invalidateQueries({ queryKey: ["favorites-page"] });
+  };
   const resetFilters = () => {
     setSearch(""); setSelectedCategories([]); setSelectedStatuses([]); setSelectedScope("all"); setEduOnly(false);
     setPremiumOnly(false); setFreshnessDays(null); setVerifiedRecently(false); setVisibleCount(PAGE_SIZE);

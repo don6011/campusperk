@@ -50,7 +50,6 @@ const App = () => (
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pricing" element={<Pricing />} />
-            <Route path="/out/:dealId" element={<OutboundRedirect />} />
             <Route path="/go/:dealId" element={<OutboundRedirect />} />
             <Route path="/deals/:dealId" element={<DealDetail />} />
             <Route path="/partners/apply" element={<PartnerApply />} />

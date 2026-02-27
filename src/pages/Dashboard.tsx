@@ -17,13 +17,14 @@ import { VerifiedStudentBadge } from "@/components/VerifiedStudentBadge";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealRow";
 import { resolveLocation } from "@/lib/deal-eligibility";
 import { citiesMatch, statesMatch } from "@/lib/state-codes";
+import { timeAgo, freshnessColor, daysUntil } from "@/lib/deal-utils";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -59,25 +60,6 @@ type DealRow = {
   stores: { name: string; logo_url: string | null } | null;
 };
 
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  if (hours < 1) return "Just now";
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
-
-function freshnessColor(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const days = diff / (1000 * 60 * 60 * 24);
-  if (days <= 1) return "text-accent";
-  if (days <= 7) return "text-gold";
-  return "text-destructive";
-}
-
-function daysUntil(dateStr: string) {
-  return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
-}
 
 function DealCard({ deal, index, compact, featured: isFeatured, favIds, onToggleFav, isPremiumUser, userId, onUpgrade }: {
   deal: DealRow; index: number; compact?: boolean; featured?: boolean;
@@ -278,6 +260,8 @@ export default function Dashboard() {
 
   const favIds = new Set(favorites.map((f) => f.deal_id));
 
+  const queryClient = useQueryClient();
+
   const toggleFav = async (dealId: string) => {
     if (!user) return;
     if (favIds.has(dealId)) {
@@ -285,7 +269,8 @@ export default function Dashboard() {
     } else {
       await supabase.from("favorites").insert({ user_id: user.id, deal_id: dealId });
     }
-    // Optimistic — will refetch
+    queryClient.invalidateQueries({ queryKey: ["dashboard-favorites"] });
+    queryClient.invalidateQueries({ queryKey: ["favorites-page"] });
   };
 
   const featuredDeals = deals.filter((d) => d.featured);
