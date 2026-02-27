@@ -325,7 +325,7 @@ export default function AffiliateAnalytics() {
     },
   });
 
-  const { data: conversions = [] } = useQuery({
+   const { data: conversions = [] } = useQuery({
     queryKey: ["analytics-conversions", dateRange],
     queryFn: async () => {
       const { data, error } = await supabase
@@ -335,6 +335,32 @@ export default function AffiliateAnalytics() {
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data;
+    },
+  });
+
+  // Sponsored impressions
+  const { data: sponsoredImpressions = [] } = useQuery({
+    queryKey: ["analytics-sponsored-impressions", dateRange],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sponsored_impressions")
+        .select("id, deal_id, scope, campus_id, created_at, is_verified, is_premium, partner_id")
+        .gte("created_at", since);
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  // Sponsored clicks
+  const { data: sponsoredClicksData = [] } = useQuery({
+    queryKey: ["analytics-sponsored-clicks", dateRange],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("sponsored_clicks")
+        .select("id, item_id, scope, campus_id, sponsor_tier, sponsor_priority, created_at, partner_id")
+        .gte("created_at", since);
+      if (error) throw error;
+      return data as any[];
     },
   });
 
@@ -1249,6 +1275,193 @@ export default function AffiliateAnalytics() {
                   </div>
                 </div>
               ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* ── Sponsored Impression & Click Analytics ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <KPICard
+            title="Sponsored Impressions"
+            value={sponsoredImpressions.length.toLocaleString()}
+            icon={Megaphone}
+            tooltip="Times sponsored cards were rendered"
+          />
+          <KPICard
+            title="Sponsored Clicks"
+            value={sponsoredClicksData.length.toLocaleString()}
+            icon={MousePointerClick}
+            tooltip="Clicks on sponsored deal cards"
+          />
+          <KPICard
+            title="Sponsored CTR"
+            value={sponsoredImpressions.length > 0 ? ((sponsoredClicksData.length / sponsoredImpressions.length) * 100).toFixed(2) : "0"}
+            suffix="%"
+            icon={TrendingUp}
+            tooltip="Click-through rate for sponsored items"
+          />
+          <KPICard
+            title="Sponsored Click Share"
+            value={totalClicks > 0 ? ((sponsoredClicks / totalClicks) * 100).toFixed(1) : "0"}
+            suffix="%"
+            icon={Radio}
+            tooltip="% of all affiliate clicks from sponsored deals"
+            highlight="gold"
+          />
+        </div>
+
+        {/* Top Sponsored Partners + Inventory Performance */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Megaphone className="h-4 w-4 text-gold" /> Top Sponsored Partners
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => {
+                const partnerImpressions = new Map<string, number>();
+                const partnerClicks = new Map<string, number>();
+                sponsoredImpressions.forEach((i: any) => {
+                  const pName = deals.find(d => d.id === i.deal_id)?.partners?.partner_name ?? "Unknown";
+                  partnerImpressions.set(pName, (partnerImpressions.get(pName) ?? 0) + 1);
+                });
+                sponsoredClicksData.forEach((c: any) => {
+                  const pName = deals.find(d => d.id === c.item_id)?.partners?.partner_name ?? "Unknown";
+                  partnerClicks.set(pName, (partnerClicks.get(pName) ?? 0) + 1);
+                });
+                const rows = Array.from(new Set([...partnerImpressions.keys(), ...partnerClicks.keys()])).map(name => {
+                  const imp = partnerImpressions.get(name) ?? 0;
+                  const clk = partnerClicks.get(name) ?? 0;
+                  return { Partner: name, Impressions: imp, Clicks: clk, CTR: imp > 0 ? ((clk/imp)*100).toFixed(2)+"%" : "0%" };
+                });
+                exportCSV(rows, "sponsored-partners");
+              }}>
+                <Download className="h-3.5 w-3.5" /> Export
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs">Partner</TableHead>
+                    <TableHead className="text-xs text-right">Impressions</TableHead>
+                    <TableHead className="text-xs text-right">Clicks</TableHead>
+                    <TableHead className="text-xs text-right">CTR</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(() => {
+                    const partnerImpressions = new Map<string, number>();
+                    const partnerClicksMap = new Map<string, number>();
+                    sponsoredImpressions.forEach((i: any) => {
+                      const pName = deals.find(d => d.id === i.deal_id)?.partners?.partner_name ?? "Unknown";
+                      partnerImpressions.set(pName, (partnerImpressions.get(pName) ?? 0) + 1);
+                    });
+                    sponsoredClicksData.forEach((c: any) => {
+                      const pName = deals.find(d => d.id === c.item_id)?.partners?.partner_name ?? "Unknown";
+                      partnerClicksMap.set(pName, (partnerClicksMap.get(pName) ?? 0) + 1);
+                    });
+                    const rows = Array.from(new Set([...partnerImpressions.keys(), ...partnerClicksMap.keys()]))
+                      .map(name => ({
+                        name,
+                        impressions: partnerImpressions.get(name) ?? 0,
+                        clicks: partnerClicksMap.get(name) ?? 0,
+                      }))
+                      .sort((a, b) => b.impressions - a.impressions)
+                      .slice(0, 10);
+                    if (rows.length === 0) return (
+                      <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-4">No sponsored data</TableCell></TableRow>
+                    );
+                    return rows.map(r => (
+                      <TableRow key={r.name}>
+                        <TableCell className="text-sm font-medium">{r.name}</TableCell>
+                        <TableCell className="text-right text-sm">{r.impressions}</TableCell>
+                        <TableCell className="text-right text-sm">{r.clicks}</TableCell>
+                        <TableCell className="text-right text-sm text-gold font-semibold">
+                          {r.impressions > 0 ? ((r.clicks/r.impressions)*100).toFixed(1) : "0"}%
+                        </TableCell>
+                      </TableRow>
+                    ));
+                  })()}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-2 flex flex-row items-center justify-between">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Zap className="h-4 w-4 text-primary" /> Sponsored Inventory Performance
+              </CardTitle>
+              <Button variant="ghost" size="sm" className="text-xs gap-1" onClick={() => {
+                const itemMap = new Map<string, { title: string; tier: number; priority: number; impressions: number; clicks: number }>();
+                sponsoredImpressions.forEach((i: any) => {
+                  const deal = deals.find(d => d.id === i.deal_id);
+                  if (!deal) return;
+                  const prev = itemMap.get(deal.id) ?? { title: deal.title, tier: 0, priority: 0, impressions: 0, clicks: 0 };
+                  itemMap.set(deal.id, { ...prev, impressions: prev.impressions + 1 });
+                });
+                sponsoredClicksData.forEach((c: any) => {
+                  const deal = deals.find(d => d.id === c.item_id);
+                  if (!deal) return;
+                  const prev = itemMap.get(deal.id) ?? { title: deal.title, tier: c.sponsor_tier ?? 0, priority: c.sponsor_priority ?? 0, impressions: 0, clicks: 0 };
+                  itemMap.set(deal.id, { ...prev, clicks: prev.clicks + 1, tier: c.sponsor_tier ?? prev.tier, priority: c.sponsor_priority ?? prev.priority });
+                });
+                exportCSV(Array.from(itemMap.entries()).map(([id, v]) => ({
+                  Item: v.title, Tier: v.tier, Priority: v.priority, Impressions: v.impressions, Clicks: v.clicks, CTR: v.impressions > 0 ? ((v.clicks/v.impressions)*100).toFixed(2)+"%" : "0%"
+                })), "sponsored-inventory");
+              }}>
+                <Download className="h-3.5 w-3.5" /> Export
+              </Button>
+            </CardHeader>
+            <CardContent className="pt-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-transparent">
+                    <TableHead className="text-xs">Item</TableHead>
+                    <TableHead className="text-xs text-center">Tier / Priority</TableHead>
+                    <TableHead className="text-xs text-right">Impressions</TableHead>
+                    <TableHead className="text-xs text-right">Clicks</TableHead>
+                    <TableHead className="text-xs text-right">CTR</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(() => {
+                    const itemMap = new Map<string, { title: string; store: string; tier: number; priority: number; impressions: number; clicks: number }>();
+                    sponsoredImpressions.forEach((i: any) => {
+                      const deal = deals.find(d => d.id === i.deal_id);
+                      if (!deal) return;
+                      const prev = itemMap.get(deal.id) ?? { title: deal.title, store: deal.stores?.name ?? "", tier: 0, priority: 0, impressions: 0, clicks: 0 };
+                      itemMap.set(deal.id, { ...prev, impressions: prev.impressions + 1 });
+                    });
+                    sponsoredClicksData.forEach((c: any) => {
+                      const deal = deals.find(d => d.id === c.item_id);
+                      if (!deal) return;
+                      const prev = itemMap.get(deal.id) ?? { title: deal.title, store: deal.stores?.name ?? "", tier: c.sponsor_tier ?? 0, priority: c.sponsor_priority ?? 0, impressions: 0, clicks: 0 };
+                      itemMap.set(deal.id, { ...prev, clicks: prev.clicks + 1, tier: c.sponsor_tier ?? prev.tier, priority: c.sponsor_priority ?? prev.priority });
+                    });
+                    const rows = Array.from(itemMap.values()).sort((a, b) => b.impressions - a.impressions).slice(0, 10);
+                    if (rows.length === 0) return (
+                      <TableRow><TableCell colSpan={5} className="text-center text-sm text-muted-foreground py-4">No sponsored data</TableCell></TableRow>
+                    );
+                    return rows.map((r, i) => (
+                      <TableRow key={i}>
+                        <TableCell>
+                          <div className="text-sm font-medium truncate max-w-[180px]">{r.title}</div>
+                          <div className="text-[11px] text-muted-foreground">{r.store}</div>
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className="text-[10px]">T{r.tier} / P{r.priority}</Badge>
+                        </TableCell>
+                        <TableCell className="text-right text-sm">{r.impressions}</TableCell>
+                        <TableCell className="text-right text-sm">{r.clicks}</TableCell>
+                        <TableCell className="text-right text-sm text-gold font-semibold">
+                          {r.impressions > 0 ? ((r.clicks/r.impressions)*100).toFixed(1) : "0"}%
+                        </TableCell>
+                      </TableRow>
+                    ));
+                  })()}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </div>

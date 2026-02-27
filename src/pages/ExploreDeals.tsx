@@ -186,7 +186,9 @@ export default function ExploreDeals() {
       return true;
     }).sort((a, b) =>
       ((b as any).sponsor_priority ?? 0) - ((a as any).sponsor_priority ?? 0) ||
-      (b.sponsor_tier ?? 0) - (a.sponsor_tier ?? 0)
+      (b.sponsor_tier ?? 0) - (a.sponsor_tier ?? 0) ||
+      (new Date((a as any).sponsor_start_at ?? 0).getTime()) - (new Date((b as any).sponsor_start_at ?? 0).getTime()) ||
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
     );
   }, [deals, selectedScope]);
 
@@ -330,8 +332,14 @@ export default function ExploreDeals() {
           </div>
         )}
 
-        {/* Sponsored Placements */}
-        {sponsoredDeals.length > 0 && (
+        {/* Sponsored Placements - show at top for local/regional scope */}
+        {sponsoredDeals.length > 0 && (selectedScope === "local" || selectedScope === "regional") && (
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
+            <SponsoredDealRow deals={sponsoredDeals} label="Sponsored" scope={selectedScope} />
+          </motion.div>
+        )}
+        {/* Sponsored Placements - also show for all/national */}
+        {sponsoredDeals.length > 0 && selectedScope !== "local" && selectedScope !== "regional" && (
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
             <SponsoredDealRow deals={sponsoredDeals} scope={selectedScope !== "all" ? selectedScope : undefined} />
           </motion.div>
@@ -490,6 +498,9 @@ export default function ExploreDeals() {
                             {deal.discount_value ?? "Special"}
                           </span>
                           <div className="flex items-center gap-1.5">
+                            {deal.sponsored && isSponsoredActive(deal) && (
+                              <Tooltip><TooltipTrigger><Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] gap-1"><Sparkles className="h-2.5 w-2.5" /> Sponsored</Badge></TooltipTrigger><TooltipContent className="text-[11px]">Paid placement.</TooltipContent></Tooltip>
+                            )}
                             {deal.status === "coming_soon" ? (
                               <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] gap-1"><Clock className="h-2.5 w-2.5" /> Coming Soon</Badge>
                             ) : deal.status === "expired" ? (

@@ -249,7 +249,9 @@ export default function CategoryDetail() {
       return true;
     }).sort((a, b) =>
       ((b as any).sponsor_priority ?? 0) - ((a as any).sponsor_priority ?? 0) ||
-      (b.sponsor_tier ?? 0) - (a.sponsor_tier ?? 0)
+      (b.sponsor_tier ?? 0) - (a.sponsor_tier ?? 0) ||
+      (new Date((a as any).sponsor_start_at ?? 0).getTime()) - (new Date((b as any).sponsor_start_at ?? 0).getTime()) ||
+      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
     );
   }, [deals]);
 

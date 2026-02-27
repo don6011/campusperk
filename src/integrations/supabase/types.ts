@@ -744,32 +744,98 @@ export type Database = {
           },
         ]
       }
-      sponsored_impressions: {
+      sponsored_clicks: {
         Row: {
           campus_id: string | null
+          city: string | null
           created_at: string
-          deal_id: string | null
           id: string
-          offer_id: string | null
+          is_sponsored: boolean
+          item_id: string
+          item_type: string
+          partner_id: string | null
           scope: string | null
+          sponsor_priority: number | null
+          sponsor_tier: number | null
+          state: string | null
           user_id: string | null
         }
         Insert: {
           campus_id?: string | null
+          city?: string | null
           created_at?: string
-          deal_id?: string | null
           id?: string
-          offer_id?: string | null
+          is_sponsored?: boolean
+          item_id: string
+          item_type?: string
+          partner_id?: string | null
           scope?: string | null
+          sponsor_priority?: number | null
+          sponsor_tier?: number | null
+          state?: string | null
           user_id?: string | null
         }
         Update: {
           campus_id?: string | null
+          city?: string | null
+          created_at?: string
+          id?: string
+          is_sponsored?: boolean
+          item_id?: string
+          item_type?: string
+          partner_id?: string | null
+          scope?: string | null
+          sponsor_priority?: number | null
+          sponsor_tier?: number | null
+          state?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      sponsored_impressions: {
+        Row: {
+          campus_id: string | null
+          city: string | null
+          created_at: string
+          deal_id: string | null
+          id: string
+          is_premium: boolean | null
+          is_verified: boolean | null
+          item_type: string | null
+          offer_id: string | null
+          partner_id: string | null
+          scope: string | null
+          state: string | null
+          user_id: string | null
+        }
+        Insert: {
+          campus_id?: string | null
+          city?: string | null
           created_at?: string
           deal_id?: string | null
           id?: string
+          is_premium?: boolean | null
+          is_verified?: boolean | null
+          item_type?: string | null
           offer_id?: string | null
+          partner_id?: string | null
           scope?: string | null
+          state?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          campus_id?: string | null
+          city?: string | null
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          is_premium?: boolean | null
+          is_verified?: boolean | null
+          item_type?: string | null
+          offer_id?: string | null
+          partner_id?: string | null
+          scope?: string | null
+          state?: string | null
           user_id?: string | null
         }
         Relationships: []
