@@ -37,7 +37,7 @@ export default function SignIn() {
       toast({ title: "Sign in failed", description: error, variant: "destructive" });
     } else {
       toast({ title: "Welcome back!", description: "Redirecting to your dashboard…" });
-      navigate("/dashboard");
+      navigate("/dashboard", { replace: true });
     }
   };
 
