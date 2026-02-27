@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import LandingPage from "./pages/LandingPage";
@@ -35,6 +35,13 @@ import PartnerRequest from "./pages/PartnerRequest";
 import AmbassadorApply from "./pages/AmbassadorApply";
 import AmbassadorsManager from "./pages/admin/AmbassadorsManager";
 
+// Redirect /join?ref=CODE to /sign-up?ref=CODE
+function JoinRedirect() {
+  const [params] = useSearchParams();
+  const ref = params.get("ref") || "";
+  return <Navigate to={`/sign-up${ref ? `?ref=${ref}` : ""}`} replace />;
+}
+
 const queryClient = new QueryClient();
 
 const App = () => (
@@ -49,6 +56,7 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/sign-in" element={<SignIn />} />
             <Route path="/sign-up" element={<SignUp />} />
+            <Route path="/join" element={<JoinRedirect />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pricing" element={<Pricing />} />
