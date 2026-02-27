@@ -176,6 +176,8 @@ export default function PartnersManager() {
       if (editingPartnerId) {
         const { error } = await supabase.from("partners").update(payload).eq("id", editingPartnerId);
         if (error) throw error;
+        // Also update the matching store's logo
+        await supabase.from("stores").update({ logo_url: logoUrl }).eq("name", pForm.partner_name);
       } else {
         const { error } = await supabase.from("partners").insert(payload);
         if (error) throw error;
@@ -259,6 +261,10 @@ export default function PartnersManager() {
 
       if (existingStore) {
         storeId = existingStore.id;
+        // Keep store logo in sync with partner
+        if (selectedPartner.logo_url) {
+          await supabase.from("stores").update({ logo_url: selectedPartner.logo_url }).eq("id", storeId);
+        }
       } else {
         const { data: newStore, error: storeErr } = await supabase
           .from("stores")
