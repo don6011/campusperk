@@ -87,12 +87,17 @@ export default {
           "0%, 100%": { opacity: "0.4" },
           "50%": { opacity: "0.8" },
         },
+        "gold-glow": {
+          "0%, 100%": { boxShadow: "0 0 3px 1px hsl(var(--gold) / 0.3)" },
+          "50%": { boxShadow: "0 0 8px 3px hsl(var(--gold) / 0.6)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "float": "float 6s ease-in-out infinite",
         "pulse-glow": "pulse-glow 3s ease-in-out infinite",
+        "gold-glow": "gold-glow 2s ease-in-out infinite",
       },
     },
   },
