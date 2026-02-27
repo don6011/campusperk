@@ -196,8 +196,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <DropdownMenuItem className="gap-2" onClick={() => navigate("/settings")}>
                   <User className="h-4 w-4" /> Account Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem className="gap-2">
-                  <Crown className="h-4 w-4" /> Premium
+                <DropdownMenuItem className="gap-2" onClick={() => navigate("/pricing")}>
+                  <Crown className={`h-4 w-4 ${profile?.premium_status ? "text-gold" : ""}`} />
+                  {profile?.premium_status ? (
+                    <span className="flex items-center gap-1.5">
+                      Premium <span className="text-[10px] font-semibold bg-gold/20 text-gold px-1.5 py-0.5 rounded-full">Active</span>
+                    </span>
+                  ) : (
+                    "Upgrade to Premium"
+                  )}
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="gap-2 text-destructive" onClick={handleLogout}>
