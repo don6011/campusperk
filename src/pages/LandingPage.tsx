@@ -275,33 +275,33 @@ const LandingPage = () => {
             savingsCounter.start();
           }}
         >
-          <div className="grid grid-cols-3 gap-6">
+          <div className="grid grid-cols-3 gap-3 md:gap-6">
             <motion.div variants={fadeUp} custom={0} className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Users className="h-5 w-5 text-primary" />
-                <span className="font-display text-3xl font-bold text-foreground md:text-4xl">
+              <div className="flex items-center justify-center gap-1 md:gap-2 mb-1">
+                <Users className="h-4 w-4 md:h-5 md:w-5 text-primary" />
+                <span className="font-display text-2xl font-bold text-foreground md:text-4xl">
                   {studentsCounter.count.toLocaleString()}+
                 </span>
               </div>
-              <div className="text-sm text-muted-foreground">Students Saving Money</div>
+              <div className="text-xs md:text-sm text-muted-foreground">Students</div>
             </motion.div>
             <motion.div variants={fadeUp} custom={1} className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <School className="h-5 w-5 text-accent" />
-                <span className="font-display text-3xl font-bold text-foreground md:text-4xl">
+              <div className="flex items-center justify-center gap-1 md:gap-2 mb-1">
+                <School className="h-4 w-4 md:h-5 md:w-5 text-accent" />
+                <span className="font-display text-2xl font-bold text-foreground md:text-4xl">
                   {campusesCounter.count.toLocaleString()}+
                 </span>
               </div>
-              <div className="text-sm text-muted-foreground">Campuses Supported</div>
+              <div className="text-xs md:text-sm text-muted-foreground">Campuses</div>
             </motion.div>
             <motion.div variants={fadeUp} custom={2} className="text-center">
-              <div className="flex items-center justify-center gap-2 mb-1">
-                <Wallet className="h-5 w-5 text-[hsl(var(--gold))]" />
-                <span className="font-display text-3xl font-bold text-foreground md:text-4xl">
+              <div className="flex items-center justify-center gap-1 md:gap-2 mb-1">
+                <Wallet className="h-4 w-4 md:h-5 md:w-5 text-[hsl(var(--gold))]" />
+                <span className="font-display text-2xl font-bold text-foreground md:text-4xl">
                   ${savingsCounter.count}
                 </span>
               </div>
-              <div className="text-sm text-muted-foreground">Avg. Savings Per Semester</div>
+              <div className="text-xs md:text-sm text-muted-foreground">Avg. Savings</div>
             </motion.div>
           </div>
         </motion.div>
@@ -398,15 +398,15 @@ const LandingPage = () => {
                 <div className="h-3 w-3 rounded-full bg-accent/60" />
                 <span className="ml-3 text-xs text-muted-foreground font-mono">campusperk.com/dashboard</span>
               </div>
-              <div className="p-6 md:p-8 grid grid-cols-3 gap-4">
+              <div className="p-4 md:p-8 grid grid-cols-3 gap-2 md:gap-4">
                 {[
                   { label: "This Month", value: "$47.50", trend: "+12%", color: "text-primary" },
                   { label: "This Semester", value: "$312.00", trend: "+23%", color: "text-accent" },
                   { label: "Lifetime", value: "$1,247.80", trend: "", color: "text-[hsl(var(--gold))]" },
                 ].map((stat) => (
-                  <div key={stat.label} className="rounded-xl border border-border bg-secondary/50 p-4 text-center">
-                    <div className="text-xs text-muted-foreground mb-2">{stat.label}</div>
-                    <div className={`font-display text-2xl font-bold ${stat.color}`}>{stat.value}</div>
+                  <div key={stat.label} className="rounded-xl border border-border bg-secondary/50 p-3 md:p-4 text-center">
+                    <div className="text-[10px] md:text-xs text-muted-foreground mb-2">{stat.label}</div>
+                    <div className={`font-display text-lg md:text-2xl font-bold ${stat.color}`}>{stat.value}</div>
                     {stat.trend && (
                       <div className="mt-1 text-xs text-accent flex items-center justify-center gap-1">
                         <TrendingUp className="h-3 w-3" />
