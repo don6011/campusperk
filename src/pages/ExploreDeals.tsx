@@ -528,9 +528,9 @@ export default function ExploreDeals() {
                         </div>
 
                         <div className="pt-3 border-t border-border/50">
-                          <Link to={`/deals/${deal.id}`}>
-                            <Button size="sm" variant="ghost" className="text-primary hover:bg-primary/10 text-xs gap-1 h-7 w-full justify-center">
-                              View Deal <ExternalLink className="h-3 w-3" />
+                          <Link to={`/go/${deal.id}`}>
+                            <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground text-xs gap-1 h-8 w-full justify-center font-semibold">
+                              <ExternalLink className="h-3 w-3" /> Unlock Deal
                             </Button>
                           </Link>
                         </div>

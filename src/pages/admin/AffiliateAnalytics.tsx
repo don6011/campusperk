@@ -304,7 +304,7 @@ export default function AffiliateAnalytics() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("affiliate_clicks")
-        .select("id, deal_id, clicked_at, is_premium_user, is_verified_student, flagged, device_type, referrer")
+        .select("id, deal_id, clicked_at, is_premium_user, is_verified_student, flagged, device_type, referrer, campus_id, scope, referral_code")
         .gte("clicked_at", since)
         .order("clicked_at", { ascending: true });
       if (error) throw error;

@@ -17,6 +17,7 @@ export type Database = {
       affiliate_clicks: {
         Row: {
           blocked_reason: string | null
+          campus_id: string | null
           clicked_at: string
           country: string | null
           deal_id: string
@@ -28,11 +29,14 @@ export type Database = {
           is_premium_user: boolean | null
           is_sponsored: boolean | null
           is_verified_student: boolean | null
+          referral_code: string | null
           referrer: string | null
+          scope: string | null
           user_id: string | null
         }
         Insert: {
           blocked_reason?: string | null
+          campus_id?: string | null
           clicked_at?: string
           country?: string | null
           deal_id: string
@@ -44,11 +48,14 @@ export type Database = {
           is_premium_user?: boolean | null
           is_sponsored?: boolean | null
           is_verified_student?: boolean | null
+          referral_code?: string | null
           referrer?: string | null
+          scope?: string | null
           user_id?: string | null
         }
         Update: {
           blocked_reason?: string | null
+          campus_id?: string | null
           clicked_at?: string
           country?: string | null
           deal_id?: string
@@ -60,7 +67,9 @@ export type Database = {
           is_premium_user?: boolean | null
           is_sponsored?: boolean | null
           is_verified_student?: boolean | null
+          referral_code?: string | null
           referrer?: string | null
+          scope?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -354,9 +363,11 @@ export type Database = {
       deals: {
         Row: {
           affiliate_link_url: string | null
+          affiliate_network: string | null
           ai_summary: string | null
           category: string | null
           commission_rate: number | null
+          commission_type: string
           created_at: string
           deal_scope: Database["public"]["Enums"]["deal_scope"]
           description: string | null
@@ -372,6 +383,7 @@ export type Database = {
           featured: boolean
           geo_radius_miles: number | null
           id: string
+          is_affiliate: boolean
           last_checked_at: string | null
           partner_id: string | null
           partner_offer_id: string | null
@@ -392,9 +404,11 @@ export type Database = {
         }
         Insert: {
           affiliate_link_url?: string | null
+          affiliate_network?: string | null
           ai_summary?: string | null
           category?: string | null
           commission_rate?: number | null
+          commission_type?: string
           created_at?: string
           deal_scope?: Database["public"]["Enums"]["deal_scope"]
           description?: string | null
@@ -410,6 +424,7 @@ export type Database = {
           featured?: boolean
           geo_radius_miles?: number | null
           id?: string
+          is_affiliate?: boolean
           last_checked_at?: string | null
           partner_id?: string | null
           partner_offer_id?: string | null
@@ -430,9 +445,11 @@ export type Database = {
         }
         Update: {
           affiliate_link_url?: string | null
+          affiliate_network?: string | null
           ai_summary?: string | null
           category?: string | null
           commission_rate?: number | null
+          commission_type?: string
           created_at?: string
           deal_scope?: Database["public"]["Enums"]["deal_scope"]
           description?: string | null
@@ -448,6 +465,7 @@ export type Database = {
           featured?: boolean
           geo_radius_miles?: number | null
           id?: string
+          is_affiliate?: boolean
           last_checked_at?: string | null
           partner_id?: string | null
           partner_offer_id?: string | null

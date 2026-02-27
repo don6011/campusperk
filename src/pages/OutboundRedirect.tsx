@@ -85,6 +85,8 @@ const OutboundRedirect = () => {
     else if (/Tablet|iPad/i.test(ua)) deviceType = "tablet";
 
     // Log click
+    const refCode = localStorage.getItem("campusperk_ref") || null;
+
     (async () => {
       await supabase.from("affiliate_clicks").insert({
         deal_id: deal.id,
@@ -93,6 +95,10 @@ const OutboundRedirect = () => {
         referrer: document.referrer || null,
         is_verified_student: profile?.student_verified || false,
         is_premium_user: profile?.premium_status || false,
+        campus_id: profile?.campus_id || null,
+        scope: (deal as any).deal_scope || "national",
+        referral_code: refCode,
+        is_sponsored: deal.sponsored || false,
       } as any);
       setClickLogged(true);
     })();
