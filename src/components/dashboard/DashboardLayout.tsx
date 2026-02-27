@@ -181,8 +181,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="flex items-center gap-2 px-2">
-                  <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm">
+                  <div className="relative h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm">
                     {profile?.name?.[0]?.toUpperCase() || "U"}
+                    {profile?.premium_status && (
+                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[hsl(var(--gold))] flex items-center justify-center ring-2 ring-background">
+                        <Crown className="h-2.5 w-2.5 text-background" />
+                      </span>
+                    )}
                   </div>
                   <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
                 </Button>
