@@ -127,22 +127,34 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           )}
         </nav>
 
-        {/* Upgrade CTA */}
+        {/* Upgrade CTA / Premium status */}
         {sidebarOpen && (
-          <div className="m-3 rounded-xl border border-gold/30 bg-gold/5 p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Crown className="h-4 w-4 text-gold" />
-              <span className="text-sm font-semibold text-gold">Go Premium</span>
+          profile?.premium_status ? (
+            <div className="m-3 rounded-xl border border-gold/30 bg-gold/10 p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Crown className="h-4 w-4 text-gold" />
+                <span className="text-sm font-semibold text-gold">Premium Active</span>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                You have full access to all deals & unlimited alerts.
+              </p>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">
-              Unlock early access deals & unlimited alerts.
-            </p>
-            <Link to="/pricing">
-              <Button size="sm" className="w-full bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 text-xs">
-                Upgrade
-              </Button>
-            </Link>
-          </div>
+          ) : (
+            <div className="m-3 rounded-xl border border-gold/30 bg-gold/5 p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Crown className="h-4 w-4 text-gold" />
+                <span className="text-sm font-semibold text-gold">Go Premium</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-3">
+                Unlock early access deals & unlimited alerts.
+              </p>
+              <Link to="/pricing">
+                <Button size="sm" className="w-full bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 text-xs">
+                  Upgrade
+                </Button>
+              </Link>
+            </div>
+          )
         )}
       </aside>
 
