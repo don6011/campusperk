@@ -39,7 +39,7 @@ const navItems = [
   { title: "Favorites", url: "/favorites", icon: Heart },
   { title: "Submit Deal", url: "/submit", icon: Send },
   { title: "Alerts", url: "/alerts", icon: Bell },
-  { title: "Premium", url: "/pricing", icon: Crown },
+  { title: "Premium", url: "/pricing", icon: Crown, premiumUrl: "/settings" },
   { title: "Account Settings", url: "/settings", icon: Settings },
 ];
 
@@ -88,11 +88,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
           {navItems.map((item) => {
-            const active = location.pathname === item.url;
+            const resolvedUrl = (item as any).premiumUrl && profile?.premium_status ? (item as any).premiumUrl : item.url;
+            const active = location.pathname === resolvedUrl;
             return (
               <Link
                 key={item.url}
-                to={item.url}
+                to={resolvedUrl}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   active
                     ? "bg-primary/15 text-primary"
@@ -100,7 +101,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 }`}
               >
                 <item.icon className="h-4.5 w-4.5 shrink-0" />
-                {sidebarOpen && <span>{item.title}</span>}
+                {sidebarOpen && <span>{profile?.premium_status && item.title === "Premium" ? "My Premium" : item.title}</span>}
               </Link>
             );
           })}
