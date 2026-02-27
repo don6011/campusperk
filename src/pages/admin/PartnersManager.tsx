@@ -208,24 +208,125 @@ export default function PartnersManager() {
         sponsor_end_at: oForm.sponsored && oForm.sponsor_end_at ? oForm.sponsor_end_at : null,
         sponsor_notes: oForm.sponsor_notes || null,
       };
+
+      let offerId = editingOfferId;
       if (editingOfferId) {
         const { error } = await supabase.from("partner_offers").update(payload).eq("id", editingOfferId);
         if (error) throw error;
       } else {
-        const { error } = await supabase.from("partner_offers").insert(payload);
+        const { data, error } = await supabase.from("partner_offers").insert(payload).select("id").single();
         if (error) throw error;
+        offerId = data.id;
+      }
+
+      // ── Auto-sync to deals table ──
+      // 1. Find or create a store for this partner
+      let storeId: string;
+      const { data: existingStore } = await supabase
+        .from("stores")
+        .select("id")
+        .eq("name", selectedPartner.partner_name)
+        .maybeSingle();
+
+      if (existingStore) {
+        storeId = existingStore.id;
+      } else {
+        const { data: newStore, error: storeErr } = await supabase
+          .from("stores")
+          .insert({
+            name: selectedPartner.partner_name,
+            website_url: selectedPartner.website_url,
+            logo_url: selectedPartner.logo_url,
+          })
+          .select("id")
+          .single();
+        if (storeErr) throw storeErr;
+        storeId = newStore.id;
+      }
+
+      // 2. Determine deal_scope from partner locations
+      const partnerType = selectedPartner.partner_type;
+      let dealScope: "national" | "regional" | "local" = "national";
+      let eligibleCities: string[] = [];
+      let eligibleRegions: string[] = [];
+
+      if (partnerType === "local_business" || partnerType === "regional_chain") {
+        dealScope = partnerType === "local_business" ? "local" : "regional";
+        // Fetch locations to populate eligible_cities/regions
+        const { data: locs } = await supabase
+          .from("partner_locations")
+          .select("city, state, state_code")
+          .eq("partner_id", selectedPartner.id)
+          .eq("is_active", true);
+        if (locs) {
+          eligibleCities = [...new Set(locs.map(l => l.city).filter(Boolean) as string[])];
+          eligibleRegions = [...new Set(locs.map(l => l.state_code || l.state).filter(Boolean) as string[])];
+        }
+      }
+
+      // 3. Upsert the deal row
+      const dealPayload = {
+        store_id: storeId,
+        partner_id: selectedPartner.id,
+        partner_offer_id: offerId,
+        title: oForm.offer_title,
+        description: oForm.offer_description || null,
+        discount_value: oForm.discount_value || null,
+        discount_type: oForm.deal_type as any,
+        requires_campus_verification: oForm.requires_campus_verification,
+        eligible_roles: oForm.eligible_roles.length > 0 ? oForm.eligible_roles as any : null,
+        requires_role_verification: oForm.eligible_roles.length > 0,
+        expires_at: oForm.end_at || null,
+        status: (oForm.status === "active" ? "active" : oForm.status === "expired" ? "expired" : "coming_soon") as any,
+        deal_scope: dealScope as any,
+        eligible_cities: eligibleCities,
+        eligible_regions: eligibleRegions,
+        sponsored: oForm.sponsored,
+        sponsor_tier: oForm.sponsored ? oForm.sponsor_tier : null,
+        sponsor_priority: oForm.sponsored ? oForm.sponsor_priority : 0,
+        sponsor_start_at: oForm.sponsored && oForm.sponsor_start_at ? oForm.sponsor_start_at : null,
+        sponsor_end_at: oForm.sponsored && oForm.sponsor_end_at ? oForm.sponsor_end_at : null,
+        sponsor_source: "partner_offer" as any,
+      };
+
+      // Check if a deal already exists for this offer
+      const { data: existingDeal } = await supabase
+        .from("deals")
+        .select("id")
+        .eq("partner_offer_id", offerId)
+        .maybeSingle();
+
+      if (existingDeal) {
+        const { error: dealErr } = await supabase.from("deals").update(dealPayload).eq("id", existingDeal.id);
+        if (dealErr) throw dealErr;
+      } else {
+        const { error: dealErr } = await supabase.from("deals").insert(dealPayload);
+        if (dealErr) throw dealErr;
       }
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-partner-offers"] }); setOfferDialog(false); toast.success("Offer saved"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-partner-offers"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-deals"] });
+      qc.invalidateQueries({ queryKey: ["deals-with-stores"] });
+      setOfferDialog(false);
+      toast.success("Offer saved & synced to deal feed");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
   const deleteOffer = useMutation({
     mutationFn: async (id: string) => {
+      // Delete linked deal first
+      await supabase.from("deals").delete().eq("partner_offer_id", id);
       const { error } = await supabase.from("partner_offers").delete().eq("id", id);
       if (error) throw error;
     },
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["admin-partner-offers"] }); toast.success("Offer deleted"); },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["admin-partner-offers"] });
+      qc.invalidateQueries({ queryKey: ["dashboard-deals"] });
+      qc.invalidateQueries({ queryKey: ["deals-with-stores"] });
+      toast.success("Offer & linked deal deleted");
+    },
     onError: (e: Error) => toast.error(e.message),
   });
 
