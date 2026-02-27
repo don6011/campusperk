@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { toast } from "sonner";
-import { Search, ShieldCheck, History, Crown } from "lucide-react";
+import { Search, ShieldCheck, History, Crown, GraduationCap } from "lucide-react";
 import { format } from "date-fns";
 
 type Profile = {
@@ -48,9 +48,10 @@ const UsersManager = () => {
   const [premiumReason, setPremiumReason] = useState("");
   const [tierFilter, setTierFilter] = useState<string>("all");
   const [verifiedFilter, setVerifiedFilter] = useState<string>("all");
+  const [roleFilter, setRoleFilter] = useState<string>("all");
 
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ["admin-users", search, tierFilter, verifiedFilter],
+    queryKey: ["admin-users", search, tierFilter, verifiedFilter, roleFilter],
     queryFn: async () => {
       let query = supabase.from("profiles").select("id, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verified, created_at").order("created_at", { ascending: false });
       if (search.trim()) {
@@ -60,6 +61,7 @@ const UsersManager = () => {
       if (tierFilter === "free") query = query.eq("premium_status", false);
       if (verifiedFilter === "verified") query = query.eq("student_verified", true);
       if (verifiedFilter === "unverified") query = query.eq("student_verified", false);
+      if (roleFilter !== "all") query = query.eq("campus_role", roleFilter as any);
       const { data, error } = await query.limit(100);
       if (error) throw error;
       return data as Profile[];
@@ -203,6 +205,19 @@ const UsersManager = () => {
               <SelectItem value="all">All Status</SelectItem>
               <SelectItem value="verified">Verified</SelectItem>
               <SelectItem value="unverified">Unverified</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-[150px] h-9">
+              <GraduationCap className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Roles</SelectItem>
+              <SelectItem value="student">Student</SelectItem>
+              <SelectItem value="faculty">Faculty</SelectItem>
+              <SelectItem value="staff">Staff</SelectItem>
+              <SelectItem value="alumni">Alumni</SelectItem>
             </SelectContent>
           </Select>
           <Button asChild variant="outline" size="sm" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10">
