@@ -140,6 +140,21 @@ export default function PartnersManager() {
     },
   });
 
+  // Fetch which offers have a synced deal row
+  const offerIds = offers.map(o => o.id);
+  const { data: syncedOfferIds = [] } = useQuery({
+    queryKey: ["admin-synced-offer-ids", selectedPartner?.id, offerIds],
+    enabled: offerIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deals")
+        .select("partner_offer_id")
+        .in("partner_offer_id", offerIds);
+      if (error) throw error;
+      return (data || []).map(d => d.partner_offer_id).filter(Boolean) as string[];
+    },
+  });
+
   // Mutations
   const savePartner = useMutation({
     mutationFn: async () => {
@@ -515,7 +530,8 @@ export default function PartnersManager() {
                           <TableHead>Offer</TableHead>
                           <TableHead>Discount</TableHead>
                           <TableHead>Type</TableHead>
-            <TableHead>Status</TableHead>
+                          <TableHead>Status</TableHead>
+            <TableHead>Feed</TableHead>
             <TableHead>Sponsored</TableHead>
             <TableHead>End</TableHead>
             <TableHead className="text-right">Actions</TableHead>
@@ -523,13 +539,20 @@ export default function PartnersManager() {
                       </TableHeader>
                       <TableBody>
                         {offers.length === 0 ? (
-                          <TableRow><TableCell colSpan={7} className="text-center py-6 text-muted-foreground text-sm">No offers.</TableCell></TableRow>
+                          <TableRow><TableCell colSpan={8} className="text-center py-6 text-muted-foreground text-sm">No offers.</TableCell></TableRow>
                         ) : offers.map(o => (
                           <TableRow key={o.id}>
                             <TableCell className="text-sm font-medium">{o.offer_title}</TableCell>
                             <TableCell className="text-sm">{o.discount_value || "—"}</TableCell>
                             <TableCell className="text-sm capitalize">{o.deal_type.replace("_", " ")}</TableCell>
                             <TableCell>{statusBadge(o.status)}</TableCell>
+                            <TableCell>
+                              {syncedOfferIds.includes(o.id) ? (
+                                <Badge className="bg-accent/15 text-accent border-accent/30 text-[10px]">Synced</Badge>
+                              ) : (
+                                <Badge variant="secondary" className="text-[10px]">Not synced</Badge>
+                              )}
+                            </TableCell>
                             <TableCell>
                               {(o as any).sponsored ? (
                                 <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] gap-1">
