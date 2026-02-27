@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 import { CampusRoleBadge } from "@/components/CampusRoleBadge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -184,9 +185,18 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="relative h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm">
                     {profile?.name?.[0]?.toUpperCase() || "U"}
                     {profile?.premium_status && (
-                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-gold flex items-center justify-center ring-2 ring-background animate-gold-glow">
-                        <Crown className="h-2.5 w-2.5 text-background" />
-                      </span>
+                      <TooltipProvider delayDuration={200}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-gold flex items-center justify-center ring-2 ring-background animate-gold-glow">
+                              <Crown className="h-2.5 w-2.5 text-background" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="bottom" className="text-xs">
+                            Premium Member ✨
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
                   </div>
                   <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
