@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
   Mail, Lock, Eye, EyeOff, ArrowRight,
@@ -27,6 +27,7 @@ const fadeUp = {
 type EduStatus = "idle" | "valid" | "invalid";
 
 export default function SignUp() {
+  const [searchParams] = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -36,6 +37,17 @@ export default function SignUp() {
   const [step, setStep] = useState<"form" | "verify">("form");
   const { toast } = useToast();
   const { signUp } = useAuth();
+
+  // Capture referral code from URL (?ref=CODE)
+  const refCode = searchParams.get("ref") ?? localStorage.getItem("campusperk_ref") ?? "";
+
+  // Persist ref code so it survives page refreshes
+  useEffect(() => {
+    const urlRef = searchParams.get("ref");
+    if (urlRef) {
+      localStorage.setItem("campusperk_ref", urlRef);
+    }
+  }, [searchParams]);
 
   const handleEmailChange = (val: string) => {
     setEmail(val);
@@ -91,6 +103,19 @@ export default function SignUp() {
     if (error) {
       toast({ title: "Sign up failed", description: error, variant: "destructive" });
     } else {
+      // Log referral if a ref code exists
+      if (refCode) {
+        try {
+          await supabase.from("referrals").insert({
+            referral_code: refCode,
+            referred_user_id: null, // Will be linked when user verifies email & logs in
+            verified: false,
+          });
+          localStorage.removeItem("campusperk_ref");
+        } catch {
+          // Non-critical — don't block signup
+        }
+      }
       setStep("verify");
     }
   };
@@ -152,6 +177,12 @@ export default function SignUp() {
             </motion.div>
 
             <motion.div variants={fadeUp} custom={0}>
+              {refCode && (
+                <div className="mb-4 flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-lg px-4 py-2.5">
+                  <GraduationCap className="h-4 w-4 text-accent shrink-0" />
+                  <span className="text-sm text-accent font-medium">You were referred by an ambassador!</span>
+                </div>
+              )}
               <h1 className="font-display text-2xl font-bold text-foreground">Create your account</h1>
               <p className="mt-1 text-sm text-muted-foreground">
                 Use your .edu email to unlock student-exclusive deals.
