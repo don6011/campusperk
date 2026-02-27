@@ -151,6 +151,69 @@ export type Database = {
         }
         Relationships: []
       }
+      ambassador_applications: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          motivation_text: string | null
+          name: string
+          role: string
+          social_handle: string | null
+          status: string
+          university: string
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          motivation_text?: string | null
+          name: string
+          role?: string
+          social_handle?: string | null
+          status?: string
+          university: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          motivation_text?: string | null
+          name?: string
+          role?: string
+          social_handle?: string | null
+          status?: string
+          university?: string
+        }
+        Relationships: []
+      }
+      ambassadors: {
+        Row: {
+          created_at: string
+          id: string
+          referral_code: string
+          status: string
+          university: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          referral_code: string
+          status?: string
+          university: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          referral_code?: string
+          status?: string
+          university?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       campus_domains: {
         Row: {
           campus_name: string | null
@@ -743,6 +806,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      referrals: {
+        Row: {
+          id: string
+          referral_code: string
+          referred_user_id: string | null
+          signup_date: string
+          verified: boolean
+        }
+        Insert: {
+          id?: string
+          referral_code: string
+          referred_user_id?: string | null
+          signup_date?: string
+          verified?: boolean
+        }
+        Update: {
+          id?: string
+          referral_code?: string
+          referred_user_id?: string | null
+          signup_date?: string
+          verified?: boolean
+        }
+        Relationships: []
       }
       sponsored_clicks: {
         Row: {

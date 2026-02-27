@@ -5,7 +5,7 @@ import {
   ArrowRight, Heart, Clock, Shield, Crown, TrendingUp, Bell, Tag, ChevronRight,
   ExternalLink, Sparkles, AlertTriangle, ShoppingBag, Monitor, Cpu, CreditCard,
   Utensils, Plane, Eye, Bookmark, DollarSign, Zap, Lock, BellRing, BarChart3,
-  Info, MapPin,
+  Info, MapPin, Megaphone, Users,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
@@ -560,6 +560,9 @@ export default function Dashboard() {
           )}
         </section>
 
+        {/* Ambassador Impact Card */}
+        <AmbassadorImpactCard userId={user?.id} />
+
         {/* Premium Upsell */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <Card className="border-border bg-card lg:col-span-2">
@@ -617,6 +620,84 @@ export default function Dashboard() {
       </div>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </DashboardLayout>
+  );
+}
+
+function AmbassadorImpactCard({ userId }: { userId?: string }) {
+  const { data: ambassador } = useQuery({
+    queryKey: ["ambassador-card", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ambassadors")
+        .select("*")
+        .eq("user_id", userId!)
+        .maybeSingle();
+      return data;
+    },
+  });
+
+  const { data: referrals = [] } = useQuery({
+    queryKey: ["ambassador-referrals", ambassador?.referral_code],
+    enabled: !!ambassador?.referral_code,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("referrals")
+        .select("*")
+        .eq("referral_code", ambassador!.referral_code);
+      return data || [];
+    },
+  });
+
+  if (!ambassador) return null;
+
+  const verified = referrals.filter((r: any) => r.verified).length;
+
+  return (
+    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={3}>
+      <Card className="border-primary/20 bg-card relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+        <CardHeader className="pb-2 relative z-10">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
+            <Megaphone className="h-4 w-4" /> Your Campus Impact
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="relative z-10">
+          <div className="grid grid-cols-3 gap-6 text-center">
+            <div>
+              <div className="font-display text-2xl font-bold text-foreground">{referrals.length}</div>
+              <div className="text-xs text-muted-foreground">Students Joined</div>
+            </div>
+            <div>
+              <div className="font-display text-2xl font-bold text-foreground">{verified}</div>
+              <div className="text-xs text-muted-foreground">Verified</div>
+            </div>
+            <div>
+              <div className="font-display text-2xl font-bold text-accent">
+                ${(referrals.length * 2).toFixed(0)}
+              </div>
+              <div className="text-xs text-muted-foreground">Est. Rewards</div>
+            </div>
+          </div>
+          <div className="mt-4 pt-3 border-t border-border/50 flex items-center justify-between">
+            <code className="text-xs bg-secondary px-3 py-1.5 rounded text-muted-foreground">
+              {window.location.origin}/join?ref={ambassador.referral_code}
+            </code>
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-xs text-primary gap-1"
+              onClick={() => {
+                navigator.clipboard.writeText(`${window.location.origin}/join?ref=${ambassador.referral_code}`);
+                toast({ title: "Referral link copied!" });
+              }}
+            >
+              Copy Link
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.section>
   );
 }
 

@@ -29,6 +29,7 @@ const navItems = [
   { label: "Partners", href: "/admin/partners", icon: Building2 },
   { label: "Scans", href: "/admin/scans", icon: ScanSearch },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
+  { label: "Ambassadors", href: "/admin/ambassadors", icon: Users },
 ];
 
 export const AdminLayout = ({ children }: { children: ReactNode }) => {
