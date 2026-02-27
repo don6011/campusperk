@@ -3,14 +3,16 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   Crown, Sparkles, Zap, Bell, ShieldCheck, Star, TrendingUp,
-  Heart, Eye, ArrowRight,
+  Heart, Eye, ArrowRight, Gift, Users, Copy, Check, Trophy,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
 const fadeUp = {
@@ -27,8 +29,13 @@ interface UsageStats {
 export default function Premium() {
   const { profile, user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [stats, setStats] = useState<UsageStats>({ favoritesCount: 0, alertsCount: 0, earlyAccessDeals: 0 });
   const [exclusiveDeals, setExclusiveDeals] = useState<any[]>([]);
+  const [ambassador, setAmbassador] = useState<any>(null);
+  const [referralCount, setReferralCount] = useState(0);
+  const [verifiedReferrals, setVerifiedReferrals] = useState(0);
+  const [copied, setCopied] = useState(false);
 
   // Non-premium users → redirect to pricing
   useEffect(() => {
@@ -72,6 +79,49 @@ export default function Premium() {
     };
     fetchDeals();
   }, [profile?.premium_status]);
+
+  // Fetch ambassador & referral data
+  useEffect(() => {
+    if (!user || !profile?.premium_status) return;
+
+    const fetchReferrals = async () => {
+      // Check if user is an ambassador
+      const { data: amb } = await supabase
+        .from("ambassadors")
+        .select("*")
+        .eq("user_id", user.id)
+        .eq("status", "active")
+        .maybeSingle();
+      setAmbassador(amb);
+
+      if (amb?.referral_code) {
+        const { data: refs } = await supabase
+          .from("referrals")
+          .select("id, verified")
+          .eq("referral_code", amb.referral_code);
+        setReferralCount(refs?.length ?? 0);
+        setVerifiedReferrals(refs?.filter((r: any) => r.verified).length ?? 0);
+      }
+    };
+    fetchReferrals();
+  }, [user, profile?.premium_status]);
+
+  const referralLink = ambassador?.referral_code
+    ? `${window.location.origin}/join?ref=${ambassador.referral_code}`
+    : `${window.location.origin}/join`;
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(referralLink);
+    setCopied(true);
+    toast({ title: "Referral link copied!" });
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const rewardTiers = [
+    { threshold: 3, reward: "1 Month Premium Extension", icon: Crown },
+    { threshold: 10, reward: "Exclusive Deal Pack", icon: Gift },
+    { threshold: 25, reward: "Premium for Life + Merch", icon: Trophy },
+  ];
 
   if (!profile?.premium_status) return null;
 
@@ -231,6 +281,95 @@ export default function Premium() {
             </Card>
           </motion.div>
         )}
+
+        {/* Referral Rewards */}
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={5}>
+          <Card className="border-border bg-card overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/3 via-transparent to-gold/3 pointer-events-none" />
+            <CardHeader className="pb-3 relative">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Gift className="h-4 w-4 text-primary" /> Referral Rewards
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-5 relative">
+              {/* Referral Link */}
+              <div className="space-y-2">
+                <p className="text-sm text-muted-foreground">
+                  Invite friends to CampusPerk and earn premium rewards for every verified signup.
+                </p>
+                <div className="flex items-center gap-2">
+                  <div className="flex-1 bg-secondary/60 border border-border rounded-lg px-3 py-2.5 text-sm font-mono text-muted-foreground truncate">
+                    {referralLink}
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className={`shrink-0 gap-1.5 transition-colors ${copied ? "border-accent text-accent" : "border-primary/30 text-primary"}`}
+                    onClick={handleCopy}
+                  >
+                    {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied ? "Copied" : "Copy"}
+                  </Button>
+                </div>
+                {!ambassador && (
+                  <p className="text-[11px] text-muted-foreground">
+                    Want a personalized referral code?{" "}
+                    <button onClick={() => navigate("/ambassador")} className="text-primary hover:underline font-medium">
+                      Apply as an Ambassador
+                    </button>
+                  </p>
+                )}
+              </div>
+
+              <Separator />
+
+              {/* Stats */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="text-center p-4 rounded-xl bg-secondary/40 border border-border">
+                  <Users className="h-5 w-5 mx-auto mb-2 text-primary" />
+                  <p className="text-2xl font-bold text-foreground">{referralCount}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Total Referrals</p>
+                </div>
+                <div className="text-center p-4 rounded-xl bg-secondary/40 border border-border">
+                  <ShieldCheck className="h-5 w-5 mx-auto mb-2 text-accent" />
+                  <p className="text-2xl font-bold text-foreground">{verifiedReferrals}</p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">Verified Signups</p>
+                </div>
+              </div>
+
+              <Separator />
+
+              {/* Reward Tiers */}
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Reward Tiers</p>
+                {rewardTiers.map((tier) => {
+                  const progress = Math.min((verifiedReferrals / tier.threshold) * 100, 100);
+                  const unlocked = verifiedReferrals >= tier.threshold;
+                  return (
+                    <div key={tier.threshold} className={`p-3 rounded-lg border transition-colors ${unlocked ? "border-gold/30 bg-gold/5" : "border-border bg-secondary/20"}`}>
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`h-8 w-8 rounded-lg flex items-center justify-center shrink-0 ${unlocked ? "bg-gold/15" : "bg-secondary"}`}>
+                          <tier.icon className={`h-4 w-4 ${unlocked ? "text-gold" : "text-muted-foreground"}`} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-sm font-medium ${unlocked ? "text-gold" : "text-foreground"}`}>{tier.reward}</p>
+                          <p className="text-[11px] text-muted-foreground">
+                            {unlocked ? "🎉 Unlocked!" : `${tier.threshold - verifiedReferrals} more verified referral${tier.threshold - verifiedReferrals === 1 ? "" : "s"} needed`}
+                          </p>
+                        </div>
+                        {unlocked && (
+                          <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px]">Earned</Badge>
+                        )}
+                      </div>
+                      <Progress value={progress} className="h-1.5" />
+                      <p className="text-[10px] text-muted-foreground mt-1 text-right">{verifiedReferrals}/{tier.threshold}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        </motion.div>
       </div>
     </DashboardLayout>
   );
