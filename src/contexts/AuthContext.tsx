@@ -59,6 +59,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  const linkPendingReferral = async (userId: string) => {
+    // Check localStorage for a referral code saved during signup
+    const refCode = localStorage.getItem("campusperk_ref");
+    if (!refCode) return;
+
+    // Find the most recent unlinked referral with this code
+    const { data: pending } = await supabase
+      .from("referrals")
+      .select("id")
+      .eq("referral_code", refCode)
+      .is("referred_user_id", null)
+      .order("signup_date", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (pending) {
+      await supabase
+        .from("referrals")
+        .update({ referred_user_id: userId, verified: true })
+        .eq("id", pending.id);
+      localStorage.removeItem("campusperk_ref");
+    }
+  };
+
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
@@ -82,7 +106,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(newSession?.user ?? null);
         if (newSession?.user) {
           // Use setTimeout to avoid Supabase client deadlock
-          setTimeout(() => fetchProfile(newSession.user.id), 0);
+          setTimeout(() => {
+            fetchProfile(newSession.user.id);
+            // Link any pending referral on first confirmed login
+            linkPendingReferral(newSession.user.id);
+          }, 0);
         } else {
           setProfile(null);
         }
