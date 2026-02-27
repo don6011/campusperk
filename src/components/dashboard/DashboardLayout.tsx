@@ -88,20 +88,36 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Nav */}
         <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1">
           {navItems.map((item) => {
-            const resolvedUrl = (item as any).premiumUrl && profile?.premium_status ? (item as any).premiumUrl : item.url;
+            const isPremiumItem = item.title === "Premium";
+            const isPremiumUser = !!profile?.premium_status;
+            const resolvedUrl = (item as any).premiumUrl && isPremiumUser ? (item as any).premiumUrl : item.url;
             const active = location.pathname === resolvedUrl;
+            const showGold = isPremiumItem && isPremiumUser;
             return (
               <Link
                 key={item.url}
                 to={resolvedUrl}
                 className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
-                  active
-                    ? "bg-primary/15 text-primary"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                  showGold
+                    ? active
+                      ? "bg-gold/15 text-gold"
+                      : "text-gold/70 hover:bg-gold/10 hover:text-gold"
+                    : active
+                      ? "bg-primary/15 text-primary"
+                      : "text-muted-foreground hover:bg-secondary hover:text-foreground"
                 }`}
               >
-                <item.icon className="h-4.5 w-4.5 shrink-0" />
-                {sidebarOpen && <span>{profile?.premium_status && item.title === "Premium" ? "My Premium" : item.title}</span>}
+                <item.icon className={`h-4.5 w-4.5 shrink-0 ${showGold ? "text-gold" : ""}`} />
+                {sidebarOpen && (
+                  <span className="flex items-center gap-2">
+                    {showGold ? "My Premium" : item.title}
+                    {showGold && (
+                      <span className="text-[9px] font-bold uppercase tracking-wider bg-gold/20 text-gold px-1.5 py-0.5 rounded-full border border-gold/30">
+                        Active
+                      </span>
+                    )}
+                  </span>
+                )}
               </Link>
             );
           })}
