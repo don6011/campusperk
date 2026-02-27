@@ -136,6 +136,95 @@ export type Database = {
           },
         ]
       }
+      affiliate_raw_deals: {
+        Row: {
+          affiliate_url: string | null
+          brand: string | null
+          category: string | null
+          created_at: string
+          description: string | null
+          external_id: string
+          id: string
+          image_url: string | null
+          network_name: string
+          raw_data: Json | null
+          source_id: string
+          title: string
+        }
+        Insert: {
+          affiliate_url?: string | null
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          external_id: string
+          id?: string
+          image_url?: string | null
+          network_name: string
+          raw_data?: Json | null
+          source_id: string
+          title: string
+        }
+        Update: {
+          affiliate_url?: string | null
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          external_id?: string
+          id?: string
+          image_url?: string | null
+          network_name?: string
+          raw_data?: Json | null
+          source_id?: string
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_raw_deals_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_sources"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_sources: {
+        Row: {
+          api_endpoint: string | null
+          api_key_secret_name: string | null
+          created_at: string
+          feed_url: string | null
+          id: string
+          last_synced_at: string | null
+          network_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          api_endpoint?: string | null
+          api_key_secret_name?: string | null
+          created_at?: string
+          feed_url?: string | null
+          id?: string
+          last_synced_at?: string | null
+          network_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          api_endpoint?: string | null
+          api_key_secret_name?: string | null
+          created_at?: string
+          feed_url?: string | null
+          id?: string
+          last_synced_at?: string | null
+          network_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       alert_subscriptions: {
         Row: {
           alert_type: string
@@ -533,6 +622,69 @@ export type Database = {
             columns: ["deal_id"]
             isOneToOne: false
             referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      normalized_deals: {
+        Row: {
+          affiliate_url: string | null
+          brand: string | null
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          promoted_deal_id: string | null
+          raw_deal_id: string | null
+          source_network: string
+          title: string
+          updated_at: string
+          verified: boolean
+        }
+        Insert: {
+          affiliate_url?: string | null
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          promoted_deal_id?: string | null
+          raw_deal_id?: string | null
+          source_network: string
+          title: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Update: {
+          affiliate_url?: string | null
+          brand?: string | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          promoted_deal_id?: string | null
+          raw_deal_id?: string | null
+          source_network?: string
+          title?: string
+          updated_at?: string
+          verified?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "normalized_deals_promoted_deal_id_fkey"
+            columns: ["promoted_deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "normalized_deals_raw_deal_id_fkey"
+            columns: ["raw_deal_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_raw_deals"
             referencedColumns: ["id"]
           },
         ]
