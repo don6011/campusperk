@@ -46,14 +46,17 @@ const UsersManager = () => {
   const [historyUser, setHistoryUser] = useState<Profile | null>(null);
   const [premiumUser, setPremiumUser] = useState<Profile | null>(null);
   const [premiumReason, setPremiumReason] = useState("");
+  const [tierFilter, setTierFilter] = useState<string>("all");
 
   const { data: users = [], isLoading } = useQuery({
-    queryKey: ["admin-users", search],
+    queryKey: ["admin-users", search, tierFilter],
     queryFn: async () => {
       let query = supabase.from("profiles").select("id, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verified, created_at").order("created_at", { ascending: false });
       if (search.trim()) {
         query = query.or(`email.ilike.%${search}%,name.ilike.%${search}%`);
       }
+      if (tierFilter === "premium") query = query.eq("premium_status", true);
+      if (tierFilter === "free") query = query.eq("premium_status", false);
       const { data, error } = await query.limit(100);
       if (error) throw error;
       return data as Profile[];
@@ -167,7 +170,7 @@ const UsersManager = () => {
   return (
     <AdminLayout>
       <div className="space-y-6">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="relative flex-1 max-w-sm">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -177,6 +180,17 @@ const UsersManager = () => {
               className="pl-9"
             />
           </div>
+          <Select value={tierFilter} onValueChange={setTierFilter}>
+            <SelectTrigger className="w-[140px] h-9">
+              <Crown className="h-3.5 w-3.5 mr-1.5 text-muted-foreground" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Users</SelectItem>
+              <SelectItem value="premium">Premium</SelectItem>
+              <SelectItem value="free">Free</SelectItem>
+            </SelectContent>
+          </Select>
           <Button asChild variant="outline" size="sm" className="gap-1.5 border-primary/30 text-primary hover:bg-primary/10">
             <Link to="/admin/verification">
               <ShieldCheck className="h-4 w-4" /> Verification Queue
