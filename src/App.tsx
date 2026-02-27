@@ -15,6 +15,7 @@ import OutboundRedirect from "./pages/OutboundRedirect";
 import ExploreDeals from "./pages/ExploreDeals";
 import DealDetail from "./pages/DealDetail";
 import Pricing from "./pages/Pricing";
+import PremiumPage from "./pages/Premium";
 import DealsManager from "./pages/admin/DealsManager";
 import SubmissionsQueue from "./pages/admin/SubmissionsQueue";
 import ScansPage from "./pages/admin/ScansPage";
@@ -75,6 +76,7 @@ const App = () => (
             <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
             <Route path="/categories/:slug" element={<ProtectedRoute><CategoryDetail /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Account /></ProtectedRoute>} />
+            <Route path="/premium" element={<ProtectedRoute><PremiumPage /></ProtectedRoute>} />
 
             {/* Admin routes (protected) */}
             <Route path="/admin/deals" element={<ProtectedRoute><DealsManager /></ProtectedRoute>} />
