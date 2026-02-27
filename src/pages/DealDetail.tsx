@@ -19,6 +19,7 @@ import {
   Heart,
   Share2,
   Copy,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -178,9 +179,14 @@ export default function DealDetail() {
                 )}
 
                 {deal.sponsored && (
-                  <Badge variant="outline" className="text-xs text-muted-foreground border-border">
-                    Sponsored
-                  </Badge>
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <Badge className="bg-primary/15 text-primary border-primary/30 text-xs gap-1">
+                        <Sparkles className="h-3 w-3" /> Sponsored
+                      </Badge>
+                    </TooltipTrigger>
+                    <TooltipContent className="text-xs">Paid placement.</TooltipContent>
+                  </Tooltip>
                 )}
 
                 {deal.requiresEduEmail && (

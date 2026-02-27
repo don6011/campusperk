@@ -762,6 +762,7 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
   // Get sponsored local deals
   const sponsoredLocalDeals = deals.filter((d: any) => {
     if (!isSponsoredActive(d)) return false;
+    if (d.status !== "active") return false;
     if (d.deal_scope !== "local" && d.deal_scope !== "regional") return false;
     if (!locationEnabled) return false;
     const cities: string[] = d.eligible_cities ?? [];
@@ -785,7 +786,7 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
         </Link>
       </div>
 
-      {/* Sponsored row first */}
+      {/* Sponsored Near You row first */}
       {sponsoredLocalDeals.length > 0 && (
         <SponsoredDealRow
           deals={sponsoredLocalDeals.map(d => ({
@@ -794,9 +795,18 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
             discount_value: d.discount_value,
             sponsor_tier: (d as any).sponsor_tier,
             sponsor_priority: (d as any).sponsor_priority,
+            sponsor_start_at: (d as any).sponsor_start_at,
+            sponsor_end_at: (d as any).sponsor_end_at,
+            deal_scope: (d as any).deal_scope,
+            requires_campus_verification: (d as any).requires_campus_verification,
+            eligible_roles: (d as any).eligible_roles,
+            eligible_campuses: (d as any).eligible_campuses,
+            eligible_cities: (d as any).eligible_cities,
+            eligible_regions: (d as any).eligible_regions,
+            status: d.status,
             stores: d.stores ?? { name: "Unknown", logo_url: null },
           }))}
-          label="Sponsored Local"
+          label="Sponsored Near You"
           scope="local"
         />
       )}
