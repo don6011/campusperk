@@ -184,7 +184,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <div className="relative h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-primary font-semibold text-sm">
                     {profile?.name?.[0]?.toUpperCase() || "U"}
                     {profile?.premium_status && (
-                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[hsl(var(--gold))] flex items-center justify-center ring-2 ring-background">
+                      <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-gold flex items-center justify-center ring-2 ring-background animate-gold-glow">
                         <Crown className="h-2.5 w-2.5 text-background" />
                       </span>
                     )}
