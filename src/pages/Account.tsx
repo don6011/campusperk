@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   GraduationCap, BookOpen, Briefcase, Users, ShieldCheck, ShieldX,
   Clock, Upload, FileText, AlertTriangle, CheckCircle2, Loader2, Info,
-  TrendingUp, MapPin,
+  TrendingUp, MapPin, Crown, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -315,6 +315,76 @@ export default function Account() {
                   </div>
                   <Progress value={profile.verification_strength_score} className="h-1.5" />
                 </div>
+              )}
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Premium Management */}
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1.5}>
+          <Card className={`border-border bg-card ${profile?.premium_status ? "border-gold/30" : ""}`}>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Crown className={`h-4 w-4 ${profile?.premium_status ? "text-gold" : "text-muted-foreground"}`} />
+                Premium Subscription
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {profile?.premium_status ? (
+                <>
+                  <div className="flex items-center gap-3 p-4 rounded-xl bg-gold/8 border border-gold/20">
+                    <div className="h-10 w-10 rounded-full bg-gold/20 flex items-center justify-center animate-gold-glow">
+                      <Crown className="h-5 w-5 text-gold" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-foreground flex items-center gap-1.5">
+                        Premium Active <Sparkles className="h-3.5 w-3.5 text-gold" />
+                      </p>
+                      <p className="text-xs text-muted-foreground">You have full access to all premium features.</p>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Plan</span>
+                      <Badge className="bg-gold/15 text-gold border-gold/30">Premium</Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Early Access Deals</span>
+                      <span className="text-sm font-medium text-accent">✓ Enabled</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Unlimited Alerts</span>
+                      <span className="text-sm font-medium text-accent">✓ Enabled</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Priority Support</span>
+                      <span className="text-sm font-medium text-accent">✓ Enabled</span>
+                    </div>
+                  </div>
+
+                  <Separator />
+                  <p className="text-[11px] text-muted-foreground">
+                    Need to manage your subscription? Contact us at <strong className="text-foreground">support@campusperk.com</strong> to cancel or modify your plan.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-sm text-muted-foreground">
+                    You're on the <strong className="text-foreground">Free</strong> plan. Upgrade to unlock early access deals, unlimited alerts, and more.
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {["Early Access Deals", "Unlimited Alerts", "Priority Support"].map((feat) => (
+                      <div key={feat} className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-2.5">
+                        <Crown className="h-3 w-3 text-gold shrink-0" />
+                        {feat}
+                      </div>
+                    ))}
+                  </div>
+                  <Button onClick={() => window.location.href = "/pricing"} className="w-full gap-2 bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30">
+                    <Crown className="h-4 w-4" /> Upgrade to Premium
+                  </Button>
+                </>
               )}
             </CardContent>
           </Card>
