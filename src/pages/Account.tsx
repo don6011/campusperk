@@ -20,7 +20,10 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { format } from "date-fns";
 import { normalizeCampusDomain, isEduDomain, computeVerificationScore, scoreLabel } from "@/lib/campus-domain";
-import { toStateCode } from "@/lib/state-codes";
+import { toStateCode, STATE_MAP } from "@/lib/state-codes";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
+import { Check, ChevronsUpDown } from "lucide-react";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -516,6 +519,48 @@ export default function Account() {
   );
 }
 
+const US_STATES = Object.entries(STATE_MAP).map(([name, code]) => ({
+  code,
+  label: `${name.replace(/\b\w/g, c => c.toUpperCase())} (${code})`,
+  name,
+})).sort((a, b) => a.name.localeCompare(b.name));
+
+function StateCombobox({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const normalized = toStateCode(value);
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button variant="outline" role="combobox" aria-expanded={open} className="h-9 w-full justify-between text-sm font-normal">
+          {normalized ? US_STATES.find(s => s.code === normalized)?.label ?? value : <span className="text-muted-foreground">Select state…</span>}
+          <ChevronsUpDown className="ml-1 h-3.5 w-3.5 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[220px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search state…" className="h-9" />
+          <CommandList>
+            <CommandEmpty>No state found.</CommandEmpty>
+            <CommandGroup>
+              {US_STATES.map(s => (
+                <CommandItem
+                  key={s.code}
+                  value={s.label}
+                  onSelect={() => { onChange(s.code); setOpen(false); }}
+                >
+                  {s.label}
+                  {normalized === s.code && <Check className="ml-auto h-3.5 w-3.5" />}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function LocationOptInCard() {
   const { user, profile, refreshProfile } = useAuth();
   const { toast } = useToast();
@@ -592,7 +637,7 @@ function LocationOptInCard() {
                   </div>
                   <div className="space-y-1">
                     <label className="text-xs font-medium text-foreground">State</label>
-                    <Input value={state} onChange={(e) => setState(e.target.value)} placeholder="e.g. AZ" className="h-9 text-sm" />
+                    <StateCombobox value={state} onChange={setState} />
                   </div>
                 </div>
               )}
