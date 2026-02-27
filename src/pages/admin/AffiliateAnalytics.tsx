@@ -377,6 +377,42 @@ export default function AffiliateAnalytics() {
     },
   });
 
+  // Ambassador analytics
+  const { data: ambassadors = [] } = useQuery({
+    queryKey: ["analytics-ambassadors"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ambassadors")
+        .select("*")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const { data: allReferrals = [] } = useQuery({
+    queryKey: ["analytics-referrals"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("referrals")
+        .select("*")
+        .order("signup_date", { ascending: false });
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
+  const { data: ambassadorApps = [] } = useQuery({
+    queryKey: ["analytics-ambassador-apps"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ambassador_applications")
+        .select("id, status, created_at");
+      if (error) throw error;
+      return data as any[];
+    },
+  });
+
   // ── Manual conversion mutation ──
 
   const addConversionMutation = useMutation({
@@ -688,6 +724,39 @@ export default function AffiliateAnalytics() {
   function resetFilters() {
     setFilters({ sponsored: "all", userType: "all", studentStatus: "all", category: "all", store: "all", scope: "all", partner: "all" });
   }
+
+  // Ambassador computed data
+  const ambassadorLeaderboard = useMemo(() => {
+    return ambassadors.map((amb: any) => {
+      const refs = allReferrals.filter((r: any) => r.referral_code === amb.referral_code);
+      const verified = refs.filter((r: any) => r.verified).length;
+      return {
+        ...amb,
+        total_referrals: refs.length,
+        verified_referrals: verified,
+        convRate: refs.length > 0 ? (verified / refs.length) * 100 : 0,
+      };
+    }).sort((a: any, b: any) => b.total_referrals - a.total_referrals);
+  }, [ambassadors, allReferrals]);
+
+  const referralTrend = useMemo(() => {
+    const map = new Map<string, { signups: number; verified: number }>();
+    allReferrals.forEach((r: any) => {
+      const day = new Date(r.signup_date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const prev = map.get(day) ?? { signups: 0, verified: 0 };
+      map.set(day, { signups: prev.signups + 1, verified: prev.verified + (r.verified ? 1 : 0) });
+    });
+    return Array.from(map.entries()).map(([date, v]) => ({ date, ...v }));
+  }, [allReferrals]);
+
+  const topUniversities = useMemo(() => {
+    const map = new Map<string, number>();
+    ambassadors.forEach((amb: any) => {
+      const refs = allReferrals.filter((r: any) => r.referral_code === amb.referral_code).length;
+      map.set(amb.university, (map.get(amb.university) ?? 0) + refs);
+    });
+    return Array.from(map.entries()).map(([name, referrals]) => ({ name, referrals })).sort((a, b) => b.referrals - a.referrals);
+  }, [ambassadors, allReferrals]);
 
   return (
     <AdminLayout>
@@ -1937,6 +2006,123 @@ export default function AffiliateAnalytics() {
           </CardContent>
         </Card>
       </div>
+
+        {/* ── Ambassador Analytics ── */}
+        <Card className="border-border bg-card">
+          <CardHeader className="pb-2 flex flex-row items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-2">
+              <Megaphone className="h-4 w-4 text-primary" /> Ambassador Analytics
+            </CardTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              className="gap-1.5"
+              onClick={() =>
+                exportCSV(
+                  ambassadorLeaderboard.map((a: any) => ({
+                    university: a.university,
+                    referral_code: a.referral_code,
+                    total_referrals: a.total_referrals,
+                    verified_referrals: a.verified_referrals,
+                    conversion_rate: `${a.convRate.toFixed(1)}%`,
+                  })),
+                  "ambassador-analytics"
+                )
+              }
+            >
+              <Download className="h-3.5 w-3.5" /> Export
+            </Button>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* KPI row */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div className="bg-secondary/50 rounded-lg p-4">
+                <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Ambassadors</div>
+                <div className="text-2xl font-display font-bold text-foreground">{ambassadors.length}</div>
+              </div>
+              <div className="bg-secondary/50 rounded-lg p-4">
+                <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Total Referrals</div>
+                <div className="text-2xl font-display font-bold text-foreground">{allReferrals.length}</div>
+              </div>
+              <div className="bg-secondary/50 rounded-lg p-4">
+                <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Verified Referrals</div>
+                <div className="text-2xl font-display font-bold text-accent">{allReferrals.filter((r: any) => r.verified).length}</div>
+              </div>
+              <div className="bg-secondary/50 rounded-lg p-4">
+                <div className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Pending Applications</div>
+                <div className="text-2xl font-display font-bold text-gold">{ambassadorApps.filter((a: any) => a.status === "pending").length}</div>
+              </div>
+            </div>
+
+            {/* Referral Trend Chart */}
+            <div>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Referral Trend</h4>
+              <div className="h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={referralTrend}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                    <XAxis dataKey="date" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} />
+                    <YAxis tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} allowDecimals={false} />
+                    <RechartsTooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                    <Bar dataKey="signups" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Signups" />
+                    <Bar dataKey="verified" fill="hsl(var(--accent))" radius={[4, 4, 0, 0]} name="Verified" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Top Universities + Leaderboard */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Top Universities */}
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">Top Universities</h4>
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={topUniversities.slice(0, 8)} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                      <XAxis type="number" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} allowDecimals={false} />
+                      <YAxis dataKey="name" type="category" tick={{ fill: "hsl(var(--muted-foreground))", fontSize: 11 }} width={120} />
+                      <RechartsTooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8 }} />
+                      <Bar dataKey="referrals" fill="hsl(var(--accent))" radius={[0, 4, 4, 0]} name="Referrals" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Leaderboard Table */}
+              <div>
+                <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 flex items-center gap-1.5">
+                  <Trophy className="h-3.5 w-3.5 text-gold" /> Ambassador Leaderboard
+                </h4>
+                <div className="overflow-auto max-h-[200px]">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="hover:bg-transparent">
+                        <TableHead className="text-xs w-8">#</TableHead>
+                        <TableHead className="text-xs">University</TableHead>
+                        <TableHead className="text-xs text-right">Refs</TableHead>
+                        <TableHead className="text-xs text-right">Conv %</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {ambassadorLeaderboard.map((amb: any, i: number) => (
+                        <TableRow key={amb.id}>
+                          <TableCell className="text-sm font-bold">{i < 3 ? ["🥇", "🥈", "🥉"][i] : i + 1}</TableCell>
+                          <TableCell className="text-sm">{amb.university}</TableCell>
+                          <TableCell className="text-right text-sm font-semibold">{amb.total_referrals}</TableCell>
+                          <TableCell className="text-right text-sm text-accent">{amb.convRate.toFixed(1)}%</TableCell>
+                        </TableRow>
+                      ))}
+                      {ambassadorLeaderboard.length === 0 && (
+                        <TableRow><TableCell colSpan={4} className="text-center text-sm text-muted-foreground py-4">No ambassadors yet</TableCell></TableRow>
+                      )}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
       {/* ── Manual Conversion Dialog ── */}
       <Dialog open={convModalOpen} onOpenChange={setConvModalOpen}>
