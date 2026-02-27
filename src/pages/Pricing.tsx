@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Check, X, Crown, ArrowLeft, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import campusperkLogo from "@/assets/campusperk-logo.png";
+import { useAuth } from "@/contexts/AuthContext";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -25,16 +26,19 @@ const comparisonRows = [
 ];
 
 const Pricing = () => {
+  const { isLoggedIn } = useAuth();
+  const backTo = isLoggedIn ? "/dashboard" : "/";
+
   return (
     <div className="min-h-screen bg-background">
       {/* Nav */}
       <nav className="border-b border-border/50 bg-background/80 backdrop-blur-xl">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
-          <Link to="/" className="flex items-center gap-2">
+          <Link to={backTo} className="flex items-center gap-2">
             <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto" />
           </Link>
           <Button asChild variant="ghost" size="sm">
-            <Link to="/"><ArrowLeft className="h-4 w-4 mr-1" /> Back</Link>
+            <Link to={backTo}><ArrowLeft className="h-4 w-4 mr-1" /> Back</Link>
           </Button>
         </div>
       </nav>
