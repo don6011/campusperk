@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
-  Mail, Lock, Eye, EyeOff, ArrowRight, Chrome,
+  Mail, Lock, Eye, EyeOff, ArrowRight,
   GraduationCap, CheckCircle2, AlertCircle, User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -158,23 +158,8 @@ export default function SignUp() {
               </p>
             </motion.div>
 
-            <motion.div variants={fadeUp} custom={1} className="mt-8">
-              <Button
-                variant="outline"
-                className="w-full h-11 gap-2 border-border bg-secondary hover:bg-secondary/80 text-foreground"
-              >
-                <Chrome className="h-4 w-4" />
-                Continue with Google
-              </Button>
-            </motion.div>
 
-            <motion.div variants={fadeUp} custom={2} className="my-6 flex items-center gap-4">
-              <Separator className="flex-1" />
-              <span className="text-xs text-muted-foreground">or sign up with email</span>
-              <Separator className="flex-1" />
-            </motion.div>
-
-            <motion.form variants={fadeUp} custom={3} onSubmit={handleSubmit} className="space-y-5">
+            <motion.form variants={fadeUp} custom={1} onSubmit={handleSubmit} className="mt-8 space-y-5">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-sm text-foreground">Full Name</Label>
                 <div className="relative">
