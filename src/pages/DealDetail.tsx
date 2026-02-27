@@ -327,7 +327,7 @@ export default function DealDetail() {
                       </>
                     ) : (
                       <>
-                        Go to Offer <ExternalLink className="h-4 w-4" />
+                        <ExternalLink className="h-4 w-4" /> Unlock Deal
                       </>
                     )}
                   </Button>

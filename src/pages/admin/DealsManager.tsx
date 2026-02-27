@@ -34,7 +34,8 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { StatusBadge, SponsoredBadge } from "@/components/StatusBadge";
-import { Search, Sparkles, CalendarIcon } from "lucide-react";
+import { Search, Sparkles, CalendarIcon, Link2 } from "lucide-react";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
@@ -55,6 +56,9 @@ type DealWithStore = {
   direct_link_url: string | null;
   affiliate_link_url: string | null;
   commission_rate: number | null;
+  commission_type: string | null;
+  affiliate_network: string | null;
+  is_affiliate: boolean;
   requires_edu_email: boolean;
   stores: { name: string } | null;
 };
@@ -67,13 +71,14 @@ const DealsManager = () => {
   const [aiUrl, setAiUrl] = useState("");
   const [aiText, setAiText] = useState("");
   const [sponsorEditId, setSponsorEditId] = useState<string | null>(null);
+  const [affiliateEditId, setAffiliateEditId] = useState<string | null>(null);
 
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ["admin-deals"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("id, title, category, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, discount_value, direct_link_url, affiliate_link_url, commission_rate, requires_edu_email, stores(name)")
+        .select("id, title, category, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, discount_value, direct_link_url, affiliate_link_url, commission_rate, commission_type, affiliate_network, is_affiliate, requires_edu_email, stores(name)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as DealWithStore[];
@@ -140,6 +145,31 @@ const DealsManager = () => {
     },
   });
 
+  const affiliateDeal = affiliateEditId ? deals.find((d) => d.id === affiliateEditId) : null;
+
+  const affiliateMutation = useMutation({
+    mutationFn: async (payload: {
+      id: string;
+      affiliate_link_url: string | null;
+      affiliate_network: string | null;
+      is_affiliate: boolean;
+      commission_type: string;
+      commission_rate: number | null;
+    }) => {
+      const { id, ...updates } = payload;
+      const { error } = await supabase.from("deals").update(updates as any).eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-deals"] });
+      toast({ title: "Affiliate settings saved" });
+      setAffiliateEditId(null);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
   const sponsorDeal = sponsorEditId ? deals.find((d) => d.id === sponsorEditId) : null;
 
   return (
@@ -190,6 +220,7 @@ const DealsManager = () => {
                 <TableHead className="text-center">Featured</TableHead>
                 <TableHead className="text-center">Sponsored</TableHead>
                 <TableHead>Sponsor Config</TableHead>
+                <TableHead>Affiliate</TableHead>
                 <TableHead>Status Action</TableHead>
               </TableRow>
             </TableHeader>
@@ -197,14 +228,14 @@ const DealsManager = () => {
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 8 }).map((_, j) => (
+                    {Array.from({ length: 9 }).map((_, j) => (
                       <TableCell key={j}><div className="h-4 w-20 rounded bg-muted animate-pulse" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">No deals found.</TableCell>
+                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No deals found.</TableCell>
                 </TableRow>
               ) : (
                 filtered.map((deal) => {
@@ -267,6 +298,22 @@ const DealsManager = () => {
                         )}
                       </TableCell>
                       <TableCell>
+                        {deal.is_affiliate ? (
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-accent/15 text-accent border-accent/30 text-[10px] gap-1">
+                              <Link2 className="h-2.5 w-2.5" /> {deal.affiliate_network || "Affiliate"}
+                            </Badge>
+                            <Button variant="ghost" size="sm" className="h-7 text-xs text-primary" onClick={() => setAffiliateEditId(deal.id)}>
+                              Edit
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground" onClick={() => setAffiliateEditId(deal.id)}>
+                            Setup
+                          </Button>
+                        )}
+                      </TableCell>
+                      <TableCell>
                         <Select
                           value={deal.status}
                           onValueChange={(v) => statusMutation.mutate({ id: deal.id, status: v })}
@@ -305,6 +352,18 @@ const DealsManager = () => {
           });
         }}
         isSaving={sponsorMutation.isPending}
+      />
+
+      {/* Affiliate Config Modal */}
+      <AffiliateConfigModal
+        deal={affiliateDeal}
+        open={!!affiliateEditId}
+        onOpenChange={(open) => { if (!open) setAffiliateEditId(null); }}
+        onSave={(payload) => {
+          if (!affiliateEditId) return;
+          affiliateMutation.mutate({ id: affiliateEditId, ...payload });
+        }}
+        isSaving={affiliateMutation.isPending}
       />
 
       {/* AI Modal */}
@@ -455,3 +514,133 @@ function SponsorConfigModal({
 }
 
 export default DealsManager;
+
+/* ---------- Affiliate Config Modal ---------- */
+
+const AFFILIATE_NETWORKS = ["Impact", "Rakuten", "CJ Affiliate", "ShareASale", "Awin", "PartnerStack", "Direct", "Other"];
+
+function AffiliateConfigModal({
+  deal,
+  open,
+  onOpenChange,
+  onSave,
+  isSaving,
+}: {
+  deal: DealWithStore | null | undefined;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (payload: {
+    affiliate_link_url: string | null;
+    affiliate_network: string | null;
+    is_affiliate: boolean;
+    commission_type: string;
+    commission_rate: number | null;
+  }) => void;
+  isSaving: boolean;
+}) {
+  const [affiliateUrl, setAffiliateUrl] = useState("");
+  const [network, setNetwork] = useState("");
+  const [commissionType, setCommissionType] = useState("percentage");
+  const [commissionValue, setCommissionValue] = useState("");
+  const [isAffiliate, setIsAffiliate] = useState(false);
+
+  // Reset when deal changes
+  const prevId = useState<string | null>(null);
+  if (open && deal && prevId[0] !== deal.id) {
+    prevId[1](deal.id);
+    setAffiliateUrl(deal.affiliate_link_url || "");
+    setNetwork(deal.affiliate_network || "");
+    setCommissionType(deal.commission_type || "percentage");
+    setCommissionValue(deal.commission_rate?.toString() || "");
+    setIsAffiliate(deal.is_affiliate || false);
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md bg-card border-border">
+        <DialogHeader>
+          <DialogTitle className="font-display text-lg flex items-center gap-2">
+            <Link2 className="h-5 w-5 text-primary" />
+            Affiliate Configuration
+          </DialogTitle>
+          <DialogDescription>
+            {deal?.title ?? "Deal"} — configure affiliate tracking and commission.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4 mt-2">
+          <div className="flex items-center gap-3">
+            <Switch checked={isAffiliate} onCheckedChange={setIsAffiliate} />
+            <Label className="text-sm">This is an affiliate deal</Label>
+          </div>
+
+          {isAffiliate && (
+            <>
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">Affiliate URL</Label>
+                <Input
+                  placeholder="https://partner.com/track?ref=campusperk"
+                  value={affiliateUrl}
+                  onChange={(e) => setAffiliateUrl(e.target.value)}
+                />
+              </div>
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">Affiliate Network</Label>
+                <Select value={network} onValueChange={setNetwork}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select network…" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {AFFILIATE_NETWORKS.map((n) => (
+                      <SelectItem key={n} value={n}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="text-sm font-medium mb-1.5 block">Commission Type</Label>
+                  <Select value={commissionType} onValueChange={setCommissionType}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="percentage">Percentage</SelectItem>
+                      <SelectItem value="flat">Flat Fee</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium mb-1.5 block">
+                    {commissionType === "percentage" ? "Rate (%)" : "Amount ($)"}
+                  </Label>
+                  <Input
+                    type="number"
+                    placeholder={commissionType === "percentage" ? "e.g. 8" : "e.g. 5.00"}
+                    value={commissionValue}
+                    onChange={(e) => setCommissionValue(e.target.value)}
+                  />
+                </div>
+              </div>
+            </>
+          )}
+
+          <Button
+            className="w-full"
+            disabled={isSaving}
+            onClick={() => {
+              onSave({
+                affiliate_link_url: isAffiliate && affiliateUrl ? affiliateUrl : null,
+                affiliate_network: isAffiliate && network ? network : null,
+                is_affiliate: isAffiliate,
+                commission_type: commissionType,
+                commission_rate: commissionValue ? parseFloat(commissionValue) : null,
+              });
+            }}
+          >
+            {isSaving ? "Saving…" : "Save Affiliate Settings"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
