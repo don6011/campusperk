@@ -588,34 +588,36 @@ export default function Dashboard() {
             </CardContent>
           </Card>
 
-          <Card className="border-gold/20 bg-card relative overflow-hidden shadow-[0_0_30px_-8px_hsl(45_93%_56%/0.15)]">
-            <div className="absolute inset-0 bg-gradient-to-br from-gold/8 via-gold/3 to-transparent pointer-events-none" />
-            <CardHeader className="pb-2 relative z-10">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2 text-gold">
-                <Crown className="h-4 w-4" /> Upgrade to Premium
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="relative z-10 space-y-3">
-              {[
-                { icon: Zap, text: "Early access deals" },
-                { icon: Lock, text: "Hidden discounts" },
-                { icon: Bell, text: "Unlimited alerts" },
-                { icon: TrendingUp, text: "Price drop tracking" },
-              ].map((item) => (
-                <div key={item.text} className="flex items-center gap-2.5 text-xs text-foreground/80">
-                  <div className="h-5 w-5 rounded-md bg-gold/10 flex items-center justify-center">
-                    <item.icon className="h-3 w-3 text-gold" />
+          {!isPremium && (
+            <Card className="border-gold/20 bg-card relative overflow-hidden shadow-[0_0_30px_-8px_hsl(45_93%_56%/0.15)]">
+              <div className="absolute inset-0 bg-gradient-to-br from-gold/8 via-gold/3 to-transparent pointer-events-none" />
+              <CardHeader className="pb-2 relative z-10">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-gold">
+                  <Crown className="h-4 w-4" /> Upgrade to Premium
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="relative z-10 space-y-3">
+                {[
+                  { icon: Zap, text: "Early access deals" },
+                  { icon: Lock, text: "Hidden discounts" },
+                  { icon: Bell, text: "Unlimited alerts" },
+                  { icon: TrendingUp, text: "Price drop tracking" },
+                ].map((item) => (
+                  <div key={item.text} className="flex items-center gap-2.5 text-xs text-foreground/80">
+                    <div className="h-5 w-5 rounded-md bg-gold/10 flex items-center justify-center">
+                      <item.icon className="h-3 w-3 text-gold" />
+                    </div>
+                    <span>{item.text}</span>
                   </div>
-                  <span>{item.text}</span>
-                </div>
-              ))}
-              <Link to="/pricing">
-                <Button size="sm" className="w-full mt-1 bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 text-xs gap-1 font-semibold">
-                  <Crown className="h-3.5 w-3.5" /> Upgrade Now
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
+                ))}
+                <Link to="/pricing">
+                  <Button size="sm" className="w-full mt-1 bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 text-xs gap-1 font-semibold">
+                    <Crown className="h-3.5 w-3.5" /> Upgrade Now
+                  </Button>
+                </Link>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
