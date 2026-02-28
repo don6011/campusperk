@@ -179,7 +179,11 @@ function DealCard({ deal, index, compact, featured: isFeatured, favIds, onToggle
           <div className="flex items-start justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                {deal.stores?.logo_url ? (
+                  <img src={deal.stores.logo_url} alt={storeName} className="h-7 w-7 rounded-lg object-contain" />
+                ) : (
+                  <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                )}
               </div>
               <div className="min-w-0">
                 <div className="text-xs text-muted-foreground">{storeName}</div>
