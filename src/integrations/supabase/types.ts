@@ -689,6 +689,47 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          body: string | null
+          category: string | null
+          created_at: string
+          deal_id: string | null
+          id: string
+          read: boolean
+          title: string
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          category?: string | null
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          read?: boolean
+          title: string
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          category?: string | null
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          read?: boolean
+          title?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       partner_locations: {
         Row: {
           address: string | null
