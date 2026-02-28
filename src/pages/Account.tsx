@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   GraduationCap, BookOpen, Briefcase, Users, ShieldCheck, ShieldX,
   Clock, Upload, FileText, AlertTriangle, CheckCircle2, Loader2, Info,
-  TrendingUp, MapPin,
+  TrendingUp, MapPin, Tag, ShoppingBag, DollarSign, Heart, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -320,8 +320,10 @@ export default function Account() {
           </Card>
         </motion.div>
 
+        {/* Your Stats */}
+        <AccountStatsSection userId={user?.id} />
 
-        {/* Campus Verification Section */}
+
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2}>
           <Card className="border-border bg-card">
             <CardHeader className="pb-3">
@@ -663,6 +665,112 @@ function LocationOptInCard() {
                 {saving ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : null}
                 Save
               </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function AccountStatsSection({ userId }: { userId?: string }) {
+  const { data: deals = [] } = useQuery({
+    queryKey: ["account-stats-deals"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("deals")
+        .select("id, category, discount_value, stores(name)")
+        .eq("status", "active");
+      return data || [];
+    },
+  });
+
+  const { data: favorites = [] } = useQuery({
+    queryKey: ["account-stats-favorites", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("favorites")
+        .select("deal_id")
+        .eq("user_id", userId!);
+      return data || [];
+    },
+  });
+
+  const { data: userClicks = [] } = useQuery({
+    queryKey: ["account-stats-clicks", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("affiliate_clicks")
+        .select("deal_id")
+        .eq("user_id", userId!);
+      return data || [];
+    },
+  });
+
+  const uniqueRedeemed = new Set(userClicks.map(c => c.deal_id));
+  const dealsRedeemed = uniqueRedeemed.size;
+
+  const AVG_PRICES: Record<string, number> = {
+    Software: 120, Subscriptions: 30, Tech: 350, Clothing: 85,
+    Food: 25, Learning: 60, Entertainment: 20, Fitness: 50, Travel: 200, Other: 50,
+  };
+
+  const lifetimeSavings = deals
+    .filter(d => uniqueRedeemed.has(d.id))
+    .reduce((sum, d: any) => {
+      const avgPrice = AVG_PRICES[d.category ?? "Other"] ?? 50;
+      const disc = d.discount_value ?? "";
+      const pct = disc.match(/(\d+)\s*%/);
+      const fixed = disc.match(/\$\s*([\d.]+)/);
+      if (pct) return sum + avgPrice * (parseInt(pct[1]) / 100);
+      if (fixed) return sum + parseFloat(fixed[1]);
+      if (/free/i.test(disc)) return sum + avgPrice;
+      return sum + avgPrice * 0.15;
+    }, 0);
+
+  const stats = [
+    { label: "Active Deals", value: `${deals.length}`, icon: Tag, color: "text-primary" },
+    { label: "Deals Redeemed", value: `${dealsRedeemed}`, icon: ShoppingBag, color: "text-accent" },
+    { label: "Savings Unlocked", value: `$${lifetimeSavings.toFixed(0)}`, icon: DollarSign, color: "text-accent" },
+    { label: "Your Favorites", value: `${favorites.length}`, icon: Heart, color: "text-destructive" },
+  ];
+
+  return (
+    <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1.5}>
+      <Card className="border-accent/20 bg-card relative overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent pointer-events-none" />
+        <CardHeader className="pb-3 relative z-10">
+          <CardTitle className="text-sm font-semibold flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 text-accent" /> Your Stats
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="relative z-10">
+          <div className="grid grid-cols-2 gap-4">
+            {stats.map(stat => (
+              <div key={stat.label} className="flex items-center gap-3">
+                <div className={`h-9 w-9 rounded-lg bg-secondary flex items-center justify-center ${stat.color}`}>
+                  <stat.icon className="h-4.5 w-4.5" />
+                </div>
+                <div>
+                  <div className="font-display text-lg font-bold text-foreground">{stat.value}</div>
+                  <div className="text-[11px] text-muted-foreground">{stat.label}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {lifetimeSavings > 0 && (
+            <div className="mt-4 pt-4 border-t border-accent/10">
+              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                <Sparkles className="h-3 w-3 text-accent" />
+                {lifetimeSavings < 100
+                  ? `$${(100 - lifetimeSavings).toFixed(0)} more to reach $100 milestone!`
+                  : lifetimeSavings < 500
+                  ? `$${(500 - lifetimeSavings).toFixed(0)} more to reach $500 milestone!`
+                  : "🎉 Amazing saver! You've unlocked the $500+ tier!"}
+              </div>
             </div>
           )}
         </CardContent>

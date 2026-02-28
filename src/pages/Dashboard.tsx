@@ -1,17 +1,18 @@
-import { useState } from "react";
+import { useState, lazy, Suspense } from "react";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight, Heart, Clock, Shield, Crown, TrendingUp, Bell, Tag, ChevronRight,
   ExternalLink, Sparkles, AlertTriangle, ShoppingBag, Monitor, Cpu, CreditCard,
   Utensils, Plane, Eye, Bookmark, DollarSign, Zap, Lock, BellRing, BarChart3,
-  Info, MapPin, Megaphone, Users,
+  Info, MapPin, Megaphone, Users, Flame,
 } from "lucide-react";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { VerifiedStudentBadge } from "@/components/VerifiedStudentBadge";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -55,12 +56,90 @@ type DealRow = {
   affiliate_link_url: string | null;
   direct_link_url: string | null;
   updated_at: string;
+  created_at: string;
   category: string | null;
   visibility: string | null;
   stores: { name: string; logo_url: string | null } | null;
 };
 
+/* ── Hero Deal Card (large) ── */
+function HeroDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onUpgrade }: {
+  deal: DealRow; index: number;
+  favIds: Set<string>; onToggleFav: (id: string) => void;
+  isPremiumUser: boolean; userId?: string; onUpgrade: () => void;
+}) {
+  const storeName = deal.stores?.name || "Unknown";
+  const isFav = favIds.has(deal.id);
+  const isGated = isDealPremium(deal) && !isPremiumUser;
 
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 40 }}
+      animate={{ opacity: 1, x: 0 }}
+      transition={{ delay: index * 0.08, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      whileHover={{ y: -6, transition: { duration: 0.2 } }}
+      className="min-w-[300px] max-w-[340px] snap-start shrink-0 h-full"
+    >
+      <Card className="group relative overflow-hidden border-border bg-card hover:border-primary/30 transition-all duration-300 h-full ring-1 ring-primary/10 hover:shadow-[var(--shadow-glow)]">
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+        {isGated && (
+          <div className="absolute inset-0 z-20 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => { onUpgrade(); logPaywallView(deal.id, "dashboard", userId); }}>
+            <div className="h-10 w-10 rounded-full bg-gold/15 flex items-center justify-center"><Lock className="h-5 w-5 text-gold" /></div>
+            <span className="text-sm font-semibold text-foreground">Premium Deal</span>
+            <span className="text-[11px] text-muted-foreground">Upgrade to unlock</span>
+          </div>
+        )}
+        <CardContent className="relative z-10 p-6 flex flex-col h-full">
+          {/* Store + Fav */}
+          <div className="flex items-start justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+                {deal.stores?.logo_url ? (
+                  <img src={deal.stores.logo_url} alt={storeName} className="h-8 w-8 rounded-lg object-contain" />
+                ) : (
+                  <ShoppingBag className="h-6 w-6 text-muted-foreground" />
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className="text-xs text-muted-foreground font-medium">{storeName}</div>
+                <div className="font-semibold text-sm text-foreground truncate">{deal.title}</div>
+              </div>
+            </div>
+            <motion.button onClick={() => onToggleFav(deal.id)} whileTap={{ scale: 0.85 }} className="shrink-0 p-1.5 rounded-lg hover:bg-secondary transition-colors">
+              <Heart className={`h-4 w-4 transition-colors ${isFav ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+            </motion.button>
+          </div>
+
+          {/* Discount highlight */}
+          <div className="mt-4 flex items-center gap-2">
+            <span className="font-display text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              {deal.discount_value || "Special Deal"}
+            </span>
+          </div>
+
+          {deal.description && (
+            <p className="mt-2 text-xs text-muted-foreground line-clamp-2 leading-relaxed flex-1">{deal.description}</p>
+          )}
+
+          {/* Footer */}
+          <div className="mt-auto pt-4 flex items-center justify-between border-t border-border/50">
+            <span className={`text-[11px] flex items-center gap-1.5 font-medium ${freshnessColor(deal.updated_at)}`}>
+              <span className={`h-1.5 w-1.5 rounded-full ${freshnessColor(deal.updated_at).replace('text-', 'bg-')}`} />
+              <Clock className="h-3 w-3" /> {timeAgo(deal.updated_at)}
+            </span>
+            <Link to={`/deals/${deal.id}`}>
+              <Button size="sm" className="text-xs gap-1.5 h-8">
+                View Deal <ExternalLink className="h-3 w-3" />
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+/* ── Compact Deal Card (reused in sections) ── */
 function DealCard({ deal, index, compact, featured: isFeatured, favIds, onToggleFav, isPremiumUser, userId, onUpgrade }: {
   deal: DealRow; index: number; compact?: boolean; featured?: boolean;
   favIds: Set<string>; onToggleFav: (id: string) => void;
@@ -89,7 +168,6 @@ function DealCard({ deal, index, compact, featured: isFeatured, favIds, onToggle
     <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={index} whileHover={{ y: -4, transition: { duration: 0.2 } }} className="h-full">
       <Card className={`group relative overflow-hidden border-border bg-card hover:border-primary/30 transition-all duration-300 h-full ${isFeatured ? "ring-1 ring-primary/30 border-primary/20 shadow-[0_0_30px_-4px_hsl(217_91%_60%/0.3)]" : "hover:shadow-[var(--shadow-glow)]"}`}>
         {isFeatured && <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />}
-        {/* Premium lock overlay */}
         {isGated && (
           <div className="absolute inset-0 z-20 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => { onUpgrade(); logPaywallView(deal.id, "dashboard", userId); }}>
             <div className="h-10 w-10 rounded-full bg-gold/15 flex items-center justify-center"><Lock className="h-5 w-5 text-gold" /></div>
@@ -162,18 +240,30 @@ const categoryIcons = [
   { name: "Food", icon: Utensils },
 ];
 
+/* ── Section loading skeleton ── */
+function SectionSkeleton() {
+  return (
+    <div className="space-y-4">
+      <Skeleton className="h-6 w-48" />
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        {[1, 2, 3].map(i => <Skeleton key={i} className="h-48 rounded-lg" />)}
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const { profile, user, isPremium } = useAuth();
   const navigate = useNavigate();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   // Fetch active deals with store info
-  const { data: deals = [] } = useQuery({
+  const { data: deals = [], isLoading: dealsLoading } = useQuery({
     queryKey: ["dashboard-deals"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, requires_edu_email, expires_at, affiliate_link_url, direct_link_url, updated_at, category, visibility, stores(name, logo_url)")
+        .select("id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, requires_edu_email, expires_at, affiliate_link_url, direct_link_url, updated_at, created_at, category, visibility, stores(name, logo_url)")
         .eq("status", "active")
         .order("updated_at", { ascending: false })
         .limit(50);
@@ -195,20 +285,6 @@ export default function Dashboard() {
     },
   });
 
-  // Fetch user's affiliate clicks (deals redeemed)
-  const { data: userClicks = [] } = useQuery({
-    queryKey: ["dashboard-user-clicks", user?.id],
-    enabled: !!user,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("affiliate_clicks")
-        .select("deal_id, clicked_at")
-        .eq("user_id", user!.id)
-        .order("clicked_at", { ascending: false });
-      return data || [];
-    },
-  });
-
   // Fetch category deal counts
   const { data: categoryCounts = {} } = useQuery({
     queryKey: ["dashboard-category-counts"],
@@ -220,46 +296,7 @@ export default function Dashboard() {
     },
   });
 
-  // ── Student Savings Engine ──
-  const uniqueDealsRedeemed = new Set(userClicks.map((c) => c.deal_id));
-  const dealsRedeemed = uniqueDealsRedeemed.size;
-
-  // Category-based average prices for savings estimation
-  const AVG_PRICES: Record<string, number> = {
-    Software: 120, Subscriptions: 30, Tech: 350, Clothing: 85,
-    Food: 25, Learning: 60, Entertainment: 20, Fitness: 50, Travel: 200, Other: 50,
-  };
-
-  // Calculate estimated savings per redeemed deal
-  const savingsData = deals
-    .filter((d) => uniqueDealsRedeemed.has(d.id))
-    .map((d) => {
-      const category = d.category ?? "Other";
-      const avgPrice = AVG_PRICES[category] ?? 50;
-      const discountStr = d.discount_value ?? "";
-      let savingsAmount = 0;
-
-      // Parse discount value
-      const pctMatch = discountStr.match(/(\d+)\s*%/);
-      const fixedMatch = discountStr.match(/\$\s*([\d.]+)/);
-      if (pctMatch) {
-        savingsAmount = avgPrice * (parseInt(pctMatch[1]) / 100);
-      } else if (fixedMatch) {
-        savingsAmount = parseFloat(fixedMatch[1]);
-      } else if (/free/i.test(discountStr)) {
-        savingsAmount = avgPrice;
-      } else {
-        savingsAmount = avgPrice * 0.15; // fallback 15%
-      }
-
-      return { dealId: d.id, title: d.title, storeName: d.stores?.name ?? "Unknown", category, savingsAmount };
-    });
-
-  const lifetimeSavings = savingsData.reduce((s, d) => s + d.savingsAmount, 0);
-  const topSavingsDeals = [...savingsData].sort((a, b) => b.savingsAmount - a.savingsAmount).slice(0, 3);
-
   const favIds = new Set(favorites.map((f) => f.deal_id));
-
   const queryClient = useQueryClient();
 
   const toggleFav = async (dealId: string) => {
@@ -273,181 +310,85 @@ export default function Dashboard() {
     queryClient.invalidateQueries({ queryKey: ["favorites-page"] });
   };
 
-  const featuredDeals = deals.filter((d) => d.featured);
-  const recentDeals = deals.slice(0, 6);
-  const expiringDeals = deals
-    .filter((d) => d.expires_at && daysUntil(d.expires_at) >= 0 && daysUntil(d.expires_at) <= 30)
-    .sort((a, b) => new Date(a.expires_at!).getTime() - new Date(b.expires_at!).getTime());
-  const favDeals = deals.filter((d) => favIds.has(d.id));
+  // ── Deal sections ──
+  const now = Date.now();
+  const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
 
-  const verifiedBrands = new Set(deals.map((d) => d.stores?.name).filter(Boolean)).size;
+  // 1. Trending = featured + sponsored, fallback to most recent
+  const trendingDeals = (() => {
+    const featured = deals.filter(d => d.featured || d.sponsored);
+    if (featured.length >= 4) return featured.slice(0, 6);
+    // fill with recent deals
+    const rest = deals.filter(d => !d.featured && !d.sponsored);
+    return [...featured, ...rest].slice(0, 6);
+  })();
+
+  // 2. Ending Soon: expiring within 7 days
+  const endingSoonDeals = deals
+    .filter(d => d.expires_at && daysUntil(d.expires_at) >= 0 && daysUntil(d.expires_at) <= 7)
+    .sort((a, b) => new Date(a.expires_at!).getTime() - new Date(b.expires_at!).getTime());
+
+  // 3. Just Added: created within last 7 days
+  const justAddedDeals = deals
+    .filter(d => {
+      const created = new Date(d.created_at).getTime();
+      return (now - created) <= sevenDaysMs;
+    })
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    .slice(0, 6);
+
+  // 4. Favorites
+  const favDeals = deals.filter(d => favIds.has(d.id));
+
+  const sharedProps = { favIds, onToggleFav: toggleFav, isPremiumUser: isPremium, userId: user?.id, onUpgrade: () => setUpgradeOpen(true) };
 
   return (
     <DashboardLayout>
       <div className="space-y-10 max-w-7xl mx-auto">
-        {/* Welcome */}
+        {/* Welcome — slim */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
           <h1 className="font-display text-2xl font-bold text-foreground">
             Welcome back{profile?.name ? `, ${profile.name}` : ""} 👋
           </h1>
           <div className="flex items-center gap-3 mt-1">
-            <p className="text-sm text-muted-foreground">Here's what's new in student discounts today.</p>
+            <p className="text-sm text-muted-foreground">Today's best student deals, curated for you.</p>
             <VerifiedStudentBadge />
           </div>
         </motion.div>
 
-        {/* Stats Row */}
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: "Active Deals", value: `${deals.length}`, icon: Tag, color: "text-primary" },
-            { label: "Deals Redeemed", value: `${dealsRedeemed}`, icon: ShoppingBag, color: "text-accent" },
-            { label: "Savings Unlocked", value: `$${lifetimeSavings.toFixed(0)}`, icon: DollarSign, color: "text-accent" },
-            { label: "Your Favorites", value: `${favIds.size}`, icon: Heart, color: "text-destructive" },
-          ].map((stat) => (
-            <Card key={stat.label} className="border-border bg-card">
-              <CardContent className="flex items-center gap-4 p-5">
-                <div className={`h-10 w-10 rounded-xl bg-secondary flex items-center justify-center ${stat.color}`}>
-                  <stat.icon className="h-5 w-5" />
-                </div>
-                <div>
-                  <div className="font-display text-2xl font-bold text-foreground">{stat.value}</div>
-                  <div className="text-xs text-muted-foreground">{stat.label}</div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </motion.div>
-
-        {/* Student Savings Summary */}
-        {user && (
-          <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={2}>
-            <Card className="border-accent/20 bg-card relative overflow-hidden shadow-[0_0_30px_-8px_hsl(142_71%_45%/0.15)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-accent/8 via-accent/3 to-transparent pointer-events-none" />
-              <CardHeader className="pb-2 relative z-10">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-accent">
-                  <TrendingUp className="h-4 w-4" /> Your Savings Dashboard
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                  {/* Lifetime Savings */}
-                  <div className="text-center sm:text-left">
-                    <div className="font-display text-3xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
-                      ${lifetimeSavings.toFixed(2)}
-                    </div>
-                    <div className="text-xs text-muted-foreground mt-1">Estimated Lifetime Savings</div>
-                  </div>
-
-                  {/* Deals Redeemed */}
-                  <div className="text-center sm:text-left">
-                    <div className="font-display text-3xl font-bold text-foreground">{dealsRedeemed}</div>
-                    <div className="text-xs text-muted-foreground mt-1">Deals Redeemed</div>
-                    {dealsRedeemed > 0 && (
-                      <div className="text-[11px] text-muted-foreground mt-0.5">
-                        Avg savings: ${dealsRedeemed > 0 ? (lifetimeSavings / dealsRedeemed).toFixed(2) : "0"} per deal
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Top Savings */}
-                  <div>
-                    <div className="text-xs text-muted-foreground mb-2">Top Savings</div>
-                    {topSavingsDeals.length > 0 ? (
-                      <div className="space-y-1.5">
-                        {topSavingsDeals.map((d) => (
-                          <div key={d.dealId} className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-medium text-foreground truncate">{d.storeName}</span>
-                            <span className="text-xs font-semibold text-accent shrink-0">${d.savingsAmount.toFixed(0)}</span>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-muted-foreground">Click "Go to Offer" on deals to start tracking savings!</p>
-                    )}
-                  </div>
-                </div>
-
-                {/* Savings progress bar */}
-                {dealsRedeemed > 0 && (
-                  <div className="mt-4 pt-4 border-t border-accent/10">
-                    <div className="flex items-center justify-between text-xs mb-1.5">
-                      <span className="text-muted-foreground">Savings milestone</span>
-                      <span className="font-semibold text-foreground">
-                        ${lifetimeSavings.toFixed(0)} / ${lifetimeSavings < 100 ? "100" : lifetimeSavings < 500 ? "500" : lifetimeSavings < 1000 ? "1,000" : "5,000"}
-                      </span>
-                    </div>
-                    <div className="w-full h-2.5 rounded-full bg-secondary overflow-hidden">
-                      <motion.div
-                        className="h-full rounded-full bg-gradient-to-r from-accent to-primary"
-                        initial={{ width: 0 }}
-                        animate={{
-                          width: `${Math.min(
-                            (lifetimeSavings / (lifetimeSavings < 100 ? 100 : lifetimeSavings < 500 ? 500 : lifetimeSavings < 1000 ? 1000 : 5000)) * 100,
-                            100
-                          )}%`,
-                        }}
-                        transition={{ duration: 1, ease: "easeOut", delay: 0.3 }}
-                      />
-                    </div>
-                    <div className="flex items-center gap-1 mt-1.5 text-[11px] text-muted-foreground">
-                      <Sparkles className="h-3 w-3 text-accent" />
-                      {lifetimeSavings < 100
-                        ? `$${(100 - lifetimeSavings).toFixed(0)} more to reach $100 milestone!`
-                        : lifetimeSavings < 500
-                        ? `$${(500 - lifetimeSavings).toFixed(0)} more to reach $500 milestone!`
-                        : lifetimeSavings < 1000
-                        ? `$${(1000 - lifetimeSavings).toFixed(0)} more to reach $1,000 milestone!`
-                        : "🎉 Amazing saver! You've unlocked the $1,000+ tier!"}
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </motion.section>
-        )}
-
-        {/* Local Near Campus */}
-        <LocalNearCampusSection
-          deals={deals}
-          profile={profile}
-          favIds={favIds}
-          onToggleFav={toggleFav}
-          isPremium={isPremium}
-          userId={user?.id}
-          onUpgrade={() => setUpgradeOpen(true)}
-        />
-
-        {/* Featured Deals */}
-        {featuredDeals.length > 0 && (
-          <section>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" /> Featured Deals
-              </h2>
-              <Link to="/explore" className="text-xs text-primary hover:underline flex items-center gap-1">
-                View all <ChevronRight className="h-3 w-3" />
-              </Link>
+        {/* ── 1. HERO: Trending Student Deals ── */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+              <Flame className="h-5 w-5 text-destructive" /> Trending Student Deals
+            </h2>
+            <Link to="/explore" className="text-xs text-primary hover:underline flex items-center gap-1">
+              View all <ChevronRight className="h-3 w-3" />
+            </Link>
+          </div>
+          {dealsLoading ? (
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1">
+              {[1, 2, 3, 4].map(i => <Skeleton key={i} className="min-w-[300px] h-64 rounded-lg shrink-0" />)}
             </div>
+          ) : (
             <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth">
-              {featuredDeals.map((deal, i) => (
-                <motion.div key={deal.id} className="min-w-[280px] max-w-[320px] snap-start shrink-0" initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}>
-                  <DealCard deal={deal} index={i} featured favIds={favIds} onToggleFav={toggleFav} isPremiumUser={isPremium} userId={user?.id} onUpgrade={() => setUpgradeOpen(true)} />
-                </motion.div>
+              {trendingDeals.map((deal, i) => (
+                <HeroDealCard key={deal.id} deal={deal} index={i} {...sharedProps} />
               ))}
             </div>
-          </section>
-        )}
+          )}
+        </section>
 
-        {/* Expiring Soon */}
-        {expiringDeals.length > 0 && (
-          <section>
+        {/* ── 2. ENDING SOON (7 days) ── */}
+        {endingSoonDeals.length > 0 && (
+          <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={2}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-destructive" /> Expiring Soon
+                <AlertTriangle className="h-5 w-5 text-destructive" /> Ending Soon
               </h2>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {expiringDeals.map((deal, i) => {
+              {endingSoonDeals.map((deal, i) => {
                 const days = daysUntil(deal.expires_at!);
                 return (
                   <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i} whileHover={{ y: -4, transition: { duration: 0.2 } }}>
@@ -468,11 +409,10 @@ export default function Dashboard() {
                           </span>
                           <Badge className={`text-[10px] font-semibold gap-1 ${
                             days < 3 ? "bg-destructive/15 text-destructive border-destructive/30" :
-                            days <= 7 ? "bg-gold/15 text-gold border-gold/30" :
-                            "bg-accent/15 text-accent border-accent/30"
+                            "bg-gold/15 text-gold border-gold/30"
                           }`}>
                             <Clock className="h-2.5 w-2.5" />
-                            {days <= 0 ? "Ending today" : days === 1 ? "Ends tomorrow" : `Ends in ${days}d`}
+                            {days <= 0 ? "Ending today" : days === 1 ? "Ends tomorrow" : `${days}d left`}
                           </Badge>
                         </div>
                         <div className="mt-3 pt-3 border-t border-border/50">
@@ -488,31 +428,45 @@ export default function Dashboard() {
                 );
               })}
             </div>
-          </section>
+          </motion.section>
         )}
 
-        {/* Recently Updated */}
-        <section>
+        {/* ── 3. LOCAL DEALS ── */}
+        <LocalNearCampusSection
+          deals={deals}
+          profile={profile}
+          favIds={favIds}
+          onToggleFav={toggleFav}
+          isPremium={isPremium}
+          userId={user?.id}
+          onUpgrade={() => setUpgradeOpen(true)}
+        />
+
+        {/* ── 4. JUST ADDED ── */}
+        <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={4}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
-              <Clock className="h-5 w-5 text-muted-foreground" /> Recently Updated
+              <Sparkles className="h-5 w-5 text-primary" /> Just Added
             </h2>
+            <Link to="/explore" className="text-xs text-primary hover:underline flex items-center gap-1">
+              View all <ChevronRight className="h-3 w-3" />
+            </Link>
           </div>
-          {recentDeals.length > 0 ? (
+          {justAddedDeals.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {recentDeals.map((deal, i) => (
-                <DealCard key={deal.id} deal={deal} index={i} favIds={favIds} onToggleFav={toggleFav} isPremiumUser={isPremium} userId={user?.id} onUpgrade={() => setUpgradeOpen(true)} />
+              {justAddedDeals.map((deal, i) => (
+                <DealCard key={deal.id} deal={deal} index={i} {...sharedProps} />
               ))}
             </div>
           ) : (
             <Card className="border-border bg-card">
-              <CardContent className="p-8 text-center text-muted-foreground text-sm">No deals yet.</CardContent>
+              <CardContent className="p-8 text-center text-muted-foreground text-sm">No new deals this week — check back soon!</CardContent>
             </Card>
           )}
-        </section>
+        </motion.section>
 
-        {/* Categories Quick Access */}
-        <section>
+        {/* ── 5. CATEGORIES ── */}
+        <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={5}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
               <Tag className="h-5 w-5 text-primary" /> Browse Categories
@@ -533,20 +487,25 @@ export default function Dashboard() {
               </motion.div>
             ))}
           </div>
-        </section>
+        </motion.section>
 
-        {/* Favorites */}
-        <section>
+        {/* ── 6. FAVORITES ── */}
+        <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={6}>
           <div className="flex items-center justify-between mb-4">
             <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
               <Heart className="h-5 w-5 text-destructive" /> Your Favorites
             </h2>
+            {favDeals.length > 0 && (
+              <Link to="/favorites" className="text-xs text-primary hover:underline flex items-center gap-1">
+                View all <ChevronRight className="h-3 w-3" />
+              </Link>
+            )}
           </div>
           {favDeals.length > 0 ? (
             <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth">
               {favDeals.map((deal, i) => (
                 <div key={deal.id} className="min-w-[280px] max-w-[320px] snap-start shrink-0">
-                  <DealCard deal={deal} index={i} compact favIds={favIds} onToggleFav={toggleFav} isPremiumUser={isPremium} userId={user?.id} onUpgrade={() => setUpgradeOpen(true)} />
+                  <DealCard deal={deal} index={i} compact {...sharedProps} />
                 </div>
               ))}
             </div>
@@ -554,71 +513,14 @@ export default function Dashboard() {
             <Card className="border-border bg-card border-dashed">
               <CardContent className="p-8 text-center">
                 <Heart className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-                <p className="text-sm text-muted-foreground">Save deals to track updates.</p>
+                <p className="text-sm text-muted-foreground">Tap the heart on any deal to save it here.</p>
               </CardContent>
             </Card>
           )}
-        </section>
+        </motion.section>
 
-        {/* Ambassador Impact Card */}
+        {/* Ambassador Impact */}
         <AmbassadorImpactCard userId={user?.id} />
-
-        {/* Premium Upsell */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <Card className="border-border bg-card lg:col-span-2">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" /> Quick Stats
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {[
-                { label: "Active Deals", value: deals.length, icon: Eye, color: "text-primary" },
-                { label: "Favorites Saved", value: favIds.size, icon: Bookmark, color: "text-destructive" },
-                { label: "Verified Brands", value: verifiedBrands, icon: Shield, color: "text-accent" },
-              ].map((item) => (
-                <div key={item.label} className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <item.icon className={`h-4 w-4 ${item.color}`} />
-                    {item.label}
-                  </div>
-                  <span className="font-display font-bold text-foreground">{item.value}</span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {!isPremium && (
-            <Card className="border-gold/20 bg-card relative overflow-hidden shadow-[0_0_30px_-8px_hsl(45_93%_56%/0.15)]">
-              <div className="absolute inset-0 bg-gradient-to-br from-gold/8 via-gold/3 to-transparent pointer-events-none" />
-              <CardHeader className="pb-2 relative z-10">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2 text-gold">
-                  <Crown className="h-4 w-4" /> Upgrade to Premium
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="relative z-10 space-y-3">
-                {[
-                  { icon: Zap, text: "Early access deals" },
-                  { icon: Lock, text: "Hidden discounts" },
-                  { icon: Bell, text: "Unlimited alerts" },
-                  { icon: TrendingUp, text: "Price drop tracking" },
-                ].map((item) => (
-                  <div key={item.text} className="flex items-center gap-2.5 text-xs text-foreground/80">
-                    <div className="h-5 w-5 rounded-md bg-gold/10 flex items-center justify-center">
-                      <item.icon className="h-3 w-3 text-gold" />
-                    </div>
-                    <span>{item.text}</span>
-                  </div>
-                ))}
-                <Link to="/pricing">
-                  <Button size="sm" className="w-full mt-1 bg-gold/20 text-gold hover:bg-gold/30 border border-gold/30 text-xs gap-1 font-semibold">
-                    <Crown className="h-3.5 w-3.5" /> Upgrade Now
-                  </Button>
-                </Link>
-              </CardContent>
-            </Card>
-          )}
-        </div>
       </div>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
     </DashboardLayout>
@@ -717,7 +619,6 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
   const useCampusLocation = profile?.use_campus_location ?? true;
   const [subscribing, setSubscribing] = useState(false);
 
-  // Resolve effective location using priority logic
   const loc = resolveLocation({
     useCampusLocation,
     campusCity: profile?.campus_city ?? null,
@@ -728,21 +629,6 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
   const userCity = loc.city;
   const userState = loc.state;
 
-  // Debug logging in dev mode
-  if (import.meta.env.DEV) {
-    const matchingLocal = deals.filter((d: any) =>
-      (d.deal_scope === "local" || d.deal_scope === "regional") && locationEnabled
-    );
-    console.log("[LocalDeals Debug]", {
-      resolvedLocationSource: loc.source,
-      resolvedCity: loc.city,
-      resolvedState: loc.state,
-      useCampusLocation,
-      numberOfCandidateDeals: matchingLocal.length,
-    });
-  }
-
-  // Filter local/regional deals matching user location
   const localDeals = deals.filter((d: any) => {
     if (d.deal_scope !== "local" && d.deal_scope !== "regional") return false;
     if (!locationEnabled) return false;
@@ -753,11 +639,6 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
     if (cities.length === 0 && regions.length === 0) return true;
     return false;
   });
-
-  // Log eligible count in dev
-  if (import.meta.env.DEV) {
-    console.log("[LocalDeals Debug] numberOfEligibleLocalDeals:", localDeals.length);
-  }
 
   const localDealsSliced = localDeals.slice(0, 6);
 
@@ -780,7 +661,12 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
 
   if (!locationEnabled) {
     return (
-      <section>
+      <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={3}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-accent" /> Local Near Campus
+          </h2>
+        </div>
         <Card className="border-primary/20 bg-card relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
           <CardContent className="relative z-10 p-6 space-y-4">
@@ -796,22 +682,20 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
                 <MapPin className="h-3.5 w-3.5" /> Enable
               </Button>
             </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
-              {["🍔 Campus dining", "💪 Local gyms", "🏠 Student housing perks", "🚌 Transit discounts"].map(item => (
-                <div key={item} className="flex items-center gap-1.5 text-xs text-muted-foreground bg-secondary/50 rounded-lg px-3 py-2">
-                  {item}
-                </div>
-              ))}
-            </div>
           </CardContent>
         </Card>
-      </section>
+      </motion.section>
     );
   }
 
   if (localDealsSliced.length === 0) {
     return (
-      <section>
+      <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={3}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
+            <MapPin className="h-5 w-5 text-accent" /> Local Near Campus
+          </h2>
+        </div>
         <Card className="border-border bg-card">
           <CardContent className="p-6 space-y-4">
             <div className="flex items-center gap-3">
@@ -820,9 +704,9 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
               </div>
               <div>
                 <h3 className="font-display text-sm font-semibold text-foreground">
-                  No local deals yet in {userCity || "your area"}{userState ? `, ${userState}` : ""} — we're adding partners weekly.
+                  Local deals coming soon near your campus.
                 </h3>
-                <p className="text-[11px] text-muted-foreground mt-0.5">We use city/state only. No GPS required.</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">We're adding partners in {userCity || "your area"}{userState ? `, ${userState}` : ""} weekly.</p>
               </div>
             </div>
             <div className="flex flex-wrap gap-2">
@@ -838,11 +722,10 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
             </div>
           </CardContent>
         </Card>
-      </section>
+      </motion.section>
     );
   }
 
-  // Get sponsored local deals
   const sponsoredLocalDeals = deals.filter((d: any) => {
     if (!isSponsoredActive(d)) return false;
     if (d.status !== "active") return false;
@@ -859,7 +742,7 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
   const nonSponsoredLocalDeals = localDealsSliced.filter((d: any) => !isSponsoredActive(d));
 
   return (
-    <section className="space-y-4">
+    <motion.section className="space-y-4" initial="hidden" animate="visible" variants={fadeUp} custom={3}>
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-display text-lg font-semibold text-foreground flex items-center gap-2">
           <MapPin className="h-5 w-5 text-accent" /> Local Near Campus
@@ -869,7 +752,6 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
         </Link>
       </div>
 
-      {/* Sponsored Near You row first */}
       {sponsoredLocalDeals.length > 0 && (
         <SponsoredDealRow
           deals={sponsoredLocalDeals.map(d => ({
@@ -901,6 +783,6 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
           </motion.div>
         ))}
       </div>
-    </section>
+    </motion.section>
   );
 }
