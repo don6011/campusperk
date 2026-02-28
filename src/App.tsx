@@ -36,6 +36,7 @@ import PartnerRequest from "./pages/PartnerRequest";
 import AmbassadorApply from "./pages/AmbassadorApply";
 import AmbassadorsManager from "./pages/admin/AmbassadorsManager";
 import AffiliateSourcesManager from "./pages/admin/AffiliateSourcesManager";
+import Alerts from "./pages/Alerts";
 
 // Redirect /join?ref=CODE to /sign-up?ref=CODE
 function JoinRedirect() {
@@ -73,6 +74,7 @@ const App = () => (
             <Route path="/explore" element={<ProtectedRoute><ExploreDeals /></ProtectedRoute>} />
             <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
             <Route path="/submit" element={<ProtectedRoute><SubmitDeal /></ProtectedRoute>} />
+            <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
             <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
             <Route path="/categories/:slug" element={<ProtectedRoute><CategoryDetail /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Account /></ProtectedRoute>} />
