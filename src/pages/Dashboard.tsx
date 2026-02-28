@@ -144,14 +144,14 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId }: {
    2. POPULAR STUDENT BRANDS
    ═══════════════════════════════════════════ */
 const popularBrands = [
-  { name: "Apple", slug: "apple" },
-  { name: "Nike", slug: "nike" },
-  { name: "Amazon", slug: "amazon" },
-  { name: "Spotify", slug: "spotify" },
-  { name: "Samsung", slug: "samsung" },
-  { name: "Best Buy", slug: "best-buy" },
-  { name: "DoorDash", slug: "doordash" },
-  { name: "Adidas", slug: "adidas" },
+  { name: "Apple", slug: "apple", logo: "/logos/apple.png" },
+  { name: "Nike", slug: "nike", logo: "/logos/nike.png" },
+  { name: "Amazon", slug: "amazon", logo: "/logos/amazon.png" },
+  { name: "Spotify", slug: "spotify", logo: "/logos/spotify.png" },
+  { name: "Samsung", slug: "samsung", logo: "/logos/samsung.png" },
+  { name: "Best Buy", slug: "best-buy", logo: "/logos/bestbuy.png" },
+  { name: "DoorDash", slug: "doordash", logo: "/logos/doordash.png" },
+  { name: "Adidas", slug: "adidas", logo: "/logos/adidas.png" },
 ];
 
 function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; logo_url: string | null; dealCount: number }> }) {
@@ -174,11 +174,7 @@ function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; 
                 <Card className="border-border bg-card hover:border-primary/30 transition-all duration-300 cursor-pointer hover:shadow-[var(--shadow-glow)] w-[120px] sm:w-[140px]">
                   <CardContent className="p-4 sm:p-5 flex flex-col items-center text-center gap-2.5">
                     <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-secondary/80 flex items-center justify-center border border-border/50">
-                      {storeData?.logo_url ? (
-                        <img src={storeData.logo_url} alt={brand.name} className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl object-contain" />
-                      ) : (
-                        <span className="font-display text-lg font-bold text-muted-foreground">{brand.name.charAt(0)}</span>
-                      )}
+                      <img src={brand.logo} alt={brand.name} className="h-10 w-10 sm:h-11 sm:w-11 rounded-xl object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; (e.target as HTMLImageElement).parentElement!.innerHTML = `<span class="font-display text-lg font-bold text-muted-foreground">${brand.name.charAt(0)}</span>`; }} />
                     </div>
                     <div>
                       <div className="text-xs font-semibold text-foreground">{brand.name}</div>
