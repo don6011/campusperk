@@ -31,6 +31,7 @@ import {
 import campusperkLogo from "@/assets/campusperk-logo.png";
 import { CampusRoleBadge } from "@/components/CampusRoleBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import NotificationBell from "@/components/NotificationBell";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -202,10 +203,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <CampusRoleBadge />
 
             {/* Notifications */}
-            <Button variant="ghost" size="icon" className="relative text-muted-foreground hover:text-foreground">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-accent" />
-            </Button>
+            <NotificationBell />
 
             {/* Avatar dropdown */}
             <DropdownMenu>
