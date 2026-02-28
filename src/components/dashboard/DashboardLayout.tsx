@@ -18,6 +18,7 @@ import {
   User,
   Send,
   Shield,
+  Medal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 import { CampusRoleBadge } from "@/components/CampusRoleBadge";
+import { AmbassadorBadge } from "@/components/AmbassadorBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import NotificationBell from "@/components/NotificationBell";
 
@@ -40,6 +42,7 @@ const navItems = [
   { title: "Favorites", url: "/favorites", icon: Heart },
   { title: "Submit Deal", url: "/submit", icon: Send },
   { title: "Alerts", url: "/alerts", icon: Bell },
+  { title: "Ambassador", url: "/ambassador/dashboard", icon: Medal },
   { title: "Premium", url: "/pricing", icon: Crown, premiumUrl: "/premium" },
   { title: "Account Settings", url: "/settings", icon: Settings },
 ];
@@ -201,6 +204,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="flex items-center gap-2 ml-auto">
             {/* Verified Student Badge */}
             <CampusRoleBadge />
+            <AmbassadorBadge />
 
             {/* Notifications */}
             <NotificationBell />
