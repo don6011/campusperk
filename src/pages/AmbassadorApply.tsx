@@ -38,6 +38,7 @@ export default function AmbassadorApply() {
     name: "",
     email: "",
     university: "",
+    graduation_year: "",
     social_handle: "",
     role: "student",
     motivation_text: "",
@@ -59,7 +60,8 @@ export default function AmbassadorApply() {
       social_handle: form.social_handle.trim() || null,
       role: form.role,
       motivation_text: form.motivation_text.trim() || null,
-    });
+      graduation_year: form.graduation_year ? parseInt(form.graduation_year) : null,
+    } as any);
     setSubmitting(false);
     if (error) {
       toast({ title: "Error submitting application", description: error.message, variant: "destructive" });
@@ -171,14 +173,25 @@ export default function AmbassadorApply() {
                     />
                   </div>
                   <div>
-                    <label className="text-sm font-medium text-foreground mb-1.5 block">Social Handle</label>
+                    <label className="text-sm font-medium text-foreground mb-1.5 block">Graduation Year</label>
                     <Input
-                      value={form.social_handle}
-                      onChange={(e) => setForm((f) => ({ ...f, social_handle: e.target.value }))}
-                      placeholder="@yourhandle"
-                      maxLength={100}
+                      type="number"
+                      value={form.graduation_year}
+                      onChange={(e) => setForm((f) => ({ ...f, graduation_year: e.target.value }))}
+                      placeholder="2026"
+                      min={2020}
+                      max={2035}
                     />
                   </div>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-foreground mb-1.5 block">Social Handle</label>
+                  <Input
+                    value={form.social_handle}
+                    onChange={(e) => setForm((f) => ({ ...f, social_handle: e.target.value }))}
+                    placeholder="@yourhandle"
+                    maxLength={100}
+                  />
                 </div>
                 <div>
                   <label className="text-sm font-medium text-foreground mb-1.5 block">Student Role *</label>
