@@ -454,6 +454,41 @@ export type Database = {
           },
         ]
       }
+      campus_savings: {
+        Row: {
+          campus_id: string
+          id: string
+          total_savings: number
+          updated_at: string
+          week_end: string
+          week_start: string
+        }
+        Insert: {
+          campus_id: string
+          id?: string
+          total_savings?: number
+          updated_at?: string
+          week_end: string
+          week_start: string
+        }
+        Update: {
+          campus_id?: string
+          id?: string
+          total_savings?: number
+          updated_at?: string
+          week_end?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campus_savings_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campus_domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
@@ -489,6 +524,48 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      deal_redemptions: {
+        Row: {
+          campus_id: string
+          created_at: string
+          deal_id: string
+          id: string
+          savings_amount: number
+          user_id: string
+        }
+        Insert: {
+          campus_id: string
+          created_at?: string
+          deal_id: string
+          id?: string
+          savings_amount?: number
+          user_id: string
+        }
+        Update: {
+          campus_id?: string
+          created_at?: string
+          deal_id?: string
+          id?: string
+          savings_amount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_redemptions_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campus_domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_redemptions_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deals: {
         Row: {

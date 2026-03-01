@@ -26,6 +26,7 @@ import { resolveLocation } from "@/lib/deal-eligibility";
 import { citiesMatch, statesMatch } from "@/lib/state-codes";
 import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
 import { CampusBattlesWidget } from "@/components/dashboard/CampusBattlesWidget";
+import { CampusLeaderboardWidget } from "@/components/dashboard/CampusLeaderboardWidget";
 
 /* ── Animations ── */
 const fadeUp = {
@@ -966,6 +967,9 @@ export default function Dashboard() {
             </Card>
           )}
         </motion.section>
+
+        {/* CAMPUS SAVINGS LEADERBOARD */}
+        <CampusLeaderboardWidget />
 
         {/* CAMPUS BATTLES */}
         <CampusBattlesWidget />
