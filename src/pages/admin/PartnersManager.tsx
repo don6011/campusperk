@@ -189,6 +189,13 @@ export default function PartnersManager() {
 
   const deletePartner = useMutation({
     mutationFn: async (id: string) => {
+      // Delete related deals that reference this partner
+      await supabase.from("deals").delete().eq("partner_id", id);
+      // Delete partner offers
+      await supabase.from("partner_offers").delete().eq("partner_id", id);
+      // Delete partner locations
+      await supabase.from("partner_locations").delete().eq("partner_id", id);
+      // Finally delete the partner
       const { error } = await supabase.from("partners").delete().eq("id", id);
       if (error) throw error;
     },
