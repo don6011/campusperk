@@ -5,7 +5,7 @@ import {
   ArrowRight, Heart, Clock, Shield, Crown, TrendingUp, Bell, Tag, ChevronRight,
   ExternalLink, Sparkles, AlertTriangle, ShoppingBag, Monitor, Cpu, CreditCard,
   Utensils, Plane, Lock, BellRing, MapPin, Megaphone, Flame, Zap, Timer, Star,
-  Copy, ChevronLeft, DollarSign,
+  Copy, ChevronLeft, DollarSign, Send, Award, Users, Trophy, Target, Gift, Swords,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -156,7 +156,6 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId }: {
   return (
     <motion.section initial={{ opacity: 0, y: 30, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}>
       <Card className="relative overflow-hidden border-border/50 bg-background">
-        {/* Subtle radial glow — no color wash */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-primary/6 rounded-full blur-[120px] pointer-events-none" />
 
         {isGated && (
@@ -174,8 +173,8 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId }: {
 
         <CardContent className="relative z-10 p-8 sm:p-10 lg:p-12">
           <div className="flex items-center gap-3 mb-6">
-            <Badge className="bg-primary/15 text-primary border-primary/30 text-xs font-bold gap-1.5 px-3 py-1.5">
-              <Star className="h-3.5 w-3.5" /> Deal of the Day
+            <Badge className="bg-destructive/15 text-destructive border-destructive/30 text-xs font-bold gap-1.5 px-3 py-1.5 animate-pulse">
+              <Flame className="h-3.5 w-3.5" /> Deal of the Day
             </Badge>
             {deal.sponsored && (
               <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">Sponsored</Badge>
@@ -229,32 +228,98 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId }: {
 }
 
 /* ═══════════════════════════════════════════
-   SAVINGS WIDGET
+   2. LIVE ACTIVITY TICKER
    ═══════════════════════════════════════════ */
-function SavingsWidget() {
+function ActivityTicker({ deals }: { deals: DealRow[] }) {
+  const messages = useMemo(() => {
+    const msgs: string[] = [];
+    deals.slice(0, 12).forEach((d) => {
+      const store = d.stores?.name || "a brand";
+      const hash = d.id.charCodeAt(1) * 7 + d.id.charCodeAt(3) * 13;
+      const count = (hash % 35) + 5;
+      msgs.push(`🔥 ${count} students claimed the ${store} deal today`);
+    });
+    if (msgs.length < 4) {
+      msgs.push("🔥 GitHub Student Pack claimed 41 times this week");
+      msgs.push("🔥 Spotify Student trending at 12 campuses");
+    }
+    return msgs;
+  }, [deals]);
+
+  const [idx, setIdx] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => setIdx(i => (i + 1) % messages.length), 3500);
+    return () => clearInterval(interval);
+  }, [messages.length]);
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm">
+      <div className="flex items-center px-4 py-2.5 gap-3">
+        <div className="h-6 w-6 rounded-lg bg-destructive/15 flex items-center justify-center shrink-0">
+          <Zap className="h-3.5 w-3.5 text-destructive" />
+        </div>
+        <div className="flex-1 overflow-hidden">
+          <AnimatePresence mode="wait">
+            <motion.p
+              key={idx}
+              initial={{ y: 16, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: -16, opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="text-sm font-medium text-foreground whitespace-nowrap"
+            >
+              {messages[idx]}
+            </motion.p>
+          </AnimatePresence>
+        </div>
+        <Badge variant="outline" className="text-[9px] text-muted-foreground border-border shrink-0">LIVE</Badge>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   3. CAMPUS SAVINGS TRACKER
+   ═══════════════════════════════════════════ */
+function SavingsTracker({ profile }: { profile: any }) {
+  const campusName = profile?.campus_name || "your campus";
+  // Seeded mock savings for demo
+  const lifetimeSavings = profile?.id ? ((profile.id.charCodeAt(1) * 17 + 42) % 500 + 30) : 0;
+  const monthlySavings = Math.floor(lifetimeSavings * 0.18);
+  const campusRank = profile?.id ? ((profile.id.charCodeAt(2) * 7) % 80 + 5) : 0;
+  const campusTotalSaved = (lifetimeSavings * 113 + 2400);
+
   return (
     <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={1.5}>
-      <div className="grid grid-cols-2 gap-5">
-        <Card className="border-border/50 bg-card">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-accent/15 flex items-center justify-center shrink-0">
-              <DollarSign className="h-6 w-6 text-accent" />
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Saved Today</div>
-              <div className="font-display text-2xl font-black text-accent">$0</div>
-            </div>
+      <SectionHeader icon={DollarSign} title="Your Savings" iconColor="text-accent" />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="border-accent/20 bg-card relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent pointer-events-none" />
+          <CardContent className="relative z-10 p-5">
+            <div className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Saved using CampusPerk</div>
+            <div className="font-display text-3xl font-black text-accent">${lifetimeSavings}</div>
           </CardContent>
         </Card>
         <Card className="border-border/50 bg-card">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="h-12 w-12 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
-              <TrendingUp className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Lifetime Savings</div>
-              <div className="font-display text-2xl font-black text-primary">$0</div>
-            </div>
+          <CardContent className="p-5">
+            <div className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">This Month</div>
+            <div className="font-display text-3xl font-black text-foreground">${monthlySavings}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-primary/20 bg-card relative overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+          <CardContent className="relative z-10 p-5">
+            <div className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Your Campus Ranking</div>
+            <div className="font-display text-3xl font-black text-primary">#{campusRank}</div>
+            <div className="text-[10px] text-muted-foreground mt-0.5">at {campusName}</div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/50 bg-card">
+          <CardContent className="p-5">
+            <div className="text-[11px] text-muted-foreground font-medium uppercase tracking-wider mb-1">Campus Total Saved</div>
+            <div className="font-display text-3xl font-black text-foreground">${campusTotalSaved.toLocaleString()}</div>
+            <div className="text-[10px] text-muted-foreground mt-0.5">this month</div>
           </CardContent>
         </Card>
       </div>
@@ -263,7 +328,46 @@ function SavingsWidget() {
 }
 
 /* ═══════════════════════════════════════════
-   2. TRENDING STUDENT BRANDS — Rakuten-style
+   4. DEAL STREAK
+   ═══════════════════════════════════════════ */
+function DealStreakWidget() {
+  // Mock streak based on current day
+  const streak = (new Date().getDay() % 5) + 1;
+  const maxStreak = 7;
+
+  return (
+    <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2}>
+      <Card className="border-gold/20 bg-card relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-gold/5 rounded-full blur-[60px] pointer-events-none -translate-y-1/2 translate-x-1/2" />
+        <CardContent className="relative z-10 p-5 flex items-center gap-5">
+          <div className="h-14 w-14 rounded-2xl bg-gold/15 flex items-center justify-center shrink-0 ring-2 ring-gold/20">
+            <Flame className="h-7 w-7 text-gold" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="font-display text-xl font-black text-gold">{streak}-Day Streak</span>
+              <Flame className="h-4 w-4 text-gold" />
+            </div>
+            <p className="text-xs text-muted-foreground">Check CampusPerk daily to unlock exclusive deals.</p>
+            <div className="flex gap-1.5 mt-2.5">
+              {Array.from({ length: maxStreak }).map((_, i) => (
+                <div key={i} className={`h-2 flex-1 rounded-full ${i < streak ? "bg-gold" : "bg-secondary"}`} />
+              ))}
+            </div>
+          </div>
+          {streak >= 5 && (
+            <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] font-bold shrink-0">
+              🎉 On Fire!
+            </Badge>
+          )}
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   TRENDING STUDENT BRANDS — Rakuten-style
    ═══════════════════════════════════════════ */
 const popularBrands = [
   { name: "Nike", slug: "nike", logo: "/logos/nike.png" },
@@ -278,7 +382,7 @@ const popularBrands = [
 
 function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; logo_url: string | null; dealCount: number }> }) {
   return (
-    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={2}>
+    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={3}>
       <SectionHeader icon={TrendingUp} title="Trending Student Brands" linkTo="/explore" subtitle="Shop discounts from brands students love" />
       <ScrollRow>
         {popularBrands.map((brand) => {
@@ -290,19 +394,18 @@ function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; 
               className="snap-start shrink-0"
             >
               <Link to={`/explore?brand=${brand.slug}`}>
-                <div className="w-[140px] sm:w-[160px] h-[100px] rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-primary/40 transition-all duration-150 hover:shadow-[0_4px_30px_-8px_hsl(var(--primary)/0.3)]">
+                <div className="w-[160px] sm:w-[180px] h-[120px] rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center gap-2.5 cursor-pointer hover:border-primary/40 transition-all duration-150 hover:shadow-[0_4px_30px_-8px_hsl(var(--primary)/0.3)]">
                   <img
                     src={brand.logo}
                     alt={brand.name}
-                    className="h-10 w-10 object-contain"
+                    className="h-12 w-12 object-contain"
                     onError={(e) => {
                       (e.target as HTMLImageElement).style.display = 'none';
-                      (e.target as HTMLImageElement).parentElement!.insertAdjacentHTML('afterbegin', `<span class="font-display text-xl font-bold text-muted-foreground">${brand.name.charAt(0)}</span>`);
                     }}
                   />
-                  <div className="text-xs font-semibold text-foreground">{brand.name}</div>
+                  <div className="text-sm font-bold text-foreground">{brand.name}</div>
                   {storeData && storeData.dealCount > 0 && (
-                    <div className="text-[10px] text-accent font-medium -mt-1">{storeData.dealCount} deal{storeData.dealCount > 1 ? "s" : ""}</div>
+                    <div className="text-[11px] text-accent font-semibold -mt-1">{storeData.dealCount} deal{storeData.dealCount > 1 ? "s" : ""}</div>
                   )}
                 </div>
               </Link>
@@ -315,7 +418,7 @@ function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; 
 }
 
 /* ═══════════════════════════════════════════
-   3. TRENDING DEAL CARD — Clickable with hover lift
+   TRENDING DEAL CARD — Clickable with hover lift
    ═══════════════════════════════════════════ */
 function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onUpgrade, badgeLabel = "Trending", badgeIcon: BadgeIcon = Flame }: {
   deal: DealRow; index: number;
@@ -326,6 +429,15 @@ function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, use
   const storeName = deal.stores?.name || "Unknown";
   const isFav = favIds.has(deal.id);
   const isGated = isDealPremium(deal) && !isPremiumUser;
+
+  // Determine smart badge
+  const getBadge = () => {
+    if (deal.expires_at && daysUntil(deal.expires_at) <= 3) return { label: "Ending Soon", icon: Timer, color: "bg-destructive/10 text-destructive border-destructive/20" };
+    if (deal.featured) return { label: "Hot Deal", icon: Zap, color: "bg-gold/10 text-gold border-gold/20" };
+    if (deal.sponsored) return { label: "Sponsored", icon: Sparkles, color: "bg-primary/10 text-primary border-primary/20" };
+    return { label: badgeLabel, icon: BadgeIcon, color: "bg-destructive/10 text-destructive border-destructive/20" };
+  };
+  const badge = getBadge();
 
   return (
     <motion.div
@@ -345,8 +457,8 @@ function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, use
         <CardContent className="relative z-10 p-6 flex flex-col h-full">
           {/* Badge row */}
           <div className="flex items-center justify-between mb-4">
-            <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-bold gap-1 px-2.5 py-1">
-              <BadgeIcon className="h-3 w-3" /> {badgeLabel}
+            <Badge className={`${badge.color} text-[10px] font-bold gap-1 px-2.5 py-1`}>
+              <badge.icon className="h-3 w-3" /> {badge.label}
             </Badge>
             <motion.button onClick={() => onToggleFav(deal.id)} whileTap={{ scale: 0.8 }} className="p-2 rounded-xl hover:bg-secondary/80 transition-colors">
               <Heart className={`h-5 w-5 transition-colors ${isFav ? "fill-destructive text-destructive" : "text-muted-foreground hover:text-foreground"}`} />
@@ -355,7 +467,7 @@ function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, use
 
           {/* Store info */}
           <div className="flex items-center gap-4 mb-5">
-            <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="md" />
+            <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="lg" />
             <div className="min-w-0">
               <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{storeName}</div>
               <div className="font-display font-bold text-base text-foreground truncate mt-0.5">{deal.title}</div>
@@ -388,21 +500,72 @@ function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, use
 }
 
 /* ═══════════════════════════════════════════
-   4. DAILY STUDENT DROP
+   STUDENT ESSENTIALS SECTION
+   ═══════════════════════════════════════════ */
+const studentEssentials = [
+  { name: "Spotify Student", brand: "Spotify", logo: "/logos/spotify.png", desc: "Premium for $5.99/mo", value: "$5.99/mo" },
+  { name: "Amazon Prime Student", brand: "Amazon", logo: "/logos/amazon.png", desc: "6-month free trial + 50% off", value: "50% Off" },
+  { name: "Adobe Creative Cloud", brand: "Adobe", logo: "/logos/adobe.png", desc: "All apps at 60% off", value: "60% Off" },
+  { name: "Apple Education", brand: "Apple", logo: "/logos/apple.png", desc: "Save up to $300 on Mac", value: "Save $300" },
+  { name: "GitHub Student Pack", brand: "GitHub", logo: "/logos/github.png", desc: "Free Pro + $200 in tools", value: "FREE" },
+  { name: "Notion Student", brand: "Notion", logo: "/logos/notion.png", desc: "Free Plus plan for students", value: "FREE" },
+];
+
+function StudentEssentialsSection({ deals }: { deals: DealRow[] }) {
+  return (
+    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={5}>
+      <SectionHeader icon={Star} title="Student Essentials" iconColor="text-gold" subtitle="The must-have deals every student needs" linkTo="/explore" />
+      <ScrollRow>
+        {studentEssentials.map((item) => {
+          const matchedDeal = deals.find(d => d.stores?.name?.toLowerCase().includes(item.brand.toLowerCase()));
+          return (
+            <motion.div key={item.name} whileHover={{ y: -4, transition: { duration: 0.15 } }} className="snap-start shrink-0">
+              <Link to={matchedDeal ? `/deals/${matchedDeal.id}` : "/explore"}>
+                <Card className="w-[220px] border-border/50 bg-card hover:border-gold/30 transition-all duration-150 cursor-pointer hover:shadow-[0_6px_30px_-8px_hsl(var(--gold)/0.2)] h-full">
+                  <CardContent className="p-5 flex flex-col items-center text-center gap-3">
+                    <div className="h-16 w-16 rounded-2xl bg-secondary/60 flex items-center justify-center border border-border/40">
+                      <img src={item.logo} alt={item.brand} className="h-10 w-10 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    </div>
+                    <div>
+                      <div className="font-display text-sm font-bold text-foreground">{item.name}</div>
+                      <div className="text-xs text-muted-foreground mt-0.5">{item.desc}</div>
+                    </div>
+                    <Badge className="bg-accent/15 text-accent border-accent/30 text-xs font-bold">{item.value}</Badge>
+                  </CardContent>
+                </Card>
+              </Link>
+            </motion.div>
+          );
+        })}
+      </ScrollRow>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   DAILY STUDENT DROP
    ═══════════════════════════════════════════ */
 function DailyDropSection({ deal }: { deal: DealRow | null }) {
+  const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0 });
+
+  useEffect(() => {
+    const tick = () => {
+      const now = new Date();
+      const midnight = new Date(now);
+      midnight.setHours(23, 59, 59, 999);
+      const diff = Math.max(0, Math.floor((midnight.getTime() - now.getTime()) / 1000));
+      setTimeLeft({ h: Math.floor(diff / 3600), m: Math.floor((diff % 3600) / 60), s: diff % 60 });
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
   if (!deal) return null;
   const storeName = deal.stores?.name || "Featured Brand";
 
-  const now = new Date();
-  const midnight = new Date(now);
-  midnight.setHours(23, 59, 59, 999);
-  const totalSecondsLeft = Math.max(0, Math.floor((midnight.getTime() - now.getTime()) / 1000));
-  const hoursLeft = Math.floor(totalSecondsLeft / 3600);
-  const minutesLeft = Math.floor((totalSecondsLeft % 3600) / 60);
-
   return (
-    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={4}>
+    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={6}>
       <SectionHeader
         icon={Zap}
         title="Student Drop"
@@ -410,7 +573,7 @@ function DailyDropSection({ deal }: { deal: DealRow | null }) {
         subtitle="Today's exclusive deal — gone at midnight"
         badge={
           <Badge className="bg-accent/15 text-accent border-accent/30 text-[10px] font-bold gap-1 px-2.5 ml-3 animate-pulse">
-            <Timer className="h-3 w-3" /> {hoursLeft}h {minutesLeft}m left
+            <Timer className="h-3 w-3" /> {timeLeft.h}h {timeLeft.m}m {timeLeft.s}s
           </Badge>
         }
       />
@@ -432,11 +595,26 @@ function DailyDropSection({ deal }: { deal: DealRow | null }) {
               </div>
             </div>
 
-            <Link to={`/deals/${deal.id}`}>
-              <Button size="lg" className="gap-2.5 font-bold text-sm bg-accent hover:bg-accent/90 text-accent-foreground shrink-0 h-12 px-8 shadow-lg shadow-accent/25">
-                Claim Now <Zap className="h-4 w-4" />
-              </Button>
-            </Link>
+            <div className="flex flex-col items-center gap-3 shrink-0">
+              {/* Countdown display */}
+              <div className="flex gap-2">
+                {[
+                  { val: timeLeft.h, label: "HRS" },
+                  { val: timeLeft.m, label: "MIN" },
+                  { val: timeLeft.s, label: "SEC" },
+                ].map(({ val, label }) => (
+                  <div key={label} className="bg-secondary/60 border border-border/40 rounded-xl px-3 py-2 text-center min-w-[50px]">
+                    <div className="font-display text-xl font-black text-foreground">{String(val).padStart(2, '0')}</div>
+                    <div className="text-[9px] text-muted-foreground font-bold tracking-wider">{label}</div>
+                  </div>
+                ))}
+              </div>
+              <Link to={`/deals/${deal.id}`}>
+                <Button size="lg" className="gap-2.5 font-bold text-sm bg-accent hover:bg-accent/90 text-accent-foreground h-12 px-8 shadow-lg shadow-accent/25">
+                  Claim Now <Zap className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -445,7 +623,7 @@ function DailyDropSection({ deal }: { deal: DealRow | null }) {
 }
 
 /* ═══════════════════════════════════════════
-   5. EXPIRING SOON CARD
+   EXPIRING SOON CARD
    ═══════════════════════════════════════════ */
 function ExpiringSoonCard({ deal, index }: { deal: DealRow; index: number }) {
   const storeName = deal.stores?.name || "Unknown";
@@ -471,7 +649,7 @@ function ExpiringSoonCard({ deal, index }: { deal: DealRow; index: number }) {
           </div>
 
           <div className="flex items-center gap-4 mb-4">
-            <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="md" />
+            <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="lg" />
             <div className="min-w-0">
               <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{storeName}</div>
               <div className="font-display font-bold text-base text-foreground truncate mt-0.5">{deal.title}</div>
@@ -496,7 +674,7 @@ function ExpiringSoonCard({ deal, index }: { deal: DealRow; index: number }) {
 }
 
 /* ═══════════════════════════════════════════
-   6. CATEGORY TILES
+   CATEGORY TILES
    ═══════════════════════════════════════════ */
 const categoryIcons = [
   { name: "Tech & Computers", icon: Cpu, accent: "text-primary" },
@@ -506,6 +684,46 @@ const categoryIcons = [
   { name: "Subscriptions", icon: CreditCard, accent: "text-accent" },
   { name: "Travel", icon: Plane, accent: "text-gold" },
 ];
+
+/* ── LOCAL DEAL DISCOVERY ── */
+const requestedLocalBrands = ["Chipotle", "Dutch Bros", "AMC Theatres", "Planet Fitness", "Chick-fil-A"];
+
+/* ── DEAL SUBMISSION REWARDS CTA ── */
+function SubmitDealCTA() {
+  return (
+    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={10}>
+      <Card className="border-primary/20 bg-card relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/5 rounded-full blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/4" />
+        <CardContent className="relative z-10 p-8 sm:p-10">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+            <div className="flex items-center gap-5 flex-1">
+              <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Send className="h-8 w-8 text-primary" />
+              </div>
+              <div>
+                <h3 className="font-display text-xl font-bold text-foreground">Know a Student Deal?</h3>
+                <p className="text-sm text-muted-foreground mt-1">Submit deals and earn Campus Points when they get approved. Top submitters unlock exclusive rewards.</p>
+                <div className="flex items-center gap-3 mt-3">
+                  <Badge className="bg-accent/15 text-accent border-accent/30 text-[10px] font-bold gap-1">
+                    <Award className="h-3 w-3" /> +25 points per deal
+                  </Badge>
+                  <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">
+                    <Trophy className="h-3 w-3 mr-1" /> Leaderboard
+                  </Badge>
+                </div>
+              </div>
+            </div>
+            <Link to="/submit">
+              <Button size="lg" className="gap-2 font-bold text-sm h-12 px-8 shrink-0">
+                Submit a Deal <Send className="h-4 w-4" />
+              </Button>
+            </Link>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.section>
+  );
+}
 
 /* ── Skeleton ── */
 function SectionSkeleton() {
@@ -616,7 +834,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-12 max-w-7xl mx-auto">
+      <div className="space-y-10 max-w-7xl mx-auto">
         {/* Welcome */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
           <div className="flex items-center gap-4">
@@ -632,6 +850,9 @@ export default function Dashboard() {
           </div>
         </motion.div>
 
+        {/* DEAL STREAK */}
+        <DealStreakWidget />
+
         {/* 1. HERO DEAL */}
         {dealsLoading ? (
           <Skeleton className="h-64 rounded-xl" />
@@ -639,13 +860,19 @@ export default function Dashboard() {
           <HeroDealSection deal={heroDeal} onUpgrade={() => setUpgradeOpen(true)} isPremium={isPremium} userId={user?.id} />
         ) : null}
 
-        {/* YOUR SAVINGS */}
-        <SavingsWidget />
+        {/* LIVE ACTIVITY TICKER */}
+        {!dealsLoading && deals.length > 0 && <ActivityTicker deals={deals} />}
 
-        {/* 2. TRENDING STUDENT BRANDS */}
+        {/* CAMPUS SAVINGS TRACKER */}
+        <SavingsTracker profile={profile} />
+
+        {/* TRENDING STUDENT BRANDS */}
         <PopularBrandsSection stores={storeMap} />
 
-        {/* 3. 🔥 TRENDING ON CAMPUS */}
+        {/* STUDENT ESSENTIALS */}
+        <StudentEssentialsSection deals={deals} />
+
+        {/* 🔥 TRENDING ON CAMPUS */}
         <motion.section initial="hidden" animate="visible" variants={stagger}>
           <SectionHeader icon={Flame} title="Trending on Campus" linkTo="/explore" iconColor="text-destructive" subtitle="Most clicked deals by students right now" />
           {dealsLoading ? (
@@ -659,7 +886,10 @@ export default function Dashboard() {
           )}
         </motion.section>
 
-        {/* 4. ENDING SOON */}
+        {/* DAILY DROP */}
+        <DailyDropSection deal={dailyDrop} />
+
+        {/* ENDING SOON */}
         {endingSoonDeals.length > 0 && (
           <motion.section initial="hidden" animate="visible" variants={stagger}>
             <SectionHeader
@@ -681,7 +911,7 @@ export default function Dashboard() {
           </motion.section>
         )}
 
-        {/* 5. LOCAL NEAR CAMPUS */}
+        {/* LOCAL NEAR CAMPUS */}
         <LocalNearCampusSection
           deals={deals}
           profile={profile}
@@ -692,7 +922,7 @@ export default function Dashboard() {
           onUpgrade={() => setUpgradeOpen(true)}
         />
 
-        {/* 6. BROWSE CATEGORIES */}
+        {/* BROWSE CATEGORIES */}
         <motion.section initial="hidden" animate="visible" variants={stagger}>
           <SectionHeader icon={Tag} title="Browse Categories" linkTo="/categories" iconColor="text-primary" subtitle="Find deals in your favorite categories" />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
@@ -713,6 +943,9 @@ export default function Dashboard() {
             ))}
           </div>
         </motion.section>
+
+        {/* SUBMIT DEAL CTA */}
+        <SubmitDealCTA />
 
         {/* FAVORITES */}
         <motion.section initial="hidden" animate="visible" variants={stagger}>
@@ -765,11 +998,44 @@ function AmbassadorImpactCard({ userId }: { userId?: string }) {
     },
   });
 
-  if (!ambassador) return null;
+  if (!ambassador) {
+    // Show ambassador recruitment CTA
+    return (
+      <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={11}>
+        <Card className="border-primary/20 bg-card relative overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
+          <CardContent className="relative z-10 p-8 sm:p-10">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-6">
+              <div className="flex items-center gap-5 flex-1">
+                <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Megaphone className="h-8 w-8 text-primary" />
+                </div>
+                <div>
+                  <h3 className="font-display text-xl font-bold text-foreground">Earn Money Promoting CampusPerk</h3>
+                  <p className="text-sm text-muted-foreground mt-1">Become a Campus Ambassador — earn per referral, build your campus network, and unlock exclusive perks.</p>
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    <Badge variant="outline" className="text-[10px] text-muted-foreground border-border gap-1"><DollarSign className="h-3 w-3" /> Earn per referral</Badge>
+                    <Badge variant="outline" className="text-[10px] text-muted-foreground border-border gap-1"><Users className="h-3 w-3" /> Build your network</Badge>
+                    <Badge variant="outline" className="text-[10px] text-muted-foreground border-border gap-1"><Gift className="h-3 w-3" /> Exclusive perks</Badge>
+                  </div>
+                </div>
+              </div>
+              <Link to="/ambassador">
+                <Button size="lg" variant="outline" className="gap-2 font-bold text-sm h-12 px-8 shrink-0 border-primary/30 text-primary hover:bg-primary/10">
+                  Apply Now <ArrowRight className="h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.section>
+    );
+  }
+
   const verified = referrals.filter((r: any) => r.verified).length;
 
   return (
-    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={9}>
+    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={11}>
       <Card className="border-primary/20 bg-card relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
         <CardHeader className="pb-2 relative z-10">
@@ -855,7 +1121,7 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
 
   if (!locationEnabled) {
     return (
-      <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={5}>
+      <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={7}>
         <SectionHeader icon={MapPin} title="Local Near Campus" iconColor="text-accent" subtitle="Deals from businesses near your campus" />
         <Card className="border-primary/20 bg-card relative overflow-hidden">
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
@@ -880,7 +1146,7 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
 
   if (localDealsSliced.length === 0) {
     return (
-      <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={5}>
+      <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={7}>
         <SectionHeader icon={MapPin} title="Local Near Campus" iconColor="text-accent" subtitle={`Deals near ${userCity || "your area"}${userState ? `, ${userState}` : ""}`} />
         <Card className="border-border/50 bg-card">
           <CardContent className="p-10 space-y-5">
@@ -889,19 +1155,21 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
                 <MapPin className="h-7 w-7 text-muted-foreground" />
               </div>
               <div>
-                <h3 className="font-display text-base font-bold text-foreground">
-                  Local deals coming soon near your campus.
-                </h3>
-                <p className="text-sm text-muted-foreground mt-1">We're adding partners in {userCity || "your area"}{userState ? `, ${userState}` : ""} weekly.</p>
+                <h3 className="font-display text-base font-bold text-foreground">Students requested local deals from:</h3>
+                <div className="flex flex-wrap gap-2 mt-3">
+                  {requestedLocalBrands.map(brand => (
+                    <Badge key={brand} variant="outline" className="text-xs text-foreground border-border">{brand}</Badge>
+                  ))}
+                </div>
               </div>
             </div>
             <div className="flex flex-wrap gap-3">
               <Link to="/partners/request">
-                <Button variant="outline" className="gap-2 text-sm h-10"><MapPin className="h-4 w-4" /> Request a local partner</Button>
+                <Button variant="outline" className="gap-2 text-sm h-10"><MapPin className="h-4 w-4" /> Request Local Deal</Button>
               </Link>
               <Button variant="outline" className="gap-2 text-sm h-10" onClick={handleLocalAlert} disabled={subscribing}>
                 {subscribing ? <Loader2 className="h-4 w-4 animate-spin" /> : <BellRing className="h-4 w-4" />}
-                Notify me when local deals drop
+                Notify Me When Available
               </Button>
             </div>
           </CardContent>
