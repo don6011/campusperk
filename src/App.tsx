@@ -38,6 +38,7 @@ import AmbassadorsManager from "./pages/admin/AmbassadorsManager";
 import AffiliateSourcesManager from "./pages/admin/AffiliateSourcesManager";
 import Alerts from "./pages/Alerts";
 import AmbassadorDashboard from "./pages/AmbassadorDashboard";
+import CampusLeaderboard from "./pages/CampusLeaderboard";
 
 // Redirect /join?ref=CODE to /sign-up?ref=CODE
 function JoinRedirect() {
@@ -81,6 +82,7 @@ const App = () => (
             <Route path="/settings" element={<ProtectedRoute><Account /></ProtectedRoute>} />
             <Route path="/premium" element={<ProtectedRoute><PremiumPage /></ProtectedRoute>} />
             <Route path="/ambassador/dashboard" element={<ProtectedRoute><AmbassadorDashboard /></ProtectedRoute>} />
+            <Route path="/campus-leaderboard" element={<ProtectedRoute><CampusLeaderboard /></ProtectedRoute>} />
 
             {/* Admin routes (protected) */}
             <Route path="/admin/deals" element={<ProtectedRoute><DealsManager /></ProtectedRoute>} />
