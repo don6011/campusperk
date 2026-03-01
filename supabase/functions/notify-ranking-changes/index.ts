@@ -125,8 +125,21 @@ Deno.serve(async (req) => {
 
       if (!users?.length) continue;
 
+      // Fetch users who opted out of leaderboard notifications
+      const userIds = users.map((u) => u.id);
+      const { data: optOuts } = await supabase
+        .from("alert_subscriptions")
+        .select("user_id")
+        .eq("alert_type", "leaderboard_optout")
+        .in("user_id", userIds);
+
+      const optedOutIds = new Set((optOuts || []).map((o) => o.user_id));
+      const eligibleUsers = users.filter((u) => !optedOutIds.has(u.id));
+
+      if (!eligibleUsers.length) continue;
+
       // Batch insert notifications
-      const notifications = users.map((u) => ({
+      const notifications = eligibleUsers.map((u) => ({
         user_id: u.id,
         title,
         body,

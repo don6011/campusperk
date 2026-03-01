@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
-import { Bell, Plus, Trash2, Tag } from "lucide-react";
+import { Bell, Plus, Trash2, Tag, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -36,6 +38,8 @@ export default function Alerts() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [loading, setLoading] = useState(true);
+  const [leaderboardEnabled, setLeaderboardEnabled] = useState(true);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -44,12 +48,46 @@ export default function Alerts() {
         supabase.from("alert_subscriptions").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
         supabase.from("categories").select("id, name, slug").order("name"),
       ]);
-      setAlerts(alertsRes.data || []);
+      const allAlerts = alertsRes.data || [];
+      // Check for leaderboard opt-out (alert_type = "leaderboard_optout")
+      const hasOptOut = allAlerts.some((a) => a.alert_type === "leaderboard_optout");
+      setLeaderboardEnabled(!hasOptOut);
+      // Filter out the opt-out record from displayed alerts
+      setAlerts(allAlerts.filter((a) => a.alert_type !== "leaderboard_optout"));
       setCategories(catsRes.data || []);
       setLoading(false);
     };
     fetchData();
   }, [user]);
+
+  const handleToggleLeaderboard = async (enabled: boolean) => {
+    if (!user) return;
+    setLeaderboardLoading(true);
+    try {
+      if (!enabled) {
+        // Insert opt-out record
+        const { error } = await supabase
+          .from("alert_subscriptions")
+          .insert({ user_id: user.id, alert_type: "leaderboard_optout", categories: [] });
+        if (error) throw error;
+        toast({ title: "Leaderboard alerts disabled", description: "You won't receive ranking change notifications." });
+      } else {
+        // Remove opt-out record
+        const { error } = await supabase
+          .from("alert_subscriptions")
+          .delete()
+          .eq("user_id", user.id)
+          .eq("alert_type", "leaderboard_optout");
+        if (error) throw error;
+        toast({ title: "Leaderboard alerts enabled", description: "You'll be notified when your campus ranking changes." });
+      }
+      setLeaderboardEnabled(enabled);
+    } catch {
+      toast({ title: "Error", description: "Failed to update preference.", variant: "destructive" });
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  };
 
   const handleAdd = async () => {
     if (!user || !selectedCategory) return;
@@ -57,7 +95,6 @@ export default function Alerts() {
     const category = categories.find((c) => c.slug === selectedCategory);
     if (!category) return;
 
-    // Check if already subscribed to this category
     const existing = alerts.find((a) => a.categories?.includes(category.slug));
     if (existing) {
       toast({ title: "Already subscribed", description: `You're already getting alerts for ${category.name}.`, variant: "destructive" });
@@ -103,6 +140,38 @@ export default function Alerts() {
           <p className="text-sm text-muted-foreground mt-1">
             Get notified when new deals drop in your favorite categories.
           </p>
+        </motion.div>
+
+        {/* Notification Preferences */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.03, duration: 0.3 }}>
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold">Notification Preferences</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex items-center justify-between gap-4 p-3 rounded-lg border border-border">
+                <div className="flex items-center gap-3">
+                  <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                    <Trophy className="h-4 w-4 text-primary" />
+                  </div>
+                  <div>
+                    <Label htmlFor="leaderboard-toggle" className="text-sm font-medium text-foreground cursor-pointer">
+                      Leaderboard ranking changes
+                    </Label>
+                    <p className="text-xs text-muted-foreground">
+                      Get notified when your campus moves up or down in the weekly leaderboard.
+                    </p>
+                  </div>
+                </div>
+                <Switch
+                  id="leaderboard-toggle"
+                  checked={leaderboardEnabled}
+                  onCheckedChange={handleToggleLeaderboard}
+                  disabled={leaderboardLoading}
+                />
+              </div>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Add new alert */}
