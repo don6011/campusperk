@@ -256,7 +256,7 @@ export default function ExploreDeals() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-7xl mx-auto space-y-8">
+      <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="font-display text-3xl font-bold text-foreground">Explore Student Deals</h1>
           <p className="text-sm text-muted-foreground mt-1">{filtered.length} deal{filtered.length !== 1 ? "s" : ""} available</p>
@@ -277,42 +277,39 @@ export default function ExploreDeals() {
                 <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => scrollCarousel("right")}><ChevronRight className="h-4 w-4" /></Button>
               </div>
             </div>
-            <div ref={carouselRef} className="flex gap-5 overflow-x-auto scrollbar-hide pb-3 -mx-1 px-1 snap-x snap-mandatory" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+            <div ref={carouselRef} className="flex gap-[18px] overflow-x-auto scrollbar-hide pb-3 -mx-1 px-1 snap-x snap-mandatory" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
               {trendingDeals.map((deal, idx) => {
                 const badge = trendingBadge(deal, idx);
-                const refDate = deal.last_checked_at || deal.updated_at;
-                const isVerifiedRecently = (Date.now() - new Date(refDate).getTime()) < 24 * 60 * 60 * 1000;
                 return (
-                  <Link key={deal.id} to={`/deals/${deal.id}`} className="snap-start shrink-0 w-[300px]">
-                    <motion.div whileHover={{ y: -4, transition: { duration: 0.15 } }}>
-                      <Card className="border-border/50 bg-card hover:border-primary/30 transition-all duration-150 hover:shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.25)] h-full">
-                        <CardContent className="p-5 space-y-4">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3 min-w-0">
-                              {deal.stores.logo_url ? (
-                                <img src={deal.stores.logo_url} alt={deal.stores.name} className="h-12 w-12 rounded-xl object-contain bg-secondary p-1.5" />
-                              ) : (
-                                <div className="h-12 w-12 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                                  <ShoppingBag className="h-5 w-5 text-muted-foreground" />
-                                </div>
-                              )}
-                              <div className="min-w-0">
-                                <div className="text-xs text-muted-foreground font-medium">{deal.stores.name}</div>
-                                <div className="font-display font-bold text-sm text-foreground truncate">{deal.title}</div>
+                  <Link key={deal.id} to={`/deals/${deal.id}`} className="snap-start shrink-0 w-[240px]">
+                    <motion.div whileHover={{ y: -3, transition: { duration: 0.12 } }}>
+                      <Card className="border-border/50 bg-card hover:border-primary/40 transition-all duration-150 hover:shadow-[0_6px_30px_-8px_hsl(var(--primary)/0.3)] hover:ring-1 hover:ring-primary/20 h-full">
+                        <CardContent className="p-4 space-y-2.5">
+                          {/* Savings dominant */}
+                          <div>
+                            <span className="text-[9px] font-bold uppercase tracking-widest text-accent/70">SAVE</span>
+                            <div className="font-display text-xl font-black text-accent leading-tight">
+                              {deal.discount_value ?? "Special"}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            {deal.stores.logo_url ? (
+                              <img src={deal.stores.logo_url} alt={deal.stores.name} className="h-9 w-9 rounded-lg object-contain bg-secondary p-1" />
+                            ) : (
+                              <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
                               </div>
+                            )}
+                            <div className="min-w-0">
+                              <div className="font-display font-bold text-xs text-foreground truncate">{deal.stores.name}</div>
+                              <div className="text-[11px] text-muted-foreground truncate">{deal.title}</div>
                             </div>
                           </div>
                           <div className="flex items-center justify-between">
-                            <span className="font-display text-2xl font-black text-accent">
-                              {deal.discount_value ?? "Special"}
-                            </span>
-                            <Badge className={`text-[10px] font-bold gap-1 ${badge.className}`}>{badge.icon} {badge.label}</Badge>
+                            <Badge className={`text-[9px] font-bold gap-1 ${badge.className}`}>{badge.icon} {badge.label}</Badge>
                           </div>
-                          {isVerifiedRecently && (
-                            <div className="flex items-center gap-1 text-[11px] text-accent font-medium"><Sparkles className="h-3 w-3" /> Verified within 24h</div>
-                          )}
-                          <Button size="sm" className="w-full gap-2 h-9 font-bold text-xs">
-                            View Deal <ExternalLink className="h-3 w-3" />
+                          <Button size="sm" className="w-full gap-1.5 h-7 font-bold text-[11px] opacity-85 group-hover:opacity-100">
+                            Get Deal <ExternalLink className="h-2.5 w-2.5" />
                           </Button>
                         </CardContent>
                       </Card>
@@ -416,7 +413,7 @@ export default function ExploreDeals() {
         {/* Deals grid — LARGER CARDS */}
         {visible.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {visible.map((deal: any, i) => {
                 const needsVerification = deal.requires_edu_email && !isStudentVerified;
                 const isPremiumDeal = isDealPremium(deal) && !isPremium;
@@ -430,7 +427,7 @@ export default function ExploreDeals() {
 
                 return (
                   <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i} whileHover={{ y: -4, transition: { duration: 0.15 } }}>
-                    <Card className={`group relative border-border/50 bg-card overflow-hidden transition-all duration-150 hover:shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.25)] hover:border-primary/30`}>
+                    <Card className={`group relative border-border/50 bg-card overflow-hidden transition-all duration-150 hover:shadow-[0_6px_30px_-8px_hsl(var(--primary)/0.3)] hover:border-primary/40 hover:ring-1 hover:ring-primary/20`}>
                       {/* Premium lock overlay */}
                       {isPremiumDeal && (
                         <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => { setUpgradeOpen(true); logPaywallView(deal.id, "explore", user?.id); }}>
@@ -464,33 +461,38 @@ export default function ExploreDeals() {
                         </div>
                       )}
 
-                      <CardContent className="p-6">
+                      <CardContent className="p-4">
                         {/* Badge + Fav row */}
-                        <div className="flex items-center justify-between mb-4">
-                          <Badge className={`text-[10px] font-bold gap-1 ${badge.className}`}>{badge.icon} {badge.label}</Badge>
-                          <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleFav(deal.id)} className="p-2 rounded-lg hover:bg-secondary transition-colors shrink-0">
-                            <Heart className={`h-4.5 w-4.5 ${favorites.has(deal.id) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+                        <div className="flex items-center justify-between mb-2">
+                          <Badge className={`text-[9px] font-bold gap-1 ${badge.className}`}>{badge.icon} {badge.label}</Badge>
+                          <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleFav(deal.id)} className="p-1.5 rounded-lg hover:bg-secondary transition-colors shrink-0">
+                            <Heart className={`h-4 w-4 ${favorites.has(deal.id) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
                           </motion.button>
                         </div>
 
-                        {/* Store + title */}
-                        <div className="flex items-center gap-4 mb-4">
-                          {deal.stores.logo_url ? (
-                            <img src={deal.stores.logo_url} alt={deal.stores.name} className="h-14 w-14 rounded-xl object-contain bg-secondary p-2 shrink-0" />
-                          ) : (
-                            <div className="h-14 w-14 rounded-xl bg-secondary flex items-center justify-center shrink-0"><ShoppingBag className="h-6 w-6 text-muted-foreground" /></div>
-                          )}
-                          <div className="min-w-0">
-                            <div className="text-xs text-muted-foreground font-medium">{deal.stores.name}</div>
-                            <div className="font-display font-bold text-base text-foreground truncate mt-0.5">{deal.title}</div>
+                        {/* Savings — DOMINANT */}
+                        <div className="mb-2">
+                          <span className="text-[10px] font-bold uppercase tracking-widest text-accent/70">SAVE</span>
+                          <div className="font-display text-2xl font-black text-accent leading-tight">
+                            {deal.discount_value ?? "Special"}
                           </div>
                         </div>
 
-                        {/* Discount + Claim counter */}
-                        <div className="mb-3 flex items-end justify-between gap-2">
-                          <span className="font-display text-2xl font-black text-accent">
-                            {deal.discount_value ?? "Special"}
-                          </span>
+                        {/* Store + title */}
+                        <div className="flex items-center gap-3 mb-2">
+                          {deal.stores.logo_url ? (
+                            <img src={deal.stores.logo_url} alt={deal.stores.name} className="h-10 w-10 rounded-lg object-contain bg-secondary p-1.5 shrink-0" />
+                          ) : (
+                            <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0"><ShoppingBag className="h-4 w-4 text-muted-foreground" /></div>
+                          )}
+                          <div className="min-w-0">
+                            <div className="font-display font-bold text-sm text-foreground truncate">{deal.stores.name}</div>
+                            <div className="text-xs text-muted-foreground truncate">{deal.title}</div>
+                          </div>
+                        </div>
+
+                        {/* Claim counter */}
+                        <div className="mb-2 flex items-center gap-2">
                           {(() => {
                             const counts = claimCountsMap?.get(deal.id);
                             const total = counts?.total || ((deal.id.charCodeAt(1) * 47 + 123) % 900 + 100);
@@ -527,11 +529,11 @@ export default function ExploreDeals() {
 
                         {/* Description */}
                         {deal.description && (
-                          <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{deal.description}</p>
+                          <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{deal.description}</p>
                         )}
 
                         {/* Meta row */}
-                        <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-4">
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-3">
                           <span className={`flex items-center gap-1 ${isVerified24h ? "text-accent font-medium" : freshnessColor(refDate)}`}>
                             {isVerified24h ? <Sparkles className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
                             {isVerified24h ? "Verified today" : timeAgo(refDate)}
@@ -549,10 +551,10 @@ export default function ExploreDeals() {
                         </div>
 
                         {/* CTA */}
-                        <div className="pt-3 border-t border-border/50">
+                        <div className="pt-2.5 border-t border-border/50">
                           <Button
                             size="sm"
-                            className="w-full gap-2 h-10 font-bold text-sm opacity-90 group-hover:opacity-100 group-hover:shadow-lg group-hover:shadow-primary/20 transition-all"
+                            className="w-full gap-1.5 h-8 font-bold text-xs opacity-85 group-hover:opacity-100 group-hover:shadow-md group-hover:shadow-primary/25 transition-all"
                             onClick={(e) => {
                               e.preventDefault();
                               claimDeal.mutate(deal.id);
