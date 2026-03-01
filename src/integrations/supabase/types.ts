@@ -416,6 +416,44 @@ export type Database = {
           },
         ]
       }
+      campus_points: {
+        Row: {
+          action: string
+          campus_id: string
+          created_at: string
+          id: string
+          points: number
+          user_id: string
+          week_start: string
+        }
+        Insert: {
+          action: string
+          campus_id: string
+          created_at?: string
+          id?: string
+          points: number
+          user_id: string
+          week_start?: string
+        }
+        Update: {
+          action?: string
+          campus_id?: string
+          created_at?: string
+          id?: string
+          points?: number
+          user_id?: string
+          week_start?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "campus_points_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campus_domains"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           created_at: string
