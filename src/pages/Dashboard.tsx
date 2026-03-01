@@ -82,16 +82,16 @@ function SectionHeader({ icon: Icon, title, subtitle, linkTo, linkText = "View a
   icon: any; title: string; subtitle?: string; linkTo?: string; linkText?: string; iconColor?: string; badge?: React.ReactNode;
 }) {
   return (
-    <div className="flex items-end justify-between mb-6">
+    <div className="flex items-end justify-between mb-4">
       <div>
-        <h2 className="font-display text-2xl font-bold text-foreground flex items-center gap-3">
-          <div className={`h-9 w-9 rounded-xl ${iconColor === "text-primary" ? "bg-primary/15" : iconColor === "text-destructive" ? "bg-destructive/15" : iconColor === "text-accent" ? "bg-accent/15" : iconColor === "text-gold" ? "bg-gold/15" : "bg-secondary"} flex items-center justify-center`}>
-            <Icon className={`h-5 w-5 ${iconColor}`} />
+        <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2.5">
+          <div className={`h-8 w-8 rounded-lg ${iconColor === "text-primary" ? "bg-primary/15" : iconColor === "text-destructive" ? "bg-destructive/15" : iconColor === "text-accent" ? "bg-accent/15" : iconColor === "text-gold" ? "bg-gold/15" : "bg-secondary"} flex items-center justify-center`}>
+            <Icon className={`h-4 w-4 ${iconColor}`} />
           </div>
           {title}
           {badge}
         </h2>
-        {subtitle && <p className="text-sm text-muted-foreground mt-1 ml-12">{subtitle}</p>}
+        {subtitle && <p className="text-xs text-muted-foreground mt-0.5 ml-10">{subtitle}</p>}
       </div>
       {linkTo && (
         <Link to={linkTo} className="text-sm text-primary hover:text-primary/80 flex items-center gap-1 font-semibold transition-colors group">
@@ -133,7 +133,7 @@ function ScrollRow({ children, className = "" }: { children: React.ReactNode; cl
           <ChevronLeft className="h-5 w-5" />
         </button>
       )}
-      <div ref={ref} className={`flex gap-5 overflow-x-auto pb-4 -mx-1 px-1 snap-x scroll-smooth scrollbar-hide ${className}`}>
+      <div ref={ref} className={`flex gap-[18px] overflow-x-auto pb-3 -mx-1 px-1 snap-x scroll-smooth scrollbar-hide ${className}`}>
         {children}
       </div>
       {canScrollRight && (
@@ -443,54 +443,62 @@ function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, use
   return (
     <motion.div
       variants={cardItem}
-      whileHover={{ y: -4, transition: { duration: 0.15 } }}
-      className="min-w-[300px] max-w-[340px] snap-start shrink-0 h-full"
+      whileHover={{ y: -3, transition: { duration: 0.12 } }}
+      className="min-w-[260px] max-w-[280px] snap-start shrink-0 h-full"
     >
-      <Card className="group relative overflow-hidden border-border/50 bg-card hover:border-primary/30 transition-all duration-150 h-full hover:shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.25)]">
+      <Card className="group relative overflow-hidden border-border/50 bg-card hover:border-primary/40 transition-all duration-150 h-full hover:shadow-[0_6px_30px_-8px_hsl(var(--primary)/0.3)] hover:ring-1 hover:ring-primary/20">
         {isGated && (
-          <div className="absolute inset-0 z-20 backdrop-blur-md bg-background/65 flex flex-col items-center justify-center gap-3 cursor-pointer" onClick={() => { onUpgrade(); logPaywallView(deal.id, "dashboard", userId); }}>
-            <div className="h-12 w-12 rounded-xl bg-gold/15 flex items-center justify-center"><Lock className="h-6 w-6 text-gold" /></div>
-            <span className="text-sm font-bold text-foreground">Premium Deal</span>
-            <span className="text-[11px] text-muted-foreground">Upgrade to unlock</span>
+          <div className="absolute inset-0 z-20 backdrop-blur-md bg-background/65 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => { onUpgrade(); logPaywallView(deal.id, "dashboard", userId); }}>
+            <div className="h-10 w-10 rounded-xl bg-gold/15 flex items-center justify-center"><Lock className="h-5 w-5 text-gold" /></div>
+            <span className="text-xs font-bold text-foreground">Premium Deal</span>
+            <span className="text-[10px] text-muted-foreground">Upgrade to unlock</span>
           </div>
         )}
 
-        <CardContent className="relative z-10 p-6 flex flex-col h-full">
-          {/* Badge row */}
-          <div className="flex items-center justify-between mb-4">
-            <Badge className={`${badge.color} text-[10px] font-bold gap-1 px-2.5 py-1`}>
-              <badge.icon className="h-3 w-3" /> {badge.label}
+        <CardContent className="relative z-10 p-4 flex flex-col h-full">
+          {/* Badge + Fav row */}
+          <div className="flex items-center justify-between mb-2.5">
+            <Badge className={`${badge.color} text-[9px] font-bold gap-1 px-2 py-0.5`}>
+              <badge.icon className="h-2.5 w-2.5" /> {badge.label}
             </Badge>
-            <motion.button onClick={() => onToggleFav(deal.id)} whileTap={{ scale: 0.8 }} className="p-2 rounded-xl hover:bg-secondary/80 transition-colors">
-              <Heart className={`h-5 w-5 transition-colors ${isFav ? "fill-destructive text-destructive" : "text-muted-foreground hover:text-foreground"}`} />
+            <motion.button onClick={() => onToggleFav(deal.id)} whileTap={{ scale: 0.8 }} className="p-1.5 rounded-lg hover:bg-secondary/80 transition-colors">
+              <Heart className={`h-4 w-4 transition-colors ${isFav ? "fill-destructive text-destructive" : "text-muted-foreground hover:text-foreground"}`} />
             </motion.button>
           </div>
 
-          {/* Store info */}
-          <div className="flex items-center gap-4 mb-5">
-            <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="lg" />
-            <div className="min-w-0">
-              <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{storeName}</div>
-              <div className="font-display font-bold text-base text-foreground truncate mt-0.5">{deal.title}</div>
+          {/* Savings — MOST DOMINANT */}
+          <div className="mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-accent/70">SAVE</span>
+            <div className="font-display text-2xl font-black text-accent leading-tight">
+              {deal.discount_value || "Special Deal"}
             </div>
           </div>
 
-          {/* Discount */}
-          <div className="mb-3">
-            <span className="font-display text-3xl font-black text-accent">
-              {deal.discount_value || "Special Deal"}
-            </span>
+          {/* Store info */}
+          <div className="flex items-center gap-3 mb-2">
+            <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="sm" />
+            <div className="min-w-0">
+              <div className="font-display font-bold text-sm text-foreground truncate">{storeName}</div>
+              <div className="text-xs text-muted-foreground truncate">{deal.title}</div>
+            </div>
           </div>
 
           {deal.description && (
-            <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed flex-1">{deal.description}</p>
+            <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed flex-1 mb-2">{deal.description}</p>
+          )}
+
+          {/* Expiration / activity */}
+          {deal.expires_at && daysUntil(deal.expires_at) <= 7 && (
+            <div className="flex items-center gap-1 text-[10px] text-destructive font-medium mb-2">
+              <Timer className="h-2.5 w-2.5" /> {daysUntil(deal.expires_at)}d left
+            </div>
           )}
 
           {/* CTA */}
-          <div className="mt-auto pt-5">
+          <div className="mt-auto pt-3">
             <Link to={`/deals/${deal.id}`}>
-              <Button className="w-full gap-2 h-11 font-bold text-sm opacity-90 group-hover:opacity-100 group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-150">
-                View Deal <ExternalLink className="h-4 w-4" />
+              <Button size="sm" className="w-full gap-1.5 h-8 font-bold text-xs opacity-85 group-hover:opacity-100 group-hover:shadow-md group-hover:shadow-primary/25 transition-all duration-150">
+                Get Deal <ExternalLink className="h-3 w-3" />
               </Button>
             </Link>
           </div>
@@ -636,35 +644,39 @@ function ExpiringSoonCard({ deal, index }: { deal: DealRow; index: number }) {
   return (
     <motion.div
       variants={cardItem}
-      whileHover={{ y: -4, transition: { duration: 0.15 } }}
-      className="min-w-[280px] max-w-[320px] snap-start shrink-0 h-full"
+      whileHover={{ y: -3, transition: { duration: 0.12 } }}
+      className="min-w-[240px] max-w-[270px] snap-start shrink-0 h-full"
     >
-      <Card className={`group relative overflow-hidden border-border/50 bg-card transition-all duration-150 h-full ${isUrgent ? "border-destructive/30 ring-1 ring-destructive/15 hover:ring-destructive/30" : "hover:border-destructive/20"} hover:shadow-[0_8px_40px_-12px_hsl(0_84%_60%/0.2)]`}>
+      <Card className={`group relative overflow-hidden border-border/50 bg-card transition-all duration-150 h-full ${isUrgent ? "border-destructive/30 ring-1 ring-destructive/15 hover:ring-destructive/30" : "hover:border-destructive/20"} hover:shadow-[0_6px_30px_-8px_hsl(0_84%_60%/0.2)] hover:ring-1 hover:ring-destructive/20`}>
         {isUrgent && <div className="absolute inset-0 bg-destructive/5 pointer-events-none" />}
 
-        <CardContent className="relative z-10 p-6 flex flex-col h-full">
-          <div className="mb-4">
-            <Badge className={`text-xs font-bold gap-1.5 px-3 py-1 ${isUrgent ? "bg-destructive/15 text-destructive border-destructive/30 animate-pulse" : "bg-gold/15 text-gold border-gold/30"}`}>
-              <Timer className="h-3.5 w-3.5" /> {countdownText}
+        <CardContent className="relative z-10 p-4 flex flex-col h-full">
+          <div className="mb-2.5">
+            <Badge className={`text-[9px] font-bold gap-1 px-2 py-0.5 ${isUrgent ? "bg-destructive/15 text-destructive border-destructive/30 animate-pulse" : "bg-gold/15 text-gold border-gold/30"}`}>
+              <Timer className="h-2.5 w-2.5" /> {countdownText}
             </Badge>
           </div>
 
-          <div className="flex items-center gap-4 mb-4">
-            <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="lg" />
-            <div className="min-w-0">
-              <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{storeName}</div>
-              <div className="font-display font-bold text-base text-foreground truncate mt-0.5">{deal.title}</div>
+          {/* Savings first */}
+          <div className="mb-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-accent/70">SAVE</span>
+            <div className="font-display text-2xl font-black text-accent leading-tight">
+              {deal.discount_value || "Deal"}
             </div>
           </div>
 
-          <span className="font-display text-2xl font-black text-accent">
-            {deal.discount_value || "Deal"}
-          </span>
+          <div className="flex items-center gap-3 mb-2">
+            <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="sm" />
+            <div className="min-w-0">
+              <div className="font-display font-bold text-sm text-foreground truncate">{storeName}</div>
+              <div className="text-xs text-muted-foreground truncate">{deal.title}</div>
+            </div>
+          </div>
 
-          <div className="mt-auto pt-5">
+          <div className="mt-auto pt-3">
             <Link to={`/deals/${deal.id}`}>
-              <Button size="sm" className={`w-full gap-2 h-10 font-bold text-sm ${isUrgent ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-lg shadow-destructive/25" : ""}`}>
-                {isUrgent ? "Grab It Now" : "View Deal"} <ExternalLink className="h-3.5 w-3.5" />
+              <Button size="sm" className={`w-full gap-1.5 h-8 font-bold text-xs ${isUrgent ? "bg-destructive hover:bg-destructive/90 text-destructive-foreground shadow-md shadow-destructive/25" : ""} group-hover:opacity-100 group-hover:shadow-md transition-all`}>
+                {isUrgent ? "Grab It Now" : "Get Deal"} <ExternalLink className="h-3 w-3" />
               </Button>
             </Link>
           </div>
@@ -835,7 +847,7 @@ export default function Dashboard() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-10 max-w-7xl mx-auto">
+      <div className="space-y-8 max-w-7xl mx-auto">
         {/* Welcome */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
           <div className="flex items-center gap-4">
