@@ -116,6 +116,38 @@ function downloadTemplate() {
   URL.revokeObjectURL(url);
 }
 
+const SAMPLE_DEALS: Omit<ImportRow, "id" | "selected" | "editing">[] = [
+  { brand_name: "Spotify", deal_title: "Spotify Premium Student — 50% Off", description: "Get Spotify Premium at half price with a valid .edu email. Includes Hulu and SHOWTIME.", category: "entertainment", discount_value: "50%", affiliate_url: "https://www.spotify.com/us/student/", logo_url: "/logos/spotify.png", estimated_savings: "5.99", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 320, seed_view_count: 1200, seed_trending_score: 92 },
+  { brand_name: "Apple Music", deal_title: "Apple Music Student Plan — $5.99/mo", description: "Students get Apple Music for just $5.99/month including Apple TV+.", category: "entertainment", discount_value: "$5.99/mo", affiliate_url: "https://music.apple.com/student", logo_url: "/logos/apple.png", estimated_savings: "5.00", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 280, seed_view_count: 950, seed_trending_score: 88 },
+  { brand_name: "Adobe", deal_title: "Adobe Creative Cloud — 60% Off for Students", description: "Get the full Adobe Creative Cloud suite at 60% off with student verification.", category: "software", discount_value: "60%", affiliate_url: "https://www.adobe.com/creativecloud/plans.html", logo_url: "/logos/adobe.png", estimated_savings: "35.99", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 210, seed_view_count: 800, seed_trending_score: 85 },
+  { brand_name: "GitHub", deal_title: "GitHub Student Developer Pack — Free", description: "Free GitHub Pro and $200+ in developer tools through the Student Developer Pack.", category: "software", discount_value: "Free", affiliate_url: "https://education.github.com/pack", logo_url: "/logos/github.png", estimated_savings: "44.00", deal_type: "informational", expiration_date: "2026-12-31", seed_claim_count: 450, seed_view_count: 1500, seed_trending_score: 95 },
+  { brand_name: "Amazon Prime", deal_title: "Amazon Prime Student — 50% Off", description: "6-month free trial then 50% off Prime membership for students.", category: "shopping", discount_value: "50%", affiliate_url: "https://www.amazon.com/amazonprime?planOptimizationId=WLPStudentMonthlyElig498", logo_url: "/logos/amazon.png", estimated_savings: "7.49", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 500, seed_view_count: 2000, seed_trending_score: 97 },
+  { brand_name: "Nike", deal_title: "Nike Student Discount — 10% Off", description: "Verified students get 10% off full-price items at Nike.com.", category: "fashion", discount_value: "10%", affiliate_url: "https://www.nike.com/help/a/student-discount", logo_url: "/logos/nike.png", estimated_savings: "12.00", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 180, seed_view_count: 700, seed_trending_score: 72 },
+  { brand_name: "Samsung", deal_title: "Samsung Education Discount — Up to 30% Off", description: "Save up to 30% on Samsung laptops, tablets, and phones with student verification.", category: "tech", discount_value: "30%", affiliate_url: "https://www.samsung.com/us/shop/discount-program/education/", logo_url: "/logos/samsung.png", estimated_savings: "150.00", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 140, seed_view_count: 600, seed_trending_score: 68 },
+  { brand_name: "Notion", deal_title: "Notion Personal Pro — Free for Students", description: "Get Notion's Personal Pro plan completely free with a .edu email.", category: "software", discount_value: "Free", affiliate_url: "https://www.notion.so/product/notion-for-education", logo_url: "/logos/notion.png", estimated_savings: "8.00", deal_type: "informational", expiration_date: "2026-12-31", seed_claim_count: 380, seed_view_count: 1100, seed_trending_score: 90 },
+  { brand_name: "The North Face", deal_title: "The North Face Student Discount — 10% Off", description: "Students save 10% on full-price items at The North Face online.", category: "fashion", discount_value: "10%", affiliate_url: "https://www.thenorthface.com/en-us/discover/student-discount", logo_url: "/logos/northface.png", estimated_savings: "20.00", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 95, seed_view_count: 400, seed_trending_score: 55 },
+  { brand_name: "Coursera", deal_title: "Coursera Plus Student Discount", description: "Access 7,000+ courses with Coursera Plus at a discounted student rate.", category: "education", discount_value: "$1/mo trial", affiliate_url: "https://www.coursera.org/courseraplus", logo_url: "/logos/coursera.png", estimated_savings: "30.00", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 170, seed_view_count: 650, seed_trending_score: 70 },
+  { brand_name: "Best Buy", deal_title: "Best Buy Student Deals Hub", description: "Exclusive student pricing on laptops, headphones, and tech essentials.", category: "tech", discount_value: "Up to 20%", affiliate_url: "https://www.bestbuy.com/site/back-to-school/college-student-deals/pcmcat748300659857.c", logo_url: "/logos/bestbuy.png", estimated_savings: "50.00", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 120, seed_view_count: 550, seed_trending_score: 62 },
+  { brand_name: "Headspace", deal_title: "Headspace Student Plan — 85% Off", description: "Students get Headspace meditation and mindfulness app for 85% off.", category: "health", discount_value: "85%", affiliate_url: "https://www.headspace.com/studentplan", logo_url: "/logos/headspace.png", estimated_savings: "57.00", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 200, seed_view_count: 750, seed_trending_score: 78 },
+  { brand_name: "DoorDash", deal_title: "DashPass Student — 50% Off", description: "Get DashPass for 50% off with a valid .edu email. Free delivery on orders $12+.", category: "food", discount_value: "50%", affiliate_url: "https://www.doordash.com/dashpass/", logo_url: "/logos/doordash.png", estimated_savings: "4.99", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 260, seed_view_count: 900, seed_trending_score: 84 },
+  { brand_name: "Uber Eats", deal_title: "Uber One Student — $4.99/mo", description: "Uber One membership at student pricing with $0 delivery fees and 5% off.", category: "food", discount_value: "$4.99/mo", affiliate_url: "https://www.ubereats.com", logo_url: "/logos/ubereats.png", estimated_savings: "4.00", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 190, seed_view_count: 680, seed_trending_score: 74 },
+  { brand_name: "Adidas", deal_title: "Adidas Student Discount — 30% Off", description: "Verified students save 30% on full-price items at Adidas.", category: "fashion", discount_value: "30%", affiliate_url: "https://www.adidas.com/us/discount-programs", logo_url: "/logos/adidas.png", estimated_savings: "25.00", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 150, seed_view_count: 580, seed_trending_score: 66 },
+  { brand_name: "Chegg", deal_title: "Chegg Study — First Month Free", description: "Get step-by-step textbook solutions and expert Q&A free for the first month.", category: "education", discount_value: "Free trial", affiliate_url: "https://www.chegg.com/study", logo_url: "/logos/chegg.png", estimated_savings: "14.95", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 340, seed_view_count: 1050, seed_trending_score: 88 },
+  { brand_name: "ASOS", deal_title: "ASOS Student Discount — 10% Off", description: "Students get 10% off everything at ASOS with student verification.", category: "fashion", discount_value: "10%", affiliate_url: "https://www.asos.com/us/student-discount/", logo_url: "/logos/asos.png", estimated_savings: "8.00", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 110, seed_view_count: 470, seed_trending_score: 58 },
+  { brand_name: "Amtrak", deal_title: "Amtrak Student Advantage — 15% Off", description: "Save 15% on Amtrak tickets with a Student Advantage membership.", category: "travel", discount_value: "15%", affiliate_url: "https://www.amtrak.com/deals-discounts/everyday-discounts.html", logo_url: "/logos/amtrak.png", estimated_savings: "18.00", deal_type: "affiliate", expiration_date: "2026-12-31", seed_claim_count: 75, seed_view_count: 320, seed_trending_score: 45 },
+  { brand_name: "Apple", deal_title: "Apple Education Pricing — Save on Mac & iPad", description: "Students and educators save on Mac, iPad, and accessories with Apple Education.", category: "tech", discount_value: "Up to $300", affiliate_url: "https://www.apple.com/shop/education-pricing", logo_url: "/logos/apple.png", estimated_savings: "200.00", deal_type: "informational", expiration_date: "2026-12-31", seed_claim_count: 400, seed_view_count: 1800, seed_trending_score: 94 },
+  { brand_name: "Microsoft", deal_title: "Microsoft 365 Education — Free", description: "Free Microsoft 365 including Word, Excel, PowerPoint, and Teams for students.", category: "software", discount_value: "Free", affiliate_url: "https://www.microsoft.com/en-us/education/products/office", logo_url: "", estimated_savings: "69.99", deal_type: "informational", expiration_date: "2026-12-31", seed_claim_count: 360, seed_view_count: 1300, seed_trending_score: 91 },
+];
+
+function loadSampleDeals(): ImportRow[] {
+  return SAMPLE_DEALS.map((deal, idx) => ({
+    ...deal,
+    id: `sample-${idx}-${Date.now()}`,
+    selected: true,
+    editing: false,
+  }));
+}
+
 // Generate random dates over the last 30 days
 function randomDateInLast30Days(): string {
   const now = Date.now();
@@ -271,10 +303,22 @@ const DealImport = () => {
               Upload a CSV to populate deals with optional engagement seeding.
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" className="gap-2" onClick={downloadTemplate}>
               <Download className="h-4 w-4" />
               Download Template
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-2"
+              onClick={() => {
+                setRows(loadSampleDeals());
+                toast({ title: "20 sample deals loaded", description: "Review and click Import to publish." });
+              }}
+            >
+              <FileSpreadsheet className="h-4 w-4" />
+              Load 20 Sample Deals
             </Button>
             <Button
               size="sm"
