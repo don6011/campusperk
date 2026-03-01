@@ -21,6 +21,8 @@ import {
   Share2,
   Copy,
   Sparkles,
+  Flame,
+  TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -32,6 +34,7 @@ import { UpgradeModal } from "@/components/UpgradeModal";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { VerifiedStudentBadge } from "@/components/VerifiedStudentBadge";
 import { mockDeals } from "@/lib/mock-data";
+import { useDealClaimCounts, useClaimDeal } from "@/hooks/use-deal-claims";
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -66,7 +69,8 @@ export default function DealDetail() {
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [fav, setFav] = useState(false);
   const { recordRedemption } = useRecordRedemption();
-
+  const claimDeal = useClaimDeal();
+  const { data: claimCountsMap } = useDealClaimCounts(dealId ? [dealId] : []);
   const deal = mockDeals.find((d) => d.id === dealId);
 
   if (!deal) {
@@ -97,10 +101,14 @@ export default function DealDetail() {
       logPaywallView(deal.id, "deal_detail", user?.id);
       return;
     }
-    // Record redemption for campus leaderboard
+    claimDeal.mutate(deal.id);
     recordRedemption(deal.id, deal.discountValue, deal.category);
     navigate(`/go/${deal.id}`);
   };
+
+  const claimCounts = claimCountsMap?.get(deal.id);
+  const totalClaims = claimCounts?.total || ((deal.id.charCodeAt(1) * 47 + 123) % 900 + 100);
+  const todayClaims = claimCounts?.today || 0;
 
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -313,9 +321,23 @@ export default function DealDetail() {
               <Separator className="my-6" />
 
               {/* Social proof */}
-              <div className="flex items-center justify-center gap-1.5 text-sm text-muted-foreground">
-                <CheckCircle2 className="h-3.5 w-3.5 text-accent" />
-                {((deal.id.charCodeAt(1) * 47 + 123) % 900 + 100).toLocaleString()} students used this deal
+              <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Flame className="h-3.5 w-3.5 text-destructive" />
+                  <span className="font-semibold text-foreground">{totalClaims.toLocaleString()}</span> students claimed this deal
+                </span>
+                {todayClaims > 0 && (
+                  <span className="flex items-center gap-1.5 text-destructive font-medium">
+                    <Flame className="h-3.5 w-3.5" />
+                    {todayClaims} claimed today
+                  </span>
+                )}
+                {claimCounts?.campusTrending && (
+                  <span className="flex items-center gap-1.5 text-primary font-medium">
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    Trending on campus
+                  </span>
+                )}
               </div>
 
               {/* CTA row */}
