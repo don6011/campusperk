@@ -22,6 +22,7 @@ import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealRow";
 import { resolveLocation } from "@/lib/deal-eligibility";
+import { CampusBattlesWidget } from "@/components/dashboard/CampusBattlesWidget";
 import { citiesMatch, statesMatch } from "@/lib/state-codes";
 import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
 
@@ -616,6 +617,9 @@ export default function Dashboard() {
             </Card>
           )}
         </motion.section>
+
+        {/* ── CAMPUS BATTLES ── */}
+        <CampusBattlesWidget />
 
         {/* Ambassador */}
         <AmbassadorImpactCard userId={user?.id} />

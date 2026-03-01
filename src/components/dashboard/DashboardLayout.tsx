@@ -34,6 +34,7 @@ import { CampusRoleBadge } from "@/components/CampusRoleBadge";
 import { AmbassadorBadge } from "@/components/AmbassadorBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import NotificationBell from "@/components/NotificationBell";
+import { CampusPrideBadge } from "@/components/CampusPrideBadge";
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
@@ -203,6 +204,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="flex items-center gap-2 ml-auto">
             {/* Verified Student Badge */}
+            <CampusPrideBadge />
             <CampusRoleBadge />
             <AmbassadorBadge />
 
