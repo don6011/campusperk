@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { logPaywallView } from "@/lib/paywall";
+import { useRecordRedemption } from "@/hooks/use-record-redemption";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -64,6 +65,7 @@ export default function DealDetail() {
   const { isPremium: userIsPremium, user } = useAuth();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [fav, setFav] = useState(false);
+  const { recordRedemption } = useRecordRedemption();
 
   const deal = mockDeals.find((d) => d.id === dealId);
 
@@ -95,6 +97,8 @@ export default function DealDetail() {
       logPaywallView(deal.id, "deal_detail", user?.id);
       return;
     }
+    // Record redemption for campus leaderboard
+    recordRedemption(deal.id, deal.discountValue, deal.category);
     navigate(`/go/${deal.id}`);
   };
 
