@@ -36,6 +36,7 @@ import PartnerRequest from "./pages/PartnerRequest";
 import AmbassadorApply from "./pages/AmbassadorApply";
 import AmbassadorsManager from "./pages/admin/AmbassadorsManager";
 import AffiliateSourcesManager from "./pages/admin/AffiliateSourcesManager";
+import DealImport from "./pages/admin/DealImport";
 import Alerts from "./pages/Alerts";
 import AmbassadorDashboard from "./pages/AmbassadorDashboard";
 import CampusLeaderboard from "./pages/CampusLeaderboard";
@@ -96,6 +97,7 @@ const App = () => (
             <Route path="/admin/partners" element={<ProtectedRoute><PartnersManager /></ProtectedRoute>} />
             <Route path="/admin/ambassadors" element={<ProtectedRoute><AmbassadorsManager /></ProtectedRoute>} />
             <Route path="/admin/affiliate-sources" element={<ProtectedRoute><AffiliateSourcesManager /></ProtectedRoute>} />
+            <Route path="/admin/deal-import" element={<ProtectedRoute><DealImport /></ProtectedRoute>} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
