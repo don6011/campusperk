@@ -40,6 +40,7 @@ import DealImport from "./pages/admin/DealImport";
 import Alerts from "./pages/Alerts";
 import AmbassadorDashboard from "./pages/AmbassadorDashboard";
 import CampusLeaderboard from "./pages/CampusLeaderboard";
+import Splash from "./pages/Splash";
 
 // Redirect /join?ref=CODE to /sign-up?ref=CODE
 function JoinRedirect() {
@@ -73,6 +74,7 @@ const App = () => (
             <Route path="/ambassador" element={<AmbassadorApply />} />
 
             {/* Protected routes */}
+            <Route path="/splash" element={<ProtectedRoute><Splash /></ProtectedRoute>} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/explore" element={<ProtectedRoute><ExploreDeals /></ProtectedRoute>} />
             <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />

@@ -1098,6 +1098,7 @@ export type Database = {
           campus_verified: boolean
           created_at: string
           email: string | null
+          has_seen_splash: boolean
           id: string
           location_opt_in: boolean
           name: string | null
@@ -1125,6 +1126,7 @@ export type Database = {
           campus_verified?: boolean
           created_at?: string
           email?: string | null
+          has_seen_splash?: boolean
           id: string
           location_opt_in?: boolean
           name?: string | null
@@ -1152,6 +1154,7 @@ export type Database = {
           campus_verified?: boolean
           created_at?: string
           email?: string | null
+          has_seen_splash?: boolean
           id?: string
           location_opt_in?: boolean
           name?: string | null

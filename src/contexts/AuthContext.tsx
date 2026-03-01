@@ -22,6 +22,7 @@ interface Profile {
   verification_strength_score: number;
   campus_id: string | null;
   campus_city: string | null;
+  has_seen_splash: boolean;
   campus_state: string | null;
   user_city: string | null;
   user_state: string | null;
@@ -86,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verification_method, campus_domain, campus_name, verification_notes, campus_verified, verification_strength_score, campus_id, campus_city, campus_state, user_city, user_state, location_opt_in, use_campus_location")
+      .select("id, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verification_method, campus_domain, campus_name, verification_notes, campus_verified, verification_strength_score, campus_id, campus_city, campus_state, user_city, user_state, location_opt_in, use_campus_location, has_seen_splash")
       .eq("id", userId)
       .single();
     setProfile(data as Profile | null);
