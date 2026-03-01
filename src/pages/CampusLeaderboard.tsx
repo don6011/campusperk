@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { Trophy, Crown, Medal, Zap, Timer, ArrowLeft, TrendingUp } from "lucide-react";
+import { Trophy, Crown, Medal, Zap, Timer, ArrowLeft, TrendingUp, ArrowUp, ArrowDown, Minus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,35 @@ const rankIcons = [
   { icon: Medal, color: "text-muted-foreground", bg: "bg-secondary" },
   { icon: Medal, color: "text-[hsl(25_70%_50%)]", bg: "bg-[hsl(25_70%_50%)]/15" },
 ];
+
+function RankDelta({ delta }: { delta: number | null }) {
+  if (delta === null) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-blue-500 bg-blue-500/10 rounded-full px-1.5 py-0.5">
+        NEW
+      </span>
+    );
+  }
+  if (delta === 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-muted-foreground">
+        <Minus className="h-3 w-3" />
+      </span>
+    );
+  }
+  if (delta > 0) {
+    return (
+      <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-500">
+        <ArrowUp className="h-3 w-3" />{delta}
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-destructive">
+      <ArrowDown className="h-3 w-3" />{Math.abs(delta)}
+    </span>
+  );
+}
 
 function WeeklyResetTimer() {
   const [timeLeft, setTimeLeft] = useState({ d: 0, h: 0, m: 0, s: 0 });
@@ -124,7 +153,10 @@ export default function CampusLeaderboard() {
                         {ri?.icon && <ri.icon className={`h-7 w-7 ${ri.color}`} />}
                       </div>
                       <div className="font-display text-lg font-bold text-foreground mb-1 truncate">{entry.campus_name}</div>
-                      <div className="font-display text-2xl font-black text-accent">${entry.total_savings.toLocaleString()}</div>
+                      <div className="flex items-center justify-center gap-1.5">
+                        <div className="font-display text-2xl font-black text-accent">${entry.total_savings.toLocaleString()}</div>
+                        <RankDelta delta={entry.rankDelta} />
+                      </div>
                       <div className="text-[10px] text-muted-foreground mt-0.5">saved this week</div>
                       {isUserCampus && (
                         <Badge className="bg-primary/15 text-primary border-primary/30 text-[9px] font-bold mt-2">YOUR CAMPUS</Badge>
@@ -188,7 +220,8 @@ export default function CampusLeaderboard() {
                         )}
                       </div>
 
-                      <div className="text-right w-32 shrink-0">
+                      <div className="text-right w-32 shrink-0 flex items-center justify-end gap-2">
+                        <RankDelta delta={entry.rankDelta} />
                         <span className="font-display text-base font-black text-accent">
                           ${entry.total_savings.toLocaleString()}
                         </span>

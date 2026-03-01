@@ -6,6 +6,7 @@ export interface LeaderboardEntry {
   campus_name: string;
   total_savings: number;
   rank: number;
+  rankDelta: number | null; // positive = moved up, negative = moved down, null = new
 }
 
 function getWeekStart() {
@@ -16,6 +17,12 @@ function getWeekStart() {
   monday.setDate(diff);
   monday.setHours(0, 0, 0, 0);
   return monday.toISOString();
+}
+
+function getPreviousWeekStart() {
+  const start = new Date(getWeekStart());
+  start.setDate(start.getDate() - 7);
+  return start.toISOString();
 }
 
 function getWeekEnd() {
@@ -29,6 +36,24 @@ export function useCampusLeaderboard(limit = 10) {
     queryKey: ["campus-leaderboard", limit],
     queryFn: async () => {
       const weekStart = getWeekStart();
+      const prevWeekStart = getPreviousWeekStart();
+
+      // Fetch previous week rankings for delta calculation
+      const { data: prevSavings } = await supabase
+        .from("campus_savings")
+        .select("campus_id, total_savings")
+        .gte("week_start", prevWeekStart)
+        .lt("week_start", weekStart)
+        .order("total_savings", { ascending: false });
+
+      const prevRankMap = new Map<string, number>();
+      (prevSavings || []).forEach((s, i) => prevRankMap.set(s.campus_id, i + 1));
+
+      const computeDelta = (campusId: string, currentRank: number): number | null => {
+        const prevRank = prevRankMap.get(campusId);
+        if (prevRank === undefined) return null; // new entry
+        return prevRank - currentRank; // positive = moved up
+      };
 
       // Try campus_savings first (aggregated)
       const { data: savings } = await supabase
@@ -39,7 +64,6 @@ export function useCampusLeaderboard(limit = 10) {
         .limit(limit);
 
       if (savings && savings.length > 0) {
-        // Fetch campus names
         const campusIds = savings.map(s => s.campus_id);
         const { data: campuses } = await supabase
           .from("campus_domains")
@@ -53,6 +77,7 @@ export function useCampusLeaderboard(limit = 10) {
           campus_name: nameMap.get(s.campus_id) || "Unknown Campus",
           total_savings: Number(s.total_savings),
           rank: i + 1,
+          rankDelta: computeDelta(s.campus_id, i + 1),
         })) as LeaderboardEntry[];
       }
 
@@ -63,7 +88,6 @@ export function useCampusLeaderboard(limit = 10) {
         .gte("created_at", weekStart);
 
       if (!redemptions || redemptions.length === 0) {
-        // Return mock data for demo
         return getMockLeaderboard(limit);
       }
 
@@ -89,6 +113,7 @@ export function useCampusLeaderboard(limit = 10) {
         campus_name: nameMap.get(id) || "Unknown Campus",
         total_savings: total,
         rank: i + 1,
+        rankDelta: computeDelta(id, i + 1),
       })) as LeaderboardEntry[];
     },
     staleTime: 60_000,
@@ -149,11 +174,15 @@ function getMockLeaderboard(limit: number): LeaderboardEntry[] {
     { name: "South Carolina University", savings: 700 },
   ];
 
+  // Generate consistent mock deltas based on index
+  const mockDeltas = [0, 2, -1, 3, -2, 0, 1, -3, 4, 0, -1, 2, 0, -2, 1, 0, 3, -1, 0, 2, -2, 1, 0, -1, 3, 0, -2, 1, 0, 2, -1, 0, 1, -3, 2, 0, -1, 1, 0, -2, 1, 0, -1, 2, 0, -2, 1, 0, -1, 0];
+
   return campuses.slice(0, limit).map((c, i) => ({
     campus_id: `mock-${i}`,
     campus_name: c.name,
     total_savings: c.savings,
     rank: i + 1,
+    rankDelta: mockDeltas[i] || 0,
   }));
 }
 
