@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.ingest-deals]
 verify_jwt = false
+
+[functions.aggregate-campus-savings]
+verify_jwt = false
