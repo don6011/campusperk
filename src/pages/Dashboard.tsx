@@ -5,7 +5,7 @@ import {
   ArrowRight, Heart, Clock, Shield, Crown, TrendingUp, Bell, Tag, ChevronRight,
   ExternalLink, Sparkles, AlertTriangle, ShoppingBag, Monitor, Cpu, CreditCard,
   Utensils, Plane, Lock, BellRing, MapPin, Megaphone, Flame, Zap, Timer, Star,
-  Copy, ChevronLeft,
+  Copy, ChevronLeft, DollarSign,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -59,10 +59,10 @@ type DealRow = {
 /* ── Brand Logo ── */
 function BrandLogo({ url, name, size = "md" }: { url: string | null; name: string; size?: "sm" | "md" | "lg" | "xl" }) {
   const config = {
-    sm: { container: "h-10 w-10", img: "h-7 w-7", icon: "h-4 w-4", radius: "rounded-xl" },
-    md: { container: "h-14 w-14", img: "h-10 w-10", icon: "h-5 w-5", radius: "rounded-2xl" },
-    lg: { container: "h-18 w-18", img: "h-13 w-13", icon: "h-7 w-7", radius: "rounded-2xl" },
-    xl: { container: "h-20 w-20", img: "h-14 w-14", icon: "h-8 w-8", radius: "rounded-3xl" },
+    sm: { container: "h-10 w-10", img: "h-7 w-7", radius: "rounded-xl" },
+    md: { container: "h-14 w-14", img: "h-10 w-10", radius: "rounded-2xl" },
+    lg: { container: "h-18 w-18", img: "h-13 w-13", radius: "rounded-2xl" },
+    xl: { container: "h-20 w-20", img: "h-14 w-14", radius: "rounded-3xl" },
   }[size];
 
   return (
@@ -145,7 +145,7 @@ function ScrollRow({ children, className = "" }: { children: React.ReactNode; cl
 }
 
 /* ═══════════════════════════════════════════
-   1. HERO DEAL — Premium Featured Card
+   1. HERO DEAL — Premium Billboard Card
    ═══════════════════════════════════════════ */
 function HeroDealSection({ deal, onUpgrade, isPremium, userId }: {
   deal: DealRow; onUpgrade: () => void; isPremium: boolean; userId?: string;
@@ -155,11 +155,9 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId }: {
 
   return (
     <motion.section initial={{ opacity: 0, y: 30, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}>
-      <Card className="relative overflow-hidden border-primary/20 bg-card">
-        {/* Multi-layer gradient background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-accent/8 pointer-events-none" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-primary/8 rounded-full blur-[100px] pointer-events-none -translate-y-1/2 translate-x-1/4" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent/8 rounded-full blur-[80px] pointer-events-none translate-y-1/2 -translate-x-1/4" />
+      <Card className="relative overflow-hidden border-border/50 bg-background">
+        {/* Subtle radial glow — no color wash */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-primary/6 rounded-full blur-[120px] pointer-events-none" />
 
         {isGated && (
           <div className="absolute inset-0 z-20 backdrop-blur-md bg-background/70 flex flex-col items-center justify-center gap-4 cursor-pointer" onClick={() => { onUpgrade(); logPaywallView(deal.id, "dashboard", userId); }}>
@@ -175,52 +173,53 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId }: {
         )}
 
         <CardContent className="relative z-10 p-8 sm:p-10 lg:p-12">
+          <div className="flex items-center gap-3 mb-6">
+            <Badge className="bg-primary/15 text-primary border-primary/30 text-xs font-bold gap-1.5 px-3 py-1.5">
+              <Star className="h-3.5 w-3.5" /> Deal of the Day
+            </Badge>
+            {deal.sponsored && (
+              <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">Sponsored</Badge>
+            )}
+          </div>
+
           <div className="flex flex-col lg:flex-row lg:items-center gap-8">
-            <div className="flex-1 space-y-6">
-              <div className="flex items-center gap-3">
-                <Badge className="bg-primary/15 text-primary border-primary/30 text-xs font-bold gap-1.5 px-3 py-1.5">
-                  <Star className="h-3.5 w-3.5" /> Today's Student Deal
+            {/* LEFT — Brand + Headline */}
+            <div className="flex items-center gap-5 flex-1 min-w-0">
+              <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="xl" />
+              <div className="min-w-0">
+                <div className="text-xs text-muted-foreground font-medium uppercase tracking-widest">{storeName}</div>
+                <h3 className="font-display text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{deal.title}</h3>
+                {deal.description && (
+                  <p className="text-sm text-muted-foreground line-clamp-2 mt-2 max-w-md">{deal.description}</p>
+                )}
+              </div>
+            </div>
+
+            {/* CENTER — Big Discount */}
+            <div className="flex flex-col items-center shrink-0 px-4">
+              <span className="text-xs font-bold uppercase tracking-widest text-accent/80">SAVE</span>
+              <span className="font-display text-[64px] leading-none font-black text-accent">
+                {deal.discount_value || "—"}
+              </span>
+              {deal.expires_at && (
+                <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs gap-1 mt-3">
+                  <Clock className="h-3 w-3" /> {daysUntil(deal.expires_at)}d left
                 </Badge>
-                {deal.sponsored && (
-                  <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">Sponsored</Badge>
-                )}
-              </div>
-
-              <div className="flex items-center gap-5">
-                <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="xl" />
-                <div>
-                  <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">{storeName}</div>
-                  <h3 className="font-display text-2xl sm:text-3xl font-bold text-foreground mt-1 leading-tight">{deal.title}</h3>
-                </div>
-              </div>
-
-              {deal.description && (
-                <p className="text-base text-muted-foreground line-clamp-2 leading-relaxed max-w-lg">{deal.description}</p>
               )}
+            </div>
 
-              <div className="flex items-end gap-4">
-                <span className="font-display text-4xl sm:text-5xl font-black bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent leading-none">
-                  {deal.discount_value || "Special Deal"}
-                </span>
-                {deal.expires_at && (
-                  <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-xs gap-1 mb-1">
-                    <Clock className="h-3 w-3" /> {daysUntil(deal.expires_at)}d left
-                  </Badge>
-                )}
-              </div>
-
-              <div className="flex items-center gap-3 pt-2">
-                <Link to={`/deals/${deal.id}`}>
-                  <Button size="lg" className="gap-2.5 font-bold text-sm h-12 px-8 shadow-lg shadow-primary/25">
-                    Get This Deal <ExternalLink className="h-4 w-4" />
-                  </Button>
-                </Link>
-                <Link to="/explore">
-                  <Button size="lg" variant="outline" className="gap-2 font-semibold text-sm h-12 px-6">
-                    Browse All Deals
-                  </Button>
-                </Link>
-              </div>
+            {/* RIGHT — CTAs */}
+            <div className="flex flex-col gap-3 shrink-0">
+              <Link to={`/deals/${deal.id}`}>
+                <Button size="lg" className="gap-2.5 font-bold text-sm h-12 px-8 shadow-lg shadow-primary/25 w-full">
+                  Get This Deal <ExternalLink className="h-4 w-4" />
+                </Button>
+              </Link>
+              <Link to="/explore">
+                <Button size="lg" variant="outline" className="gap-2 font-semibold text-sm h-12 px-6 w-full">
+                  Browse All Deals
+                </Button>
+              </Link>
             </div>
           </div>
         </CardContent>
@@ -230,7 +229,41 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId }: {
 }
 
 /* ═══════════════════════════════════════════
-   2. POPULAR STUDENT BRANDS — Large Tiles
+   SAVINGS WIDGET
+   ═══════════════════════════════════════════ */
+function SavingsWidget() {
+  return (
+    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={1.5}>
+      <div className="grid grid-cols-2 gap-5">
+        <Card className="border-border/50 bg-card">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-accent/15 flex items-center justify-center shrink-0">
+              <DollarSign className="h-6 w-6 text-accent" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Saved Today</div>
+              <div className="font-display text-2xl font-black text-accent">$0</div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="border-border/50 bg-card">
+          <CardContent className="p-6 flex items-center gap-4">
+            <div className="h-12 w-12 rounded-2xl bg-primary/15 flex items-center justify-center shrink-0">
+              <TrendingUp className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">Lifetime Savings</div>
+              <div className="font-display text-2xl font-black text-primary">$0</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </motion.section>
+  );
+}
+
+/* ═══════════════════════════════════════════
+   2. TRENDING STUDENT BRANDS — Rakuten-style
    ═══════════════════════════════════════════ */
 const popularBrands = [
   { name: "Nike", slug: "nike", logo: "/logos/nike.png" },
@@ -245,40 +278,33 @@ const popularBrands = [
 
 function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; logo_url: string | null; dealCount: number }> }) {
   return (
-    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={1}>
-      <SectionHeader icon={TrendingUp} title="Popular Student Brands" linkTo="/explore" subtitle="Shop discounts from brands students love" />
+    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={2}>
+      <SectionHeader icon={TrendingUp} title="Trending Student Brands" linkTo="/explore" subtitle="Shop discounts from brands students love" />
       <ScrollRow>
-        {popularBrands.map((brand, i) => {
+        {popularBrands.map((brand) => {
           const storeData = stores.get(brand.name.toLowerCase());
           return (
             <motion.div
               key={brand.name}
-              variants={cardItem}
-              whileHover={{ y: -8, scale: 1.04, transition: { duration: 0.25 } }}
+              whileHover={{ y: -6, transition: { duration: 0.15 } }}
               className="snap-start shrink-0"
             >
               <Link to={`/explore?brand=${brand.slug}`}>
-                <Card className="border-border bg-card hover:border-primary/40 transition-all duration-300 cursor-pointer hover:shadow-[0_0_50px_-12px_hsl(217_91%_60%/0.4)] w-[160px] sm:w-[180px]">
-                  <CardContent className="p-6 flex flex-col items-center text-center gap-3">
-                    <div className="h-20 w-20 rounded-2xl bg-secondary/60 flex items-center justify-center border border-border/40 group-hover:border-primary/30 transition-colors">
-                      <img
-                        src={brand.logo}
-                        alt={brand.name}
-                        className="h-14 w-14 rounded-xl object-contain"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
-                          (e.target as HTMLImageElement).parentElement!.innerHTML = `<span class="font-display text-2xl font-bold text-muted-foreground">${brand.name.charAt(0)}</span>`;
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <div className="text-sm font-bold text-foreground">{brand.name}</div>
-                      {storeData && storeData.dealCount > 0 && (
-                        <div className="text-xs text-primary font-medium mt-0.5">{storeData.dealCount} deal{storeData.dealCount > 1 ? "s" : ""}</div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                <div className="w-[140px] sm:w-[160px] h-[100px] rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center gap-2 cursor-pointer hover:border-primary/40 transition-all duration-150 hover:shadow-[0_4px_30px_-8px_hsl(var(--primary)/0.3)]">
+                  <img
+                    src={brand.logo}
+                    alt={brand.name}
+                    className="h-10 w-10 object-contain"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      (e.target as HTMLImageElement).parentElement!.insertAdjacentHTML('afterbegin', `<span class="font-display text-xl font-bold text-muted-foreground">${brand.name.charAt(0)}</span>`);
+                    }}
+                  />
+                  <div className="text-xs font-semibold text-foreground">{brand.name}</div>
+                  {storeData && storeData.dealCount > 0 && (
+                    <div className="text-[10px] text-accent font-medium -mt-1">{storeData.dealCount} deal{storeData.dealCount > 1 ? "s" : ""}</div>
+                  )}
+                </div>
               </Link>
             </motion.div>
           );
@@ -289,12 +315,13 @@ function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; 
 }
 
 /* ═══════════════════════════════════════════
-   3. TRENDING DEAL CARD — Premium Layout
+   3. TRENDING DEAL CARD — Clickable with hover lift
    ═══════════════════════════════════════════ */
-function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onUpgrade }: {
+function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onUpgrade, badgeLabel = "Trending", badgeIcon: BadgeIcon = Flame }: {
   deal: DealRow; index: number;
   favIds: Set<string>; onToggleFav: (id: string) => void;
   isPremiumUser: boolean; userId?: string; onUpgrade: () => void;
+  badgeLabel?: string; badgeIcon?: any;
 }) {
   const storeName = deal.stores?.name || "Unknown";
   const isFav = favIds.has(deal.id);
@@ -303,12 +330,10 @@ function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, use
   return (
     <motion.div
       variants={cardItem}
-      whileHover={{ y: -8, transition: { duration: 0.25 } }}
+      whileHover={{ y: -4, transition: { duration: 0.15 } }}
       className="min-w-[300px] max-w-[340px] snap-start shrink-0 h-full"
     >
-      <Card className="group relative overflow-hidden border-border bg-card hover:border-primary/30 transition-all duration-300 h-full hover:shadow-[0_8px_50px_-12px_hsl(217_91%_60%/0.3)]">
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-
+      <Card className="group relative overflow-hidden border-border/50 bg-card hover:border-primary/30 transition-all duration-150 h-full hover:shadow-[0_8px_40px_-12px_hsl(var(--primary)/0.25)]">
         {isGated && (
           <div className="absolute inset-0 z-20 backdrop-blur-md bg-background/65 flex flex-col items-center justify-center gap-3 cursor-pointer" onClick={() => { onUpgrade(); logPaywallView(deal.id, "dashboard", userId); }}>
             <div className="h-12 w-12 rounded-xl bg-gold/15 flex items-center justify-center"><Lock className="h-6 w-6 text-gold" /></div>
@@ -321,7 +346,7 @@ function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, use
           {/* Badge row */}
           <div className="flex items-center justify-between mb-4">
             <Badge className="bg-destructive/10 text-destructive border-destructive/20 text-[10px] font-bold gap-1 px-2.5 py-1">
-              <Flame className="h-3 w-3" /> Trending
+              <BadgeIcon className="h-3 w-3" /> {badgeLabel}
             </Badge>
             <motion.button onClick={() => onToggleFav(deal.id)} whileTap={{ scale: 0.8 }} className="p-2 rounded-xl hover:bg-secondary/80 transition-colors">
               <Heart className={`h-5 w-5 transition-colors ${isFav ? "fill-destructive text-destructive" : "text-muted-foreground hover:text-foreground"}`} />
@@ -339,7 +364,7 @@ function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, use
 
           {/* Discount */}
           <div className="mb-3">
-            <span className="font-display text-3xl font-black bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+            <span className="font-display text-3xl font-black text-accent">
               {deal.discount_value || "Special Deal"}
             </span>
           </div>
@@ -351,7 +376,7 @@ function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, use
           {/* CTA */}
           <div className="mt-auto pt-5">
             <Link to={`/deals/${deal.id}`}>
-              <Button className="w-full gap-2 h-11 font-bold text-sm group-hover:shadow-lg group-hover:shadow-primary/20 transition-shadow">
+              <Button className="w-full gap-2 h-11 font-bold text-sm opacity-90 group-hover:opacity-100 group-hover:shadow-lg group-hover:shadow-primary/20 transition-all duration-150">
                 View Deal <ExternalLink className="h-4 w-4" />
               </Button>
             </Link>
@@ -390,8 +415,7 @@ function DailyDropSection({ deal }: { deal: DealRow | null }) {
         }
       />
       <Card className="relative overflow-hidden border-accent/20 bg-card ring-1 ring-accent/10">
-        <div className="absolute inset-0 bg-gradient-to-br from-accent/8 via-transparent to-primary/5 pointer-events-none" />
-        <div className="absolute top-0 left-0 w-64 h-64 bg-accent/8 rounded-full blur-[80px] pointer-events-none -translate-y-1/2 -translate-x-1/3" />
+        <div className="absolute top-0 left-1/3 w-64 h-64 bg-accent/6 rounded-full blur-[100px] pointer-events-none -translate-y-1/2" />
 
         <CardContent className="relative z-10 p-8 sm:p-10">
           <div className="flex flex-col sm:flex-row sm:items-center gap-6">
@@ -401,7 +425,7 @@ function DailyDropSection({ deal }: { deal: DealRow | null }) {
                 <div className="text-sm text-muted-foreground font-medium uppercase tracking-wider">{storeName}</div>
                 <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground mt-1">{deal.title}</h3>
                 <div className="mt-3">
-                  <span className="font-display text-3xl sm:text-4xl font-black bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
+                  <span className="font-display text-3xl sm:text-4xl font-black text-accent">
                     {deal.discount_value || "Special Deal"}
                   </span>
                 </div>
@@ -433,14 +457,13 @@ function ExpiringSoonCard({ deal, index }: { deal: DealRow; index: number }) {
   return (
     <motion.div
       variants={cardItem}
-      whileHover={{ y: -8, transition: { duration: 0.25 } }}
+      whileHover={{ y: -4, transition: { duration: 0.15 } }}
       className="min-w-[280px] max-w-[320px] snap-start shrink-0 h-full"
     >
-      <Card className={`group relative overflow-hidden border-border bg-card transition-all duration-300 h-full ${isUrgent ? "border-destructive/30 ring-1 ring-destructive/15 hover:ring-destructive/30" : "hover:border-destructive/20"} hover:shadow-[0_8px_40px_-12px_hsl(0_84%_60%/0.2)]`}>
-        {isUrgent && <div className="absolute inset-0 bg-gradient-to-b from-destructive/8 to-transparent pointer-events-none" />}
+      <Card className={`group relative overflow-hidden border-border/50 bg-card transition-all duration-150 h-full ${isUrgent ? "border-destructive/30 ring-1 ring-destructive/15 hover:ring-destructive/30" : "hover:border-destructive/20"} hover:shadow-[0_8px_40px_-12px_hsl(0_84%_60%/0.2)]`}>
+        {isUrgent && <div className="absolute inset-0 bg-destructive/5 pointer-events-none" />}
 
         <CardContent className="relative z-10 p-6 flex flex-col h-full">
-          {/* Countdown badge */}
           <div className="mb-4">
             <Badge className={`text-xs font-bold gap-1.5 px-3 py-1 ${isUrgent ? "bg-destructive/15 text-destructive border-destructive/30 animate-pulse" : "bg-gold/15 text-gold border-gold/30"}`}>
               <Timer className="h-3.5 w-3.5" /> {countdownText}
@@ -455,7 +478,7 @@ function ExpiringSoonCard({ deal, index }: { deal: DealRow; index: number }) {
             </div>
           </div>
 
-          <span className="font-display text-2xl font-black bg-gradient-to-r from-destructive to-primary bg-clip-text text-transparent">
+          <span className="font-display text-2xl font-black text-accent">
             {deal.discount_value || "Deal"}
           </span>
 
@@ -473,15 +496,15 @@ function ExpiringSoonCard({ deal, index }: { deal: DealRow; index: number }) {
 }
 
 /* ═══════════════════════════════════════════
-   6. CATEGORY TILES — Premium Grid
+   6. CATEGORY TILES
    ═══════════════════════════════════════════ */
 const categoryIcons = [
-  { name: "Tech & Computers", icon: Cpu, gradient: "from-violet-500/20 to-violet-600/5", accent: "text-violet-400" },
-  { name: "Software", icon: Monitor, gradient: "from-blue-500/20 to-blue-600/5", accent: "text-blue-400" },
-  { name: "Food", icon: Utensils, gradient: "from-red-500/20 to-red-600/5", accent: "text-red-400" },
-  { name: "Clothing", icon: ShoppingBag, gradient: "from-pink-500/20 to-pink-600/5", accent: "text-pink-400" },
-  { name: "Subscriptions", icon: CreditCard, gradient: "from-green-500/20 to-green-600/5", accent: "text-green-400" },
-  { name: "Travel", icon: Plane, gradient: "from-orange-500/20 to-orange-600/5", accent: "text-orange-400" },
+  { name: "Tech & Computers", icon: Cpu, accent: "text-primary" },
+  { name: "Software", icon: Monitor, accent: "text-primary" },
+  { name: "Food", icon: Utensils, accent: "text-destructive" },
+  { name: "Clothing", icon: ShoppingBag, accent: "text-accent" },
+  { name: "Subscriptions", icon: CreditCard, accent: "text-accent" },
+  { name: "Travel", icon: Plane, accent: "text-gold" },
 ];
 
 /* ── Skeleton ── */
@@ -573,7 +596,6 @@ export default function Dashboard() {
     return [...featured, ...rest].slice(0, 10);
   }, [deals, heroDeal]);
 
-  // Ending Soon: within 3 days (72 hours)
   const endingSoonDeals = useMemo(() =>
     deals
       .filter(d => d.expires_at && daysUntil(d.expires_at) >= 0 && daysUntil(d.expires_at) <= 3)
@@ -582,7 +604,6 @@ export default function Dashboard() {
     [deals]
   );
 
-  // Daily Drop
   const dailyDrop = useMemo(() => {
     const dayOfYear = Math.floor(now / (1000 * 60 * 60 * 24));
     const candidates = deals.filter(d => d.id !== heroDeal?.id);
@@ -618,38 +639,27 @@ export default function Dashboard() {
           <HeroDealSection deal={heroDeal} onUpgrade={() => setUpgradeOpen(true)} isPremium={isPremium} userId={user?.id} />
         ) : null}
 
-        {/* 2. POPULAR STUDENT BRANDS */}
+        {/* YOUR SAVINGS */}
+        <SavingsWidget />
+
+        {/* 2. TRENDING STUDENT BRANDS */}
         <PopularBrandsSection stores={storeMap} />
 
-        {/* 3. TRENDING STUDENT DEALS */}
+        {/* 3. 🔥 TRENDING ON CAMPUS */}
         <motion.section initial="hidden" animate="visible" variants={stagger}>
-          <SectionHeader icon={Flame} title="Trending Student Deals" linkTo="/explore" iconColor="text-destructive" subtitle="The most popular deals right now" />
+          <SectionHeader icon={Flame} title="Trending on Campus" linkTo="/explore" iconColor="text-destructive" subtitle="Most clicked deals by students right now" />
           {dealsLoading ? (
             <SectionSkeleton />
           ) : (
             <ScrollRow>
               {trendingDeals.map((deal, i) => (
-                <TrendingDealCard key={deal.id} deal={deal} index={i} {...sharedProps} />
+                <TrendingDealCard key={deal.id} deal={deal} index={i} {...sharedProps} badgeLabel="Trending" badgeIcon={Flame} />
               ))}
             </ScrollRow>
           )}
         </motion.section>
 
-        {/* 4. DAILY STUDENT DROP */}
-        <DailyDropSection deal={dailyDrop} />
-
-        {/* 5. LOCAL NEAR CAMPUS */}
-        <LocalNearCampusSection
-          deals={deals}
-          profile={profile}
-          favIds={favIds}
-          onToggleFav={toggleFav}
-          isPremium={isPremium}
-          userId={user?.id}
-          onUpgrade={() => setUpgradeOpen(true)}
-        />
-
-        {/* 6. ENDING SOON */}
+        {/* 4. ENDING SOON */}
         {endingSoonDeals.length > 0 && (
           <motion.section initial="hidden" animate="visible" variants={stagger}>
             <SectionHeader
@@ -671,15 +681,25 @@ export default function Dashboard() {
           </motion.section>
         )}
 
-        {/* 7. BROWSE CATEGORIES */}
+        {/* 5. LOCAL NEAR CAMPUS */}
+        <LocalNearCampusSection
+          deals={deals}
+          profile={profile}
+          favIds={favIds}
+          onToggleFav={toggleFav}
+          isPremium={isPremium}
+          userId={user?.id}
+          onUpgrade={() => setUpgradeOpen(true)}
+        />
+
+        {/* 6. BROWSE CATEGORIES */}
         <motion.section initial="hidden" animate="visible" variants={stagger}>
           <SectionHeader icon={Tag} title="Browse Categories" linkTo="/categories" iconColor="text-primary" subtitle="Find deals in your favorite categories" />
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-5">
-            {categoryIcons.map((cat, i) => (
-              <motion.div key={cat.name} variants={cardItem} whileHover={{ y: -6, scale: 1.03, transition: { duration: 0.25 } }}>
+            {categoryIcons.map((cat) => (
+              <motion.div key={cat.name} variants={cardItem} whileHover={{ y: -4, transition: { duration: 0.15 } }}>
                 <Link to={`/categories/${cat.name.toLowerCase().replace(/[^a-z]+/g, '-').replace(/-$/, '')}`}>
-                  <Card className="border-border bg-card hover:border-primary/30 transition-all duration-300 cursor-pointer hover:shadow-[var(--shadow-glow)] overflow-hidden group">
-                    <div className={`absolute inset-0 bg-gradient-to-br ${cat.gradient} pointer-events-none opacity-40 group-hover:opacity-70 transition-opacity duration-300`} />
+                  <Card className="border-border/50 bg-card hover:border-primary/30 transition-all duration-150 cursor-pointer hover:shadow-[0_4px_30px_-8px_hsl(var(--primary)/0.2)] overflow-hidden group">
                     <CardContent className="relative p-6 sm:p-7 text-center">
                       <div className="h-14 w-14 sm:h-16 sm:w-16 rounded-2xl bg-secondary/60 flex items-center justify-center mx-auto mb-4 border border-border/40 group-hover:border-primary/20 transition-colors">
                         <cat.icon className={`h-7 w-7 sm:h-8 sm:w-8 ${cat.accent}`} />
@@ -700,11 +720,11 @@ export default function Dashboard() {
           {favDeals.length > 0 ? (
             <ScrollRow>
               {favDeals.map((deal, i) => (
-                <TrendingDealCard key={deal.id} deal={deal} index={i} {...sharedProps} />
+                <TrendingDealCard key={deal.id} deal={deal} index={i} {...sharedProps} badgeLabel="Saved" badgeIcon={Heart} />
               ))}
             </ScrollRow>
           ) : (
-            <Card className="border-border bg-card border-dashed">
+            <Card className="border-border/50 bg-card border-dashed">
               <CardContent className="p-12 text-center">
                 <Heart className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
                 <p className="text-base text-muted-foreground font-medium">Tap the heart on any deal to save it here.</p>
@@ -751,7 +771,7 @@ function AmbassadorImpactCard({ userId }: { userId?: string }) {
   return (
     <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={9}>
       <Card className="border-primary/20 bg-card relative overflow-hidden">
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
         <CardHeader className="pb-2 relative z-10">
           <CardTitle className="text-sm font-semibold flex items-center gap-2 text-primary">
             <Megaphone className="h-4 w-4" /> Your Campus Impact
@@ -838,7 +858,7 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
       <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={5}>
         <SectionHeader icon={MapPin} title="Local Near Campus" iconColor="text-accent" subtitle="Deals from businesses near your campus" />
         <Card className="border-primary/20 bg-card relative overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent pointer-events-none" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
           <CardContent className="relative z-10 p-8 sm:p-10 space-y-5">
             <div className="flex items-center gap-5">
               <div className="h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -862,7 +882,7 @@ function LocalNearCampusSection({ deals, profile, favIds, onToggleFav, isPremium
     return (
       <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={5}>
         <SectionHeader icon={MapPin} title="Local Near Campus" iconColor="text-accent" subtitle={`Deals near ${userCity || "your area"}${userState ? `, ${userState}` : ""}`} />
-        <Card className="border-border bg-card">
+        <Card className="border-border/50 bg-card">
           <CardContent className="p-10 space-y-5">
             <div className="flex items-center gap-5">
               <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center shrink-0">
