@@ -64,6 +64,20 @@ Deno.serve(async (req) => {
       }
     }
 
+    // Trigger ranking change notifications after aggregation
+    try {
+      const notifyUrl = `${Deno.env.get("SUPABASE_URL")}/functions/v1/notify-ranking-changes`;
+      await fetch(notifyUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+        },
+      });
+    } catch (notifyErr) {
+      console.error("Failed to trigger notify-ranking-changes:", notifyErr);
+    }
+
     return new Response(
       JSON.stringify({ success: true, campuses_updated: upserted, week_start: weekStart.toISOString() }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
