@@ -17,6 +17,7 @@ import {
   Globe,
   Building2,
   Rss,
+  Upload,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -32,6 +33,7 @@ const navItems = [
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { label: "Ambassadors", href: "/admin/ambassadors", icon: Users },
   { label: "Affiliate Sources", href: "/admin/affiliate-sources", icon: Rss },
+  { label: "Deal Import", href: "/admin/deal-import", icon: Upload },
 ];
 
 export const AdminLayout = ({ children }: { children: ReactNode }) => {
