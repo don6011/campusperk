@@ -47,6 +47,11 @@ const BRAND_LOGOS = [
   { name: "Amazon", logo: "/logos/amazon.png" },
   { name: "Adobe", logo: "/logos/adobe.png" },
   { name: "Nike", logo: "/logos/nike.png" },
+  { name: "Samsung", logo: "/logos/samsung.png" },
+  { name: "Best Buy", logo: "/logos/bestbuy.png" },
+  { name: "DoorDash", logo: "/logos/doordash.png" },
+  { name: "Notion", logo: "/logos/notion.png" },
+  { name: "GitHub", logo: "/logos/github.png" },
 ];
 
 const categories = [
@@ -404,9 +409,9 @@ const LandingPage = () => {
                 key={brand.name}
                 variants={fadeUp}
                 custom={i * 0.5}
-                className="flex items-center gap-3 rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:shadow-[var(--shadow-glow)] transition-all duration-300 px-6 py-4 min-w-[160px] justify-center"
+                className="flex items-center gap-3 rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:shadow-[var(--shadow-glow)] transition-all duration-300 px-6 py-4 min-w-[170px] justify-center"
               >
-                <img src={brand.logo} alt={brand.name} className="h-7 w-7 object-contain" />
+                <img src={brand.logo} alt={brand.name} className="h-10 w-10 object-contain" />
                 <span className="font-display text-base font-bold text-foreground">{brand.name}</span>
               </motion.div>
             ))}
