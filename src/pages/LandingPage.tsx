@@ -42,20 +42,20 @@ const fadeUp = {
 };
 
 const BRAND_LOGOS = [
-  { name: "Apple", logo: "/logos/apple.png", bg: "#000000" },
-  { name: "Spotify", logo: "/logos/spotify.png", bg: "#1DB954" },
-  { name: "Amazon", logo: "/logos/amazon.png", bg: "#232F3E" },
-  { name: "Adobe", logo: "/logos/adobe.png", bg: "#FF0000" },
-  { name: "Nike", logo: "/logos/nike.png", bg: "#000000" },
-  { name: "Samsung", logo: "/logos/samsung.png", bg: "#1428A0" },
-  { name: "Best Buy", logo: "/logos/bestbuy.png", bg: "#0046BE" },
-  { name: "DoorDash", logo: "/logos/doordash.png", bg: "#FF3008" },
-  { name: "Notion", logo: "/logos/notion.png", bg: "#000000" },
-  { name: "GitHub", logo: "/logos/github.png", bg: "#24292E" },
-  { name: "Coursera", logo: "/logos/coursera.png", bg: "#0056D2" },
-  { name: "Headspace", logo: "/logos/headspace.png", bg: "#F47D31" },
-  { name: "Adidas", logo: "/logos/adidas.png", bg: "#000000" },
-  { name: "North Face", logo: "/logos/northface.png", bg: "#000000" },
+  { name: "Apple", logo: "/logos/apple.png", bg: "#000000", discount: "Up to 20% Off" },
+  { name: "Spotify", logo: "/logos/spotify.png", bg: "#1DB954", discount: "50% Off Premium" },
+  { name: "Amazon", logo: "/logos/amazon.png", bg: "#232F3E", discount: "Free Prime Trial" },
+  { name: "Adobe", logo: "/logos/adobe.png", bg: "#FF0000", discount: "60% Off Creative Cloud" },
+  { name: "Nike", logo: "/logos/nike.png", bg: "#000000", discount: "15% Student Discount" },
+  { name: "Samsung", logo: "/logos/samsung.png", bg: "#1428A0", discount: "Up to 30% Off" },
+  { name: "Best Buy", logo: "/logos/bestbuy.png", bg: "#0046BE", discount: "Student Deals" },
+  { name: "DoorDash", logo: "/logos/doordash.png", bg: "#FF3008", discount: "50% Off DashPass" },
+  { name: "Notion", logo: "/logos/notion.png", bg: "#000000", discount: "Free Plus Plan" },
+  { name: "GitHub", logo: "/logos/github.png", bg: "#24292E", discount: "Free Pro Access" },
+  { name: "Coursera", logo: "/logos/coursera.png", bg: "#0056D2", discount: "Free Courses" },
+  { name: "Headspace", logo: "/logos/headspace.png", bg: "#F47D31", discount: "85% Off" },
+  { name: "Adidas", logo: "/logos/adidas.png", bg: "#000000", discount: "30% Off" },
+  { name: "North Face", logo: "/logos/northface.png", bg: "#000000", discount: "10% Student Discount" },
 ];
 
 const categories = [
@@ -407,15 +407,20 @@ const LandingPage = () => {
             <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
             <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
 
-            <div className="flex gap-5 animate-marquee w-max hover:[animation-play-state:paused]">
+            <div className="flex gap-6 animate-marquee w-max hover:[animation-play-state:paused]">
               {[...BRAND_LOGOS, ...BRAND_LOGOS].map((brand, i) => (
                 <div
                   key={`${brand.name}-${i}`}
-                  className="flex flex-col items-center justify-center rounded-2xl w-[200px] h-[120px] flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg"
-                  style={{ backgroundColor: brand.bg }}
+                  className="flex flex-col items-center flex-shrink-0 transition-all duration-300 hover:scale-105 group/brand"
                 >
-                  <img src={brand.logo} alt={brand.name} className="h-14 w-auto max-w-[140px] object-contain brightness-0 invert" />
-                  <span className="text-white/90 text-xs font-semibold mt-1.5 tracking-wide">{brand.name}</span>
+                  <div
+                    className="flex items-center justify-center rounded-2xl w-[200px] h-[120px] transition-shadow duration-300 group-hover/brand:shadow-lg"
+                    style={{ backgroundColor: brand.bg }}
+                  >
+                    <img src={brand.logo} alt={brand.name} className="h-14 w-auto max-w-[140px] object-contain brightness-0 invert" />
+                  </div>
+                  <span className="mt-2 text-xs font-bold text-foreground">{brand.name}</span>
+                  <span className="text-[11px] font-semibold text-accent">{brand.discount}</span>
                 </div>
               ))}
             </div>
@@ -538,8 +543,8 @@ const LandingPage = () => {
                 custom={i}
                 className="group rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/40 hover:shadow-[var(--shadow-glow)]"
               >
-                <div className={`mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl ${deal.bgColor} p-2`}>
-                  <img src={deal.logo} alt={deal.title} className="h-10 w-10 object-contain" />
+                <div className={`mb-4 flex h-16 w-full items-center justify-center rounded-xl ${deal.bgColor} p-3`}>
+                  <img src={deal.logo} alt={deal.title} className="h-10 w-auto max-w-[120px] object-contain brightness-0 invert" />
                 </div>
                 <h3 className="font-display text-lg font-semibold text-foreground">{deal.title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{deal.brand}</p>
