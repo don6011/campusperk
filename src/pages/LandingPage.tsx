@@ -180,7 +180,7 @@ const LandingPage = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/30 bg-background/70 backdrop-blur-xl">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto" />
+            <img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto" />
           </Link>
           <div className="hidden md:flex items-center gap-8">
             <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How It Works</a>
@@ -322,7 +322,7 @@ const LandingPage = () => {
                 <div className="absolute left-8 top-0 w-[260px] h-[480px] rounded-3xl border-2 border-primary/30 bg-card shadow-[0_20px_80px_-15px_hsl(var(--primary)/0.3)] overflow-hidden z-10">
                   <div className="p-1 bg-gradient-to-b from-primary/10 to-transparent">
                     <div className="flex items-center justify-between px-4 py-2">
-                      <img src={campusperkLogo} alt="" className="h-5" />
+                      <img src={campusperkLogo} alt="" className="h-7" />
                       <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
                         <Users className="h-3 w-3 text-primary" />
                       </div>
@@ -785,7 +785,7 @@ const LandingPage = () => {
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
             <Link to="/" className="flex items-center gap-2">
-              <img src={campusperkLogo} alt="CampusPerk" className="h-8 w-auto" />
+              <img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto" />
             </Link>
             <div className="flex gap-8 text-sm text-muted-foreground">
               <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
