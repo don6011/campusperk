@@ -42,16 +42,20 @@ const fadeUp = {
 };
 
 const BRAND_LOGOS = [
-  { name: "Apple", logo: "/logos/apple.png" },
-  { name: "Spotify", logo: "/logos/spotify.png" },
-  { name: "Amazon", logo: "/logos/amazon.png" },
-  { name: "Adobe", logo: "/logos/adobe.png" },
-  { name: "Nike", logo: "/logos/nike.png" },
-  { name: "Samsung", logo: "/logos/samsung.png" },
-  { name: "Best Buy", logo: "/logos/bestbuy.png" },
-  { name: "DoorDash", logo: "/logos/doordash.png" },
-  { name: "Notion", logo: "/logos/notion.png" },
-  { name: "GitHub", logo: "/logos/github.png" },
+  { name: "Apple", logo: "/logos/apple.png", bg: "#000000" },
+  { name: "Spotify", logo: "/logos/spotify.png", bg: "#1DB954" },
+  { name: "Amazon", logo: "/logos/amazon.png", bg: "#232F3E" },
+  { name: "Adobe", logo: "/logos/adobe.png", bg: "#FF0000" },
+  { name: "Nike", logo: "/logos/nike.png", bg: "#000000" },
+  { name: "Samsung", logo: "/logos/samsung.png", bg: "#1428A0" },
+  { name: "Best Buy", logo: "/logos/bestbuy.png", bg: "#0046BE" },
+  { name: "DoorDash", logo: "/logos/doordash.png", bg: "#FF3008" },
+  { name: "Notion", logo: "/logos/notion.png", bg: "#000000" },
+  { name: "GitHub", logo: "/logos/github.png", bg: "#24292E" },
+  { name: "Coursera", logo: "/logos/coursera.png", bg: "#0056D2" },
+  { name: "Headspace", logo: "/logos/headspace.png", bg: "#F47D31" },
+  { name: "Adidas", logo: "/logos/adidas.png", bg: "#000000" },
+  { name: "North Face", logo: "/logos/northface.png", bg: "#000000" },
 ];
 
 const categories = [
@@ -107,11 +111,11 @@ const testimonials = [
 ];
 
 const exampleDeals = [
-  { icon: BookOpen, title: "Grammarly Premium", brand: "AI writing assistance", discount: "Free for Students", color: "from-accent/20 to-accent/5", iconColor: "text-accent" },
-  { icon: Utensils, title: "HelloFresh", brand: "Meals delivered to your dorm", discount: "60% off", color: "from-destructive/20 to-destructive/5", iconColor: "text-destructive" },
-  { icon: Shield, title: "NordVPN", brand: "Secure dorm WiFi", discount: "73% off", color: "from-primary/20 to-primary/5", iconColor: "text-primary" },
-  { icon: Lightbulb, title: "Skillshare", brand: "Learn design & freelancing", discount: "1 Month Free", color: "from-[hsl(var(--gold))]/20 to-[hsl(var(--gold))]/5", iconColor: "text-[hsl(var(--gold))]" },
-  { icon: Cpu, title: "Lenovo Student", brand: "Campus-ready laptops", discount: "Up to $500 off", color: "from-accent/20 to-accent/5", iconColor: "text-accent" },
+  { logo: "/logos/apple.png", title: "Apple Education", brand: "MacBooks, iPads & more", discount: "Free $150 Gift Card", bgColor: "bg-[#000000]" },
+  { logo: "/logos/spotify.png", title: "Spotify Student", brand: "Music & podcasts", discount: "50% off Premium", bgColor: "bg-[#1DB954]" },
+  { logo: "/logos/adobe.png", title: "Adobe Creative Cloud", brand: "Design & creative tools", discount: "60% off", bgColor: "bg-[#FF0000]" },
+  { logo: "/logos/nike.png", title: "Nike Student", brand: "Shoes, apparel & gear", discount: "10% off Sitewide", bgColor: "bg-[#000000]" },
+  { logo: "/logos/amazon.png", title: "Amazon Prime Student", brand: "Free delivery & streaming", discount: "6 Months Free", bgColor: "bg-[#232F3E]" },
 ];
 
 /* Animated counter hook */
@@ -403,14 +407,14 @@ const LandingPage = () => {
             <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
             <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
 
-            <div className="flex gap-4 animate-marquee w-max hover:[animation-play-state:paused]">
+            <div className="flex gap-5 animate-marquee w-max hover:[animation-play-state:paused]">
               {[...BRAND_LOGOS, ...BRAND_LOGOS].map((brand, i) => (
                 <div
                   key={`${brand.name}-${i}`}
-                  className="flex items-center gap-3 rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:shadow-[var(--shadow-glow)] transition-all duration-300 px-6 py-4 min-w-[170px] justify-center flex-shrink-0"
+                  className="flex items-center justify-center rounded-2xl w-[180px] h-[100px] flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  style={{ backgroundColor: brand.bg }}
                 >
-                  <img src={brand.logo} alt={brand.name} className="h-10 w-10 object-contain" />
-                  <span className="font-display text-base font-bold text-foreground">{brand.name}</span>
+                  <img src={brand.logo} alt={brand.name} className="h-12 w-auto max-w-[120px] object-contain brightness-0 invert" />
                 </div>
               ))}
             </div>
@@ -533,8 +537,8 @@ const LandingPage = () => {
                 custom={i}
                 className="group rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/40 hover:shadow-[var(--shadow-glow)]"
               >
-                <div className={`mb-4 inline-flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br ${deal.color}`}>
-                  <deal.icon className={`h-6 w-6 ${deal.iconColor}`} />
+                <div className={`mb-4 inline-flex h-14 w-14 items-center justify-center rounded-xl ${deal.bgColor} p-2`}>
+                  <img src={deal.logo} alt={deal.title} className="h-10 w-10 object-contain" />
                 </div>
                 <h3 className="font-display text-lg font-semibold text-foreground">{deal.title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{deal.brand}</p>
