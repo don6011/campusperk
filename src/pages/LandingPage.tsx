@@ -398,24 +398,23 @@ const LandingPage = () => {
             </motion.p>
           </motion.div>
 
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-            className="flex flex-wrap justify-center gap-4"
-          >
-            {BRAND_LOGOS.map((brand, i) => (
-              <motion.div
-                key={brand.name}
-                variants={fadeUp}
-                custom={i * 0.5}
-                className="flex items-center gap-3 rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:shadow-[var(--shadow-glow)] transition-all duration-300 px-6 py-4 min-w-[170px] justify-center"
-              >
-                <img src={brand.logo} alt={brand.name} className="h-10 w-10 object-contain" />
-                <span className="font-display text-base font-bold text-foreground">{brand.name}</span>
-              </motion.div>
-            ))}
-          </motion.div>
+          <div className="relative overflow-hidden">
+            {/* Gradient fade edges */}
+            <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
+            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
+
+            <div className="flex gap-4 animate-marquee w-max hover:[animation-play-state:paused]">
+              {[...BRAND_LOGOS, ...BRAND_LOGOS].map((brand, i) => (
+                <div
+                  key={`${brand.name}-${i}`}
+                  className="flex items-center gap-3 rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:shadow-[var(--shadow-glow)] transition-all duration-300 px-6 py-4 min-w-[170px] justify-center flex-shrink-0"
+                >
+                  <img src={brand.logo} alt={brand.name} className="h-10 w-10 object-contain" />
+                  <span className="font-display text-base font-bold text-foreground">{brand.name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </section>
 
