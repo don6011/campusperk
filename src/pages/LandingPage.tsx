@@ -411,10 +411,11 @@ const LandingPage = () => {
               {[...BRAND_LOGOS, ...BRAND_LOGOS].map((brand, i) => (
                 <div
                   key={`${brand.name}-${i}`}
-                  className="flex items-center justify-center rounded-2xl w-[180px] h-[100px] flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg"
+                  className="flex flex-col items-center justify-center rounded-2xl w-[200px] h-[120px] flex-shrink-0 transition-all duration-300 hover:scale-105 hover:shadow-lg"
                   style={{ backgroundColor: brand.bg }}
                 >
-                  <img src={brand.logo} alt={brand.name} className="h-12 w-auto max-w-[120px] object-contain brightness-0 invert" />
+                  <img src={brand.logo} alt={brand.name} className="h-14 w-auto max-w-[140px] object-contain brightness-0 invert" />
+                  <span className="text-white/90 text-xs font-semibold mt-1.5 tracking-wide">{brand.name}</span>
                 </div>
               ))}
             </div>
