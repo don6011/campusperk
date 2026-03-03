@@ -26,6 +26,7 @@ import {
   Users,
   School,
   Wallet,
+  CheckCircle2,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -39,6 +40,14 @@ const fadeUp = {
     transition: { delay: i * 0.1, duration: 0.6, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
   }),
 };
+
+const BRAND_LOGOS = [
+  { name: "Apple", logo: "/logos/apple.png" },
+  { name: "Spotify", logo: "/logos/spotify.png" },
+  { name: "Amazon", logo: "/logos/amazon.png" },
+  { name: "Adobe", logo: "/logos/adobe.png" },
+  { name: "Nike", logo: "/logos/nike.png" },
+];
 
 const categories = [
   { name: "Clothing", icon: ShoppingBag, deals: 24 },
@@ -93,11 +102,11 @@ const testimonials = [
 ];
 
 const exampleDeals = [
-  { icon: BookOpen, title: "Grammarly Premium", brand: "Write A+ papers with AI writing assistance", discount: "Free for Students", color: "from-accent/20 to-accent/5", iconColor: "text-accent" },
-  { icon: Utensils, title: "HelloFresh Student Meals", brand: "Cheap, healthy meals delivered to your dorm", discount: "60% off", color: "from-destructive/20 to-destructive/5", iconColor: "text-destructive" },
-  { icon: Shield, title: "NordVPN Student Discount", brand: "Secure dorm WiFi and streaming", discount: "73% off", color: "from-primary/20 to-primary/5", iconColor: "text-primary" },
-  { icon: Lightbulb, title: "Skillshare Free Trial", brand: "Learn design, video & freelancing skills", discount: "1 Month Free", color: "from-[hsl(var(--gold))]/20 to-[hsl(var(--gold))]/5", iconColor: "text-[hsl(var(--gold))]" },
-  { icon: Cpu, title: "Lenovo Student Laptops", brand: "Campus-ready laptops at student prices", discount: "Up to $500 off", color: "from-accent/20 to-accent/5", iconColor: "text-accent" },
+  { icon: BookOpen, title: "Grammarly Premium", brand: "AI writing assistance", discount: "Free for Students", color: "from-accent/20 to-accent/5", iconColor: "text-accent" },
+  { icon: Utensils, title: "HelloFresh", brand: "Meals delivered to your dorm", discount: "60% off", color: "from-destructive/20 to-destructive/5", iconColor: "text-destructive" },
+  { icon: Shield, title: "NordVPN", brand: "Secure dorm WiFi", discount: "73% off", color: "from-primary/20 to-primary/5", iconColor: "text-primary" },
+  { icon: Lightbulb, title: "Skillshare", brand: "Learn design & freelancing", discount: "1 Month Free", color: "from-[hsl(var(--gold))]/20 to-[hsl(var(--gold))]/5", iconColor: "text-[hsl(var(--gold))]" },
+  { icon: Cpu, title: "Lenovo Student", brand: "Campus-ready laptops", discount: "Up to $500 off", color: "from-accent/20 to-accent/5", iconColor: "text-accent" },
 ];
 
 /* Animated counter hook */
@@ -135,7 +144,6 @@ const LandingPage = () => {
   const [matchedDealsCount, setMatchedDealsCount] = useState<number | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  // Fetch matching campuses
   useEffect(() => {
     if (campusQuery.length < 2) {
       setCampuses([]);
@@ -158,7 +166,6 @@ const LandingPage = () => {
     setCampusQuery(campus.campus_name ?? campus.domain_root);
     setCampuses([]);
     setSearchLoading(true);
-    // Count deals available (national + those targeting this campus)
     const { count } = await supabase
       .from("deals")
       .select("id", { count: "exact", head: true })
@@ -169,27 +176,27 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden">
-      {/* Nav */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/50 bg-background/80 backdrop-blur-xl">
+      {/* ─── NAV ─── */}
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border/30 bg-background/70 backdrop-blur-xl">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
             <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto" />
           </Link>
           <div className="hidden md:flex items-center gap-8">
+            <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How It Works</a>
             <a href="#deals" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Deals</a>
-            <a href="#features" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Features</a>
             <a href="#categories" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Categories</a>
             <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Reviews</a>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/sign-in">
-              <Button variant="ghost" size="sm" className="text-muted-foreground">
-                Sign In
+            <Link to="/partner-apply">
+              <Button variant="outline" size="sm" className="border-primary/40 text-primary hover:bg-primary/10 hidden sm:inline-flex">
+                For Partners
               </Button>
             </Link>
             <Link to="/sign-up">
-              <Button size="sm" className="bg-primary hover:bg-primary/90">
-                Get Started
+              <Button size="sm" className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold">
+                Get Early Access
               </Button>
             </Link>
           </div>
@@ -197,72 +204,218 @@ const LandingPage = () => {
       </nav>
 
       {/* ─── HERO ─── */}
-      <section className="relative pt-32 pb-16 md:pt-44 md:pb-24">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-primary/10 blur-[120px] animate-pulse-glow" />
-          <div className="absolute top-1/3 right-1/4 w-[400px] h-[400px] rounded-full bg-accent/8 blur-[100px] animate-pulse-glow" style={{ animationDelay: "1.5s" }} />
+      <section className="relative pt-28 pb-8 md:pt-40 md:pb-16 overflow-hidden">
+        {/* Deep cosmic background glows */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[800px] rounded-full bg-primary/8 blur-[180px] animate-pulse-glow" />
+          <div className="absolute top-1/3 right-0 w-[600px] h-[600px] rounded-full bg-accent/5 blur-[140px] animate-pulse-glow" style={{ animationDelay: "1.5s" }} />
+          <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full bg-primary/6 blur-[120px] animate-pulse-glow" style={{ animationDelay: "3s" }} />
+          {/* Particle-like dots */}
+          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "radial-gradient(1px 1px at 20% 30%, hsl(var(--foreground)) 0.5px, transparent 0), radial-gradient(1px 1px at 70% 60%, hsl(var(--foreground)) 0.5px, transparent 0), radial-gradient(1px 1px at 40% 80%, hsl(var(--foreground)) 0.5px, transparent 0), radial-gradient(1px 1px at 80% 20%, hsl(var(--foreground)) 0.5px, transparent 0), radial-gradient(1px 1px at 10% 50%, hsl(var(--foreground)) 0.5px, transparent 0)" }} />
         </div>
 
         <div className="container mx-auto px-4 relative z-10">
-          <motion.div className="mx-auto max-w-4xl text-center" initial="hidden" animate="visible">
-            <motion.div variants={fadeUp} custom={0} className="mb-8 flex justify-center">
-              <Link to="/">
-                <img src={campusperkLogo} alt="CampusPerk" className="h-20 w-auto" />
-              </Link>
+          <div className="grid lg:grid-cols-2 gap-12 items-center">
+            {/* Left: Copy */}
+            <motion.div initial="hidden" animate="visible" className="max-w-xl">
+              <motion.h1
+                variants={fadeUp}
+                custom={0}
+                className="font-display text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.1] tracking-tight"
+              >
+                Big savings for students —{" "}
+                <span className="bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text">
+                  without the fake coupon spam.
+                </span>
+              </motion.h1>
+
+              <motion.p
+                variants={fadeUp}
+                custom={1}
+                className="mt-6 text-base md:text-lg text-muted-foreground leading-relaxed max-w-md"
+              >
+                CampusPerk is a premium discount app for verified students (and campus roles) with curated deals from top brands plus local discounts near campus.
+              </motion.p>
+
+              <motion.div
+                variants={fadeUp}
+                custom={2}
+                className="mt-8 flex flex-col sm:flex-row gap-3"
+              >
+                <Link to="/sign-up">
+                  <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-8 h-12 text-base gap-2 shadow-[0_0_30px_-5px_hsl(var(--accent)/0.4)]">
+                    Join the Waitlist
+                  </Button>
+                </Link>
+                <Link to="/partner-apply">
+                  <Button size="lg" variant="outline" className="border-border hover:bg-secondary h-12 px-8 text-base">
+                    Partner / Affiliate Inquiry
+                  </Button>
+                </Link>
+              </motion.div>
+
+              {/* Trust badges */}
+              <motion.div
+                variants={fadeUp}
+                custom={3}
+                className="mt-8 flex flex-wrap gap-x-6 gap-y-2"
+              >
+                {[
+                  { label: "Verified", bold: "student eligibility" },
+                  { label: "Trending", bold: "deals daily" },
+                  { label: "Local", bold: "near campus" },
+                ].map((item) => (
+                  <div key={item.bold} className="flex items-center gap-2 text-sm text-foreground">
+                    <CheckCircle2 className="h-4 w-4 text-accent shrink-0" />
+                    <span><strong>{item.label}</strong> {item.bold}</span>
+                  </div>
+                ))}
+              </motion.div>
+
+              {/* App Store badges */}
+              <motion.div
+                variants={fadeUp}
+                custom={4}
+                className="mt-8 flex gap-3"
+              >
+                <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-secondary/50 px-4 py-2.5 text-sm text-muted-foreground">
+                  <span className="text-base">🍎</span>
+                  <span><strong className="text-foreground">App Store</strong> – Coming Soon</span>
+                </div>
+                <div className="flex items-center gap-2 rounded-lg border border-border/60 bg-secondary/50 px-4 py-2.5 text-sm text-muted-foreground">
+                  <span className="text-base">▶️</span>
+                  <span><strong className="text-foreground">Google Play</strong> – Coming Soon</span>
+                </div>
+              </motion.div>
             </motion.div>
 
+            {/* Right: Phone mockup area */}
             <motion.div
-              variants={fadeUp}
-              custom={0.5}
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-accent/30 bg-accent/10 px-4 py-1.5 text-sm text-accent"
+              initial={{ opacity: 0, x: 40 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+              className="hidden lg:flex justify-center items-center relative"
             >
-              <DollarSign className="h-3.5 w-3.5" />
-              Average student saves $300+ per year
+              {/* Abstract phone-like cards to represent app screens */}
+              <div className="relative w-[340px] h-[520px]">
+                {/* Back card */}
+                <div className="absolute -left-12 top-8 w-[200px] h-[380px] rounded-3xl border border-border/40 bg-card/80 backdrop-blur-sm shadow-2xl rotate-[-8deg] overflow-hidden">
+                  <div className="p-4">
+                    <div className="text-xs text-muted-foreground mb-2">Trending</div>
+                    <div className="space-y-3">
+                      {["Amazon", "Nike", "Spotify"].map((brand) => (
+                        <div key={brand} className="flex items-center gap-2 rounded-lg bg-secondary/60 p-2">
+                          <div className="w-8 h-8 rounded-md bg-primary/10 flex items-center justify-center">
+                            <img src={`/logos/${brand.toLowerCase()}.png`} alt={brand} className="w-5 h-5 object-contain" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="text-xs font-medium text-foreground truncate">{brand}</div>
+                            <div className="text-[10px] text-accent">Save 20%+</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Main phone card */}
+                <div className="absolute left-8 top-0 w-[260px] h-[480px] rounded-3xl border-2 border-primary/30 bg-card shadow-[0_20px_80px_-15px_hsl(var(--primary)/0.3)] overflow-hidden z-10">
+                  <div className="p-1 bg-gradient-to-b from-primary/10 to-transparent">
+                    <div className="flex items-center justify-between px-4 py-2">
+                      <img src={campusperkLogo} alt="" className="h-5" />
+                      <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center">
+                        <Users className="h-3 w-3 text-primary" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="px-4 py-3 space-y-3">
+                    {/* Featured deal card */}
+                    <div className="rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 border border-primary/20 p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <img src="/logos/apple.png" alt="Apple" className="w-6 h-6 object-contain" />
+                        <span className="font-display text-sm font-bold text-foreground">Apple Student Discount</span>
+                      </div>
+                      <span className="text-xs text-accent font-semibold">Free $150 gift card</span>
+                    </div>
+                    {/* Deal list */}
+                    {[
+                      { name: "Uber Eats", caption: "McDonalds 20% Off", logo: "/logos/ubereats.png" },
+                      { name: "Spotify", caption: "Student Plan $5.99", logo: "/logos/spotify.png" },
+                      { name: "Adobe", caption: "60% off Creative Cloud", logo: "/logos/adobe.png" },
+                    ].map((deal) => (
+                      <div key={deal.name} className="flex items-center gap-3 rounded-lg bg-secondary/50 p-2.5">
+                        <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
+                          <img src={deal.logo} alt={deal.name} className="w-6 h-6 object-contain" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-xs font-semibold text-foreground">{deal.name}</div>
+                          <div className="text-[10px] text-muted-foreground truncate">{deal.caption}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Side card */}
+                <div className="absolute -right-8 top-16 w-[160px] h-[340px] rounded-3xl border border-border/40 bg-card/80 backdrop-blur-sm shadow-xl rotate-[6deg] overflow-hidden">
+                  <div className="p-3">
+                    <div className="text-[10px] text-muted-foreground mb-2">Local Near Campus</div>
+                    <div className="space-y-2.5">
+                      {["Smoothie Cafe", "Burrito Shop", "Campus Bookstore"].map((place) => (
+                        <div key={place} className="rounded-lg bg-secondary/50 p-2">
+                          <div className="text-[10px] font-medium text-foreground">{place}</div>
+                          <div className="text-[9px] text-accent mt-0.5">20% Off</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
             </motion.div>
+          </div>
+        </div>
+      </section>
 
-            <motion.h1
-              variants={fadeUp}
-              custom={1}
-              className="font-display text-4xl font-bold leading-tight tracking-tight md:text-6xl lg:text-7xl"
-            >
-              Students Save $300+ Per Year{" "}
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                With CampusPerk
-              </span>
-            </motion.h1>
-
-            <motion.p
-              variants={fadeUp}
-              custom={2}
-              className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground md:text-xl"
-            >
-              Discover verified student discounts from local businesses and national brands near your campus.
+      {/* ─── FEATURED BRANDS BAR ─── */}
+      <section className="py-12 md:py-16 border-t border-border/30">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="text-center"
+          >
+            <motion.h2 variants={fadeUp} custom={0} className="font-display text-2xl md:text-3xl font-bold text-foreground mb-2">
+              Featured brands students actually use.
+            </motion.h2>
+            <motion.p variants={fadeUp} custom={1} className="text-sm text-muted-foreground mb-10">
+              These are examples of deal categories we support. Offers vary by eligibility and availability.
             </motion.p>
+          </motion.div>
 
-            <motion.div
-              variants={fadeUp}
-              custom={3}
-              className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center"
-            >
-              <Link to="/sign-up">
-                <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-base gap-2">
-                  <GraduationCap className="h-4 w-4" />
-                  Join Free With Your .edu Email
-                </Button>
-              </Link>
-              <Link to="/explore">
-                <Button size="lg" variant="outline" className="border-border hover:bg-secondary h-12 px-8 text-base gap-2">
-                  <MapPin className="h-4 w-4" />
-                  See Deals Near Your Campus
-                </Button>
-              </Link>
-            </motion.div>
+          <motion.div
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            className="flex flex-wrap justify-center gap-4"
+          >
+            {BRAND_LOGOS.map((brand, i) => (
+              <motion.div
+                key={brand.name}
+                variants={fadeUp}
+                custom={i * 0.5}
+                className="flex items-center gap-3 rounded-xl border border-border/60 bg-card hover:border-primary/40 hover:shadow-[var(--shadow-glow)] transition-all duration-300 px-6 py-4 min-w-[160px] justify-center"
+              >
+                <img src={brand.logo} alt={brand.name} className="h-7 w-7 object-contain" />
+                <span className="font-display text-base font-bold text-foreground">{brand.name}</span>
+              </motion.div>
+            ))}
           </motion.div>
         </div>
       </section>
 
       {/* ─── STATS BAR ─── */}
-      <section className="py-6 border-y border-border/50 bg-card/50">
+      <section className="py-6 border-y border-border/30 bg-card/30">
         <motion.div
           className="container mx-auto px-4"
           initial="hidden"
@@ -306,8 +459,49 @@ const LandingPage = () => {
         </motion.div>
       </section>
 
+      {/* ─── HOW IT WORKS ─── */}
+      <section id="how-it-works" className="py-20 md:py-28">
+        <div className="container mx-auto px-4">
+          <motion.div
+            className="text-center mb-16"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+          >
+            <motion.h2 variants={fadeUp} custom={0} className="font-display text-3xl font-bold md:text-5xl">
+              How It{" "}
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Works</span>
+            </motion.h2>
+          </motion.div>
+
+          <div className="grid gap-6 md:grid-cols-3 max-w-4xl mx-auto">
+            {[
+              { step: "1", icon: GraduationCap, title: "Verify Your .edu Email", desc: "One-time verification unlocks access to every student deal on the platform." },
+              { step: "2", icon: Search, title: "Browse Curated Deals", desc: "Discover verified discounts from national brands and local businesses near your campus." },
+              { step: "3", icon: DollarSign, title: "Save Hundreds Per Year", desc: "Click, redeem, and track your savings. Average students save $300+ annually." },
+            ].map((item, i) => (
+              <motion.div
+                key={item.step}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-50px" }}
+                variants={fadeUp}
+                custom={i}
+                className="relative group rounded-2xl border border-border bg-card p-8 text-center transition-all duration-300 hover:border-primary/40 hover:shadow-[var(--shadow-glow)]"
+              >
+                <div className="mx-auto mb-4 w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center text-primary font-display text-xl font-bold group-hover:bg-primary/20 transition-colors">
+                  {item.step}
+                </div>
+                <h3 className="font-display text-lg font-semibold text-foreground mb-2">{item.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{item.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* ─── EXAMPLE DEALS ─── */}
-      <section id="deals" className="py-20 md:py-28">
+      <section id="deals" className="py-20 md:py-28 border-t border-border/30">
         <div className="container mx-auto px-4">
           <motion.div
             className="text-center mb-14"
@@ -364,72 +558,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* ─── SAVINGS DASHBOARD PREVIEW ─── */}
-      <section className="py-20 md:py-28 border-t border-border/50">
-        <div className="container mx-auto px-4">
-          <motion.div
-            className="text-center mb-14"
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-100px" }}
-          >
-            <motion.h2 variants={fadeUp} custom={0} className="font-display text-3xl font-bold md:text-5xl">
-              Your Savings{" "}
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Dashboard</span>
-            </motion.h2>
-            <motion.p variants={fadeUp} custom={1} className="mx-auto mt-4 max-w-xl text-muted-foreground">
-              Track every dollar you save — in real time.
-            </motion.p>
-          </motion.div>
-
-          <motion.div
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, margin: "-50px" }}
-            variants={fadeUp}
-            custom={2}
-            className="mx-auto max-w-2xl"
-          >
-            <div className="rounded-2xl border border-border bg-card overflow-hidden">
-              <div className="px-6 py-4 border-b border-border flex items-center gap-2">
-                <div className="h-3 w-3 rounded-full bg-destructive/60" />
-                <div className="h-3 w-3 rounded-full bg-[hsl(var(--gold))]/60" />
-                <div className="h-3 w-3 rounded-full bg-accent/60" />
-                <span className="ml-3 text-xs text-muted-foreground font-mono">campusperk.com/dashboard</span>
-              </div>
-              <div className="p-4 md:p-8 grid grid-cols-3 gap-2 md:gap-4">
-                {[
-                  { label: "This Month", value: "$47.50", trend: "+12%", color: "text-primary" },
-                  { label: "This Semester", value: "$312.00", trend: "+23%", color: "text-accent" },
-                  { label: "Lifetime", value: "$1,247.80", trend: "", color: "text-[hsl(var(--gold))]" },
-                ].map((stat) => (
-                  <div key={stat.label} className="rounded-xl border border-border bg-secondary/50 p-3 md:p-4 text-center">
-                    <div className="text-[10px] md:text-xs text-muted-foreground mb-2">{stat.label}</div>
-                    <div className={`font-display text-lg md:text-2xl font-bold ${stat.color}`}>{stat.value}</div>
-                    {stat.trend && (
-                      <div className="mt-1 text-xs text-accent flex items-center justify-center gap-1">
-                        <TrendingUp className="h-3 w-3" />
-                        {stat.trend}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-              <div className="px-6 pb-6 md:px-8 md:pb-8">
-                <Link to="/sign-up">
-                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
-                    <GraduationCap className="h-4 w-4" />
-                    Start Tracking Your Savings
-                  </Button>
-                </Link>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
       {/* ─── CAMPUS SEARCH ─── */}
-      <section className="py-20 md:py-28 border-t border-border/50">
+      <section className="py-20 md:py-28 border-t border-border/30">
         <div className="container mx-auto px-4">
           <motion.div
             className="mx-auto max-w-xl text-center"
@@ -492,8 +622,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Features */}
-      <section id="features" className="py-20 md:py-32 border-t border-border/50">
+      {/* ─── FEATURES ─── */}
+      <section id="features" className="py-20 md:py-28 border-t border-border/30">
         <div className="container mx-auto px-4">
           <motion.div
             className="text-center mb-16"
@@ -503,9 +633,7 @@ const LandingPage = () => {
           >
             <motion.h2 variants={fadeUp} custom={0} className="font-display text-3xl font-bold md:text-5xl">
               Built for{" "}
-              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                students
-              </span>
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">students</span>
             </motion.h2>
             <motion.p variants={fadeUp} custom={1} className="mx-auto mt-4 max-w-xl text-muted-foreground">
               Everything you need to maximize savings during your college years.
@@ -534,8 +662,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Categories */}
-      <section id="categories" className="py-20 md:py-32 border-t border-border/50">
+      {/* ─── CATEGORIES ─── */}
+      <section id="categories" className="py-20 md:py-28 border-t border-border/30">
         <div className="container mx-auto px-4">
           <motion.div
             className="text-center mb-16"
@@ -571,8 +699,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section id="testimonials" className="py-20 md:py-32 border-t border-border/50">
+      {/* ─── TESTIMONIALS ─── */}
+      <section id="testimonials" className="py-20 md:py-28 border-t border-border/30">
         <div className="container mx-auto px-4">
           <motion.div
             className="text-center mb-16"
@@ -617,8 +745,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* CTA */}
-      <section className="py-20 md:py-32 border-t border-border/50">
+      {/* ─── CTA ─── */}
+      <section className="py-20 md:py-28 border-t border-border/30">
         <div className="container mx-auto px-4">
           <motion.div
             className="relative mx-auto max-w-3xl rounded-3xl border border-primary/30 bg-gradient-to-b from-primary/10 to-transparent p-12 text-center md:p-16 overflow-hidden"
@@ -636,7 +764,7 @@ const LandingPage = () => {
               </motion.p>
               <motion.div variants={fadeUp} custom={2} className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                 <Link to="/sign-up">
-                  <Button size="lg" className="bg-primary hover:bg-primary/90 text-primary-foreground px-8 h-12 text-base gap-2">
+                  <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-8 h-12 text-base gap-2">
                     Get Started Free
                     <ArrowRight className="h-4 w-4" />
                   </Button>
@@ -652,8 +780,8 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t border-border/50 py-12">
+      {/* ─── FOOTER ─── */}
+      <footer className="border-t border-border/30 py-12">
         <div className="container mx-auto px-4">
           <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
             <Link to="/" className="flex items-center gap-2">
