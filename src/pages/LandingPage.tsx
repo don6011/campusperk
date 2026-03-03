@@ -407,20 +407,19 @@ const LandingPage = () => {
             <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
             <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
 
-            <div className="flex gap-6 animate-marquee w-max hover:[animation-play-state:paused]">
+            <div className="flex gap-5 animate-marquee w-max hover:[animation-play-state:paused]">
               {[...BRAND_LOGOS, ...BRAND_LOGOS].map((brand, i) => (
                 <div
                   key={`${brand.name}-${i}`}
                   className="flex flex-col items-center flex-shrink-0 transition-all duration-300 hover:scale-105 group/brand"
                 >
                   <div
-                    className="flex items-center justify-center rounded-2xl w-[200px] h-[120px] transition-shadow duration-300 group-hover/brand:shadow-lg"
+                    className="flex items-center justify-center rounded-xl w-[220px] h-[110px] transition-shadow duration-300 group-hover/brand:shadow-lg overflow-hidden"
                     style={{ backgroundColor: brand.bg }}
                   >
-                    <img src={brand.logo} alt={brand.name} className="h-14 w-auto max-w-[140px] object-contain brightness-0 invert" />
+                    <span className="text-white font-display text-2xl font-bold tracking-tight text-center leading-tight px-4">{brand.name}</span>
                   </div>
-                  <span className="mt-2 text-xs font-bold text-foreground">{brand.name}</span>
-                  <span className="text-[11px] font-semibold text-accent">{brand.discount}</span>
+                  <span className="mt-2 text-xs font-semibold text-accent">{brand.discount}</span>
                 </div>
               ))}
             </div>
@@ -543,8 +542,8 @@ const LandingPage = () => {
                 custom={i}
                 className="group rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/40 hover:shadow-[var(--shadow-glow)]"
               >
-                <div className={`mb-4 flex h-16 w-full items-center justify-center rounded-xl ${deal.bgColor} p-3`}>
-                  <img src={deal.logo} alt={deal.title} className="h-10 w-auto max-w-[120px] object-contain brightness-0 invert" />
+                <div className={`mb-4 flex h-20 w-full items-center justify-center rounded-xl ${deal.bgColor}`}>
+                  <span className="text-white font-display text-xl font-bold tracking-tight">{deal.brand.split(" ")[0] === "MacBooks" ? "Apple" : deal.title.split(" ")[0]}</span>
                 </div>
                 <h3 className="font-display text-lg font-semibold text-foreground">{deal.title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{deal.brand}</p>
