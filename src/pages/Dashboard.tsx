@@ -698,6 +698,7 @@ function SectionSkeleton() {
    ═══════════════════════════════════════════ */
 export default function Dashboard() {
   const { profile, user, isPremium, isFoundingMember } = useAuth();
+  const { campusName } = useCampusTheme();
   const navigate = useNavigate();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const { logClick } = useDealClick();
