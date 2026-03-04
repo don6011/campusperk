@@ -38,6 +38,7 @@ import AmbassadorsManager from "./pages/admin/AmbassadorsManager";
 import AffiliateSourcesManager from "./pages/admin/AffiliateSourcesManager";
 import DealImport from "./pages/admin/DealImport";
 import Alerts from "./pages/Alerts";
+import NotificationSettings from "./pages/NotificationSettings";
 import AmbassadorDashboard from "./pages/AmbassadorDashboard";
 import CampusLeaderboard from "./pages/CampusLeaderboard";
 import Splash from "./pages/Splash";
