@@ -110,12 +110,30 @@ serve(async (req) => {
       );
     }
 
+    // Enforce 2/day notification limit
+    const today = now.toISOString().split("T")[0];
+    const { data: counts } = await supabase
+      .from("daily_notification_counts")
+      .select("user_id, count")
+      .eq("notification_date", today);
+
+    const countMap = new Map((counts || []).map((c: any) => [c.user_id, c.count]));
+    const eligibleUsers = allUsers
+      .filter((u: any) => (countMap.get(u.id) || 0) < 2)
+      .map((u: any) => u.id);
+
+    if (eligibleUsers.length === 0) {
+      return new Response(
+        JSON.stringify({ message: "All users hit daily notification limit", trending_deals: 0 }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const sendPushUrl = `${supabaseUrl}/functions/v1/send-push`;
     let totalSent = 0;
 
     for (const deal of newTrendingDeals) {
       const clickCount = clickCounts.get(deal.id) || 0;
-      const userIds = allUsers.map((u) => u.id);
 
       const res = await fetch(sendPushUrl, {
         method: "POST",
@@ -124,7 +142,7 @@ serve(async (req) => {
           Authorization: `Bearer ${serviceRoleKey}`,
         },
         body: JSON.stringify({
-          user_ids: userIds,
+          user_ids: eligibleUsers,
           title: `🔥 ${deal.title} is trending!`,
           body: `${clickCount} students grabbed this deal in the last ${LOOKBACK_HOURS} hours. Don't miss out!`,
           url: `/deal/${deal.id}`,
@@ -139,6 +157,22 @@ serve(async (req) => {
         totalSent += result.sent || 0;
       } else {
         console.error(`Failed to send trending push for deal ${deal.id}:`, await res.text());
+      }
+    }
+
+    // Increment daily notification counts
+    for (const uid of eligibleUsers) {
+      const existing = countMap.get(uid);
+      if (existing) {
+        await supabase
+          .from("daily_notification_counts")
+          .update({ count: existing + 1 })
+          .eq("user_id", uid)
+          .eq("notification_date", today);
+      } else {
+        await supabase
+          .from("daily_notification_counts")
+          .insert({ user_id: uid, notification_date: today, count: 1 });
       }
     }
 
