@@ -2,9 +2,11 @@ import { Shield } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useAuth } from "@/contexts/AuthContext";
+import { useCampusTheme } from "@/contexts/CampusThemeContext";
 
 export function CampusPrideBadge({ className }: { className?: string }) {
   const { profile } = useAuth();
+  const { primaryColor } = useCampusTheme();
 
   if (!profile?.campus_name) return null;
 
@@ -13,7 +15,12 @@ export function CampusPrideBadge({ className }: { className?: string }) {
       <TooltipTrigger asChild>
         <Badge
           variant="outline"
-          className={`bg-accent/10 text-accent border-accent/30 font-medium text-xs gap-1.5 cursor-default ${className ?? ""}`}
+          className={`font-medium text-xs gap-1.5 cursor-default ${className ?? ""}`}
+          style={primaryColor ? {
+            backgroundColor: `${primaryColor}18`,
+            color: primaryColor,
+            borderColor: `${primaryColor}4D`,
+          } : undefined}
         >
           <Shield className="h-3 w-3" />
           {profile.campus_name}
