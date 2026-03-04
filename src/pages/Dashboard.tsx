@@ -711,7 +711,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, requires_edu_email, expires_at, affiliate_link_url, direct_link_url, updated_at, created_at, category, visibility, stores(name, logo_url)")
+        .select("id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, requires_edu_email, expires_at, affiliate_link_url, direct_link_url, updated_at, created_at, category, visibility, is_surprise_drop, drop_window, drop_time, stores(name, logo_url)")
         .eq("status", "active")
         .order("updated_at", { ascending: false })
         .limit(60);
