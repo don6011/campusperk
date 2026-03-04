@@ -28,6 +28,9 @@ import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-uti
 import { useDealClick } from "@/hooks/use-deal-click";
 import PushNotificationPrompt from "@/components/PushNotificationPrompt";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
+import { NextDropWidget } from "@/components/dashboard/NextDropWidget";
+import { SurpriseDropCard } from "@/components/dashboard/SurpriseDropCard";
+import { isDealDropVisible } from "@/lib/deal-drops";
 
 /* ── Animations ── */
 const fadeUp = {
@@ -56,6 +59,7 @@ type DealRow = {
   requires_edu_email: boolean; expires_at: string | null; affiliate_link_url: string | null;
   direct_link_url: string | null; updated_at: string; created_at: string; category: string | null;
   visibility: string | null; stores: { name: string; logo_url: string | null } | null;
+  is_surprise_drop?: boolean; drop_window?: string | null; drop_time?: string | null;
 };
 
 /* ── Brand Logo ── */
@@ -707,7 +711,7 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, requires_edu_email, expires_at, affiliate_link_url, direct_link_url, updated_at, created_at, category, visibility, stores(name, logo_url)")
+        .select("id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, requires_edu_email, expires_at, affiliate_link_url, direct_link_url, updated_at, created_at, category, visibility, is_surprise_drop, drop_window, drop_time, stores(name, logo_url)")
         .eq("status", "active")
         .order("updated_at", { ascending: false })
         .limit(60);
@@ -786,6 +790,14 @@ export default function Dashboard() {
     return candidates[dayOfYear % candidates.length];
   }, [deals, heroDeal, now]);
 
+  // Surprise deal drops - filter by visibility (founding members get early access)
+  const surpriseDrops = useMemo(() => {
+    return deals.filter(d =>
+      d.is_surprise_drop &&
+      isDealDropVisible(d.drop_time ?? null, isFoundingMember)
+    );
+  }, [deals, isFoundingMember]);
+
   const sharedProps = { favIds, onToggleFav: toggleFav, isPremiumUser: isPremium, userId: user?.id, onUpgrade: () => setUpgradeOpen(true), onGetDeal: handleGetDeal };
 
   // Local deals
@@ -849,6 +861,36 @@ export default function Dashboard() {
 
         {/* DEAL STREAK */}
         <DealStreakWidget />
+
+        {/* NEXT DROP WINDOW WIDGET */}
+        <NextDropWidget />
+
+        {/* SURPRISE DEAL DROPS */}
+        {surpriseDrops.length > 0 && (
+          <motion.section initial="hidden" animate="visible" variants={stagger}>
+            <SectionHeader
+              icon={Zap}
+              title="⚡ Surprise Drops"
+              iconColor="text-primary"
+              subtitle="Limited-time deals dropping right now"
+              badge={
+                <Badge className="bg-primary/15 text-primary border-primary/30 text-[9px] font-bold gap-1 px-2 ml-2 animate-pulse">
+                  <Zap className="h-2.5 w-2.5" /> {surpriseDrops.length} NEW
+                </Badge>
+              }
+            />
+            <ScrollRow>
+              {surpriseDrops.map((deal) => (
+                <SurpriseDropCard
+                  key={deal.id}
+                  deal={deal}
+                  isFoundingMember={isFoundingMember}
+                  onGetDeal={handleGetDeal}
+                />
+              ))}
+            </ScrollRow>
+          </motion.section>
+        )}
 
         {/* HERO DEAL */}
         {dealsLoading ? (
