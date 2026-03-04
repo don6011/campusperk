@@ -96,19 +96,19 @@ const App = () => (
             <Route path="/ambassador/dashboard" element={<ProtectedRoute><AmbassadorDashboard /></ProtectedRoute>} />
             <Route path="/campus-leaderboard" element={<ProtectedRoute><CampusLeaderboard /></ProtectedRoute>} />
 
-            {/* Admin routes (protected) */}
-            <Route path="/admin/deals" element={<ProtectedRoute><DealsManager /></ProtectedRoute>} />
-            <Route path="/admin/submissions" element={<ProtectedRoute><SubmissionsQueue /></ProtectedRoute>} />
-            <Route path="/admin/scans" element={<ProtectedRoute><ScansPage /></ProtectedRoute>} />
-            <Route path="/admin/analytics" element={<ProtectedRoute><AffiliateAnalytics /></ProtectedRoute>} />
-            <Route path="/admin/users" element={<ProtectedRoute><UsersManager /></ProtectedRoute>} />
-            <Route path="/admin/categories" element={<ProtectedRoute><CategoryManager /></ProtectedRoute>} />
-            <Route path="/admin/verification" element={<ProtectedRoute><VerificationQueue /></ProtectedRoute>} />
-            <Route path="/admin/domains" element={<ProtectedRoute><CampusDomainsManager /></ProtectedRoute>} />
-            <Route path="/admin/partners" element={<ProtectedRoute><PartnersManager /></ProtectedRoute>} />
-            <Route path="/admin/ambassadors" element={<ProtectedRoute><AmbassadorsManager /></ProtectedRoute>} />
-            <Route path="/admin/affiliate-sources" element={<ProtectedRoute><AffiliateSourcesManager /></ProtectedRoute>} />
-            <Route path="/admin/deal-import" element={<ProtectedRoute><DealImport /></ProtectedRoute>} />
+            {/* Admin routes (role-gated) */}
+            <Route path="/admin/deals" element={<AdminRoute><DealsManager /></AdminRoute>} />
+            <Route path="/admin/submissions" element={<AdminRoute><SubmissionsQueue /></AdminRoute>} />
+            <Route path="/admin/scans" element={<AdminRoute><ScansPage /></AdminRoute>} />
+            <Route path="/admin/analytics" element={<AdminRoute><AffiliateAnalytics /></AdminRoute>} />
+            <Route path="/admin/users" element={<AdminRoute><UsersManager /></AdminRoute>} />
+            <Route path="/admin/categories" element={<AdminRoute><CategoryManager /></AdminRoute>} />
+            <Route path="/admin/verification" element={<AdminRoute><VerificationQueue /></AdminRoute>} />
+            <Route path="/admin/domains" element={<AdminRoute><CampusDomainsManager /></AdminRoute>} />
+            <Route path="/admin/partners" element={<AdminRoute><PartnersManager /></AdminRoute>} />
+            <Route path="/admin/ambassadors" element={<AdminRoute><AmbassadorsManager /></AdminRoute>} />
+            <Route path="/admin/affiliate-sources" element={<AdminRoute><AffiliateSourcesManager /></AdminRoute>} />
+            <Route path="/admin/deal-import" element={<AdminRoute><DealImport /></AdminRoute>} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
