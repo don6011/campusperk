@@ -56,6 +56,10 @@ const BRAND_LOGOS = [
   { name: "Headspace", logo: "/logos/headspace-wordmark.svg", bg: "#F47D31", discount: "85% Off" },
   { name: "Adidas", logo: "/logos/adidas-wordmark.svg", bg: "#000000", discount: "30% Off" },
   { name: "North Face", logo: "/logos/northface-wordmark.svg", bg: "#000000", discount: "10% Student Discount" },
+  { name: "Uber Eats", logo: "/logos/ubereats-wordmark.svg", bg: "#06C167", discount: "$0 Delivery Fee" },
+  { name: "Chegg", logo: "/logos/chegg-wordmark.svg", bg: "#F27C38", discount: "Free Trial" },
+  { name: "ASOS", logo: "/logos/asos-wordmark.svg", bg: "#2D2D2D", discount: "20% Off" },
+  { name: "Amtrak", logo: "/logos/amtrak-wordmark.svg", bg: "#1A4B8C", discount: "15% Off" },
 ];
 
 const categories = [
