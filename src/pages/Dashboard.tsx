@@ -790,6 +790,14 @@ export default function Dashboard() {
     return candidates[dayOfYear % candidates.length];
   }, [deals, heroDeal, now]);
 
+  // Surprise deal drops - filter by visibility (founding members get early access)
+  const surpriseDrops = useMemo(() => {
+    return deals.filter(d =>
+      d.is_surprise_drop &&
+      isDealDropVisible(d.drop_time ?? null, isFoundingMember)
+    );
+  }, [deals, isFoundingMember]);
+
   const sharedProps = { favIds, onToggleFav: toggleFav, isPremiumUser: isPremium, userId: user?.id, onUpgrade: () => setUpgradeOpen(true), onGetDeal: handleGetDeal };
 
   // Local deals
