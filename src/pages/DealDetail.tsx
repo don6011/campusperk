@@ -65,7 +65,7 @@ export default function DealDetail() {
   const { dealId } = useParams<{ dealId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { isPremium: userIsPremium, user } = useAuth();
+  const { isPremium: userIsPremium, isFoundingMember, user } = useAuth();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [fav, setFav] = useState(false);
   const { recordRedemption } = useRecordRedemption();
@@ -89,7 +89,7 @@ export default function DealDetail() {
   }
 
   const isPremiumDeal = deal.visibility === "premium";
-  const isGated = isPremiumDeal && !userIsPremium;
+  const isGated = isPremiumDeal && !userIsPremium && !isFoundingMember;
   const isExpiring = deal.expiresAt && new Date(deal.expiresAt) > new Date();
   const daysLeft = deal.expiresAt
     ? Math.ceil((new Date(deal.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))

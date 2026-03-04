@@ -17,6 +17,7 @@ export interface UserEligibility {
   locationOptIn: boolean;
   isPremium: boolean;
   useCampusLocation: boolean;
+  isFoundingMember: boolean;
 }
 
 export interface DealEligibilityFields {

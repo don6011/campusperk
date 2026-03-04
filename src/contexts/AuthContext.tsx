@@ -28,6 +28,7 @@ interface Profile {
   user_state: string | null;
   location_opt_in: boolean;
   use_campus_location: boolean;
+  is_founding_member: boolean;
 }
 
 interface AuthContextType {
@@ -40,6 +41,7 @@ interface AuthContextType {
   campusRole: CampusRole | null;
   campusRoleStatus: CampusRoleStatus;
   isPremium: boolean;
+  isFoundingMember: boolean;
   isLoading: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -87,7 +89,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verification_method, campus_domain, campus_name, verification_notes, campus_verified, verification_strength_score, campus_id, campus_city, campus_state, user_city, user_state, location_opt_in, use_campus_location, has_seen_splash")
+      .select("id, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verification_method, campus_domain, campus_name, verification_notes, campus_verified, verification_strength_score, campus_id, campus_city, campus_state, user_city, user_state, location_opt_in, use_campus_location, has_seen_splash, is_founding_member")
       .eq("id", userId)
       .single();
     setProfile(data as Profile | null);
@@ -188,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         campusRole: (profile?.campus_role as CampusRole | null) ?? null,
         campusRoleStatus: (profile?.campus_role_status as CampusRoleStatus) ?? "unselected",
         isPremium: profile?.premium_status ?? false,
+        isFoundingMember: profile?.is_founding_member ?? false,
         isLoading,
         signUp,
         signIn,

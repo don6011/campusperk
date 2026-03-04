@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { motion } from "framer-motion";
 import {
   GraduationCap, BookOpen, Briefcase, Users, ShieldCheck, ShieldX,
@@ -318,6 +319,12 @@ export default function Account() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Role</span>
                   <span className="text-sm font-medium capitalize">{campusRole}</span>
+                </div>
+              )}
+              {profile?.is_founding_member && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Status</span>
+                  <FoundingMemberBadge />
                 </div>
               )}
               {/* Verification Strength Score */}

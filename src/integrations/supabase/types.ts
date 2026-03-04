@@ -1277,6 +1277,7 @@ export type Database = {
           email: string | null
           has_seen_splash: boolean
           id: string
+          is_founding_member: boolean
           location_opt_in: boolean
           name: string | null
           premium_status: boolean
@@ -1305,6 +1306,7 @@ export type Database = {
           email?: string | null
           has_seen_splash?: boolean
           id: string
+          is_founding_member?: boolean
           location_opt_in?: boolean
           name?: string | null
           premium_status?: boolean
@@ -1333,6 +1335,7 @@ export type Database = {
           email?: string | null
           has_seen_splash?: boolean
           id?: string
+          is_founding_member?: boolean
           location_opt_in?: boolean
           name?: string | null
           premium_status?: boolean

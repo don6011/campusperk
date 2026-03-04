@@ -37,9 +37,9 @@ export default function Premium() {
   const [verifiedReferrals, setVerifiedReferrals] = useState(0);
   const [copied, setCopied] = useState(false);
 
-  // Non-premium users → redirect to pricing
+  // Non-premium and non-founding-member users → redirect to pricing
   useEffect(() => {
-    if (profile && !profile.premium_status) {
+    if (profile && !profile.premium_status && !profile.is_founding_member) {
       navigate("/pricing", { replace: true });
     }
   }, [profile, navigate]);

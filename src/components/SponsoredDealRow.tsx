@@ -85,6 +85,7 @@ export function SponsoredDealRow({ deals, label = "Sponsored", maxItems = 3, sco
       locationOptIn: profile.location_opt_in ?? false,
       isPremium: profile.premium_status ?? false,
       useCampusLocation: profile.use_campus_location ?? true,
+      isFoundingMember: profile.is_founding_member ?? false,
     };
   }, [profile]);
 

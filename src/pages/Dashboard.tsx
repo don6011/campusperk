@@ -27,6 +27,7 @@ import { citiesMatch, statesMatch } from "@/lib/state-codes";
 import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
 import { useDealClick } from "@/hooks/use-deal-click";
 import PushNotificationPrompt from "@/components/PushNotificationPrompt";
+import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 
 /* ── Animations ── */
 const fadeUp = {
@@ -170,7 +171,8 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId, onGetDeal }: {
   deal: DealRow; onUpgrade: () => void; isPremium: boolean; userId?: string; onGetDeal: (dealId: string) => void;
 }) {
   const storeName = deal.stores?.name || "Featured Brand";
-  const isGated = isDealPremium(deal) && !isPremium;
+  const { isFoundingMember } = useAuth();
+  const isGated = isDealPremium(deal) && !isPremium && !isFoundingMember;
   const proof = socialProof(deal);
 
   return (
@@ -690,7 +692,7 @@ function SectionSkeleton() {
    MAIN DASHBOARD
    ═══════════════════════════════════════════ */
 export default function Dashboard() {
-  const { profile, user, isPremium } = useAuth();
+  const { profile, user, isPremium, isFoundingMember } = useAuth();
   const navigate = useNavigate();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const { logClick } = useDealClick();
@@ -836,6 +838,7 @@ export default function Dashboard() {
               <div className="flex items-center gap-2 mt-1">
                 <p className="text-sm text-muted-foreground">Discover today's best student deals.</p>
                 <VerifiedStudentBadge />
+                <FoundingMemberBadge />
               </div>
             </div>
           </div>
