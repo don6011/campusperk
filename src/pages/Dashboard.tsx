@@ -31,6 +31,7 @@ import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { NextDropWidget } from "@/components/dashboard/NextDropWidget";
 import { SurpriseDropCard } from "@/components/dashboard/SurpriseDropCard";
 import { isDealDropVisible } from "@/lib/deal-drops";
+import { useCampusTheme } from "@/contexts/CampusThemeContext";
 
 /* ── Animations ── */
 const fadeUp = {
