@@ -7,8 +7,7 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
-// Called via cron to notify users when their favorited deals are expiring soon (within 24h)
-
+// Notify users when their favorited deals expire within 12 hours
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -20,16 +19,16 @@ serve(async (req) => {
     const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     const now = new Date();
-    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    const in12h = new Date(now.getTime() + 12 * 60 * 60 * 1000);
 
-    // Find deals expiring in the next 24 hours
+    // Deals expiring within 12 hours
     const { data: expiringDeals } = await supabase
       .from("deals")
       .select("id, title, expires_at, store_id")
       .eq("status", "active")
       .not("expires_at", "is", null)
       .gte("expires_at", now.toISOString())
-      .lte("expires_at", in24h.toISOString())
+      .lte("expires_at", in12h.toISOString())
       .limit(50);
 
     if (!expiringDeals || expiringDeals.length === 0) {
@@ -52,15 +51,39 @@ serve(async (req) => {
       });
     }
 
+    // Deduplicate: check if we already notified today for these deals
+    const todayStart = new Date(now);
+    todayStart.setUTCHours(0, 0, 0, 0);
+
+    const { data: alreadySent } = await supabase
+      .from("notification_log")
+      .select("user_id, title")
+      .eq("type", "ending_soon")
+      .gte("sent_at", todayStart.toISOString());
+
+    const sentKeys = new Set(
+      (alreadySent || []).map((n) => `${n.user_id}:${n.title}`)
+    );
+
     // Group by user
     const userDeals = new Map<string, typeof expiringDeals>();
     for (const fav of favorites) {
       const deal = expiringDeals.find((d) => d.id === fav.deal_id);
-      if (deal) {
-        const existing = userDeals.get(fav.user_id) || [];
-        existing.push(deal);
-        userDeals.set(fav.user_id, existing);
-      }
+      if (!deal) continue;
+
+      // Skip if already notified today
+      const key = `${fav.user_id}:⏳ Deals expiring soon!`;
+      if (sentKeys.has(key)) continue;
+
+      const existing = userDeals.get(fav.user_id) || [];
+      existing.push(deal);
+      userDeals.set(fav.user_id, existing);
+    }
+
+    if (userDeals.size === 0) {
+      return new Response(JSON.stringify({ message: "All users already notified" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     let totalSent = 0;
@@ -73,7 +96,7 @@ serve(async (req) => {
           ? `"${deals[0].title}" expires soon — grab it before it's gone!`
           : `${deals.length} saved deals are expiring soon: ${dealNames}`;
 
-      await fetch(sendPushUrl, {
+      const res = await fetch(sendPushUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -85,10 +108,16 @@ serve(async (req) => {
           body,
           url: deals.length === 1 ? `/deal/${deals[0].id}` : "/favorites",
           deal_id: deals.length === 1 ? deals[0].id : null,
-          tag: "expiring_deal",
+          tag: "ending_soon",
+          type: "ending_soon",
         }),
       });
-      totalSent++;
+
+      if (res.ok) {
+        totalSent++;
+      } else {
+        console.error(`Failed to notify ${userId}:`, await res.text());
+      }
     }
 
     return new Response(
