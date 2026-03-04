@@ -5,7 +5,7 @@ import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { motion, AnimatePresence } from "framer-motion";
 
 export default function PushNotificationPrompt() {
-  const { isSupported, isSubscribed, permission, subscribe, unsubscribe } = usePushNotifications();
+  const { isSupported, isSubscribed, permission, subscribe } = usePushNotifications();
   const [dismissed, setDismissed] = useState(() =>
     localStorage.getItem("campusperk_push_dismissed") === "true"
   );

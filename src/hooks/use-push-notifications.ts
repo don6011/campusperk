@@ -1,108 +1,87 @@
-/// <reference lib="webworker" />
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
-
-// PushManager types are available in modern browsers but TS needs help
-declare global {
-  interface ServiceWorkerRegistration {
-    pushManager: PushManager;
-  }
-  interface PushManager {
-    getSubscription(): Promise<PushSubscription | null>;
-    subscribe(options: PushSubscriptionOptionsInit): Promise<PushSubscription>;
-  }
-}
-
-const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY || "";
-
-function urlBase64ToUint8Array(base64String: string) {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) outputArray[i] = rawData.charCodeAt(i);
-  return outputArray;
-}
+import { Capacitor } from "@capacitor/core";
+import { PushNotifications } from "@capacitor/push-notifications";
 
 export function usePushNotifications() {
   const { user } = useAuth();
   const [isSupported, setIsSupported] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
-  const [permission, setPermission] = useState<NotificationPermission>("default");
+  const [permission, setPermission] = useState<"default" | "granted" | "denied">("default");
+
+  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
-    const supported = "serviceWorker" in navigator && "PushManager" in window && !!VAPID_PUBLIC_KEY;
-    setIsSupported(supported);
-    if (supported) {
-      setPermission(Notification.permission);
-      checkExistingSubscription();
+    if (!isNative) {
+      setIsSupported(false);
+      return;
     }
-  }, []);
+    setIsSupported(true);
+    checkExisting();
+  }, [isNative, user]);
 
-  const checkExistingSubscription = async () => {
+  const checkExisting = async () => {
+    if (!user) return;
     try {
-      const registration = await navigator.serviceWorker.getRegistration("/sw-push.js");
-      if (registration) {
-        const subscription = await registration.pushManager.getSubscription();
-        setIsSubscribed(!!subscription);
-      }
+      const { data } = await supabase
+        .from("push_devices")
+        .select("id")
+        .eq("user_id", user.id)
+        .limit(1);
+      setIsSubscribed(!!(data && data.length > 0));
     } catch {
       // ignore
     }
   };
 
   const subscribe = useCallback(async () => {
-    if (!user || !VAPID_PUBLIC_KEY) return false;
+    if (!user || !isNative) return false;
     try {
-      const perm = await Notification.requestPermission();
-      setPermission(perm);
-      if (perm !== "granted") return false;
+      const permResult = await PushNotifications.requestPermissions();
+      if (permResult.receive !== "granted") {
+        setPermission("denied");
+        return false;
+      }
+      setPermission("granted");
 
-      const registration = await navigator.serviceWorker.register("/sw-push.js");
-      await navigator.serviceWorker.ready;
+      await PushNotifications.register();
 
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      // Listen for the registration event to get FCM token
+      return new Promise<boolean>((resolve) => {
+        PushNotifications.addListener("registration", async (token) => {
+          const platform = Capacitor.getPlatform() as "ios" | "android";
+          await supabase.from("push_devices").upsert(
+            {
+              user_id: user.id,
+              platform,
+              fcm_token: token.value,
+              last_seen: new Date().toISOString(),
+            },
+            { onConflict: "fcm_token" }
+          );
+          setIsSubscribed(true);
+          resolve(true);
+        });
+
+        PushNotifications.addListener("registrationError", (err) => {
+          console.error("Push registration failed:", err);
+          resolve(false);
+        });
       });
-
-      const json = subscription.toJSON();
-      await supabase.from("push_subscriptions").upsert(
-        {
-          user_id: user.id,
-          endpoint: json.endpoint!,
-          p256dh: json.keys!.p256dh!,
-          auth: json.keys!.auth!,
-        },
-        { onConflict: "user_id,endpoint" }
-      );
-
-      setIsSubscribed(true);
-      return true;
     } catch (err) {
       console.error("Push subscription failed:", err);
       return false;
     }
-  }, [user]);
+  }, [user, isNative]);
 
   const unsubscribe = useCallback(async () => {
+    if (!user) return;
     try {
-      const registration = await navigator.serviceWorker.getRegistration("/sw-push.js");
-      if (registration) {
-        const subscription = await registration.pushManager.getSubscription();
-        if (subscription) {
-          const endpoint = subscription.endpoint;
-          await subscription.unsubscribe();
-          if (user) {
-            await supabase
-              .from("push_subscriptions")
-              .delete()
-              .eq("user_id", user.id)
-              .eq("endpoint", endpoint);
-          }
-        }
-      }
+      await supabase
+        .from("push_devices")
+        .delete()
+        .eq("user_id", user.id);
       setIsSubscribed(false);
     } catch (err) {
       console.error("Push unsubscribe failed:", err);
