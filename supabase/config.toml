@@ -27,5 +27,8 @@ verify_jwt = false
 [functions.notify-trending-deals]
 verify_jwt = false
 
+[functions.schedule-deal-drops]
+verify_jwt = false
+
 [functions.notify-deal-alerts]
 verify_jwt = false
