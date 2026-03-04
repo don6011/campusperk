@@ -862,6 +862,36 @@ export default function Dashboard() {
         {/* DEAL STREAK */}
         <DealStreakWidget />
 
+        {/* NEXT DROP WINDOW WIDGET */}
+        <NextDropWidget />
+
+        {/* SURPRISE DEAL DROPS */}
+        {surpriseDrops.length > 0 && (
+          <motion.section initial="hidden" animate="visible" variants={stagger}>
+            <SectionHeader
+              icon={Zap}
+              title="⚡ Surprise Drops"
+              iconColor="text-primary"
+              subtitle="Limited-time deals dropping right now"
+              badge={
+                <Badge className="bg-primary/15 text-primary border-primary/30 text-[9px] font-bold gap-1 px-2 ml-2 animate-pulse">
+                  <Zap className="h-2.5 w-2.5" /> {surpriseDrops.length} NEW
+                </Badge>
+              }
+            />
+            <ScrollRow>
+              {surpriseDrops.map((deal) => (
+                <SurpriseDropCard
+                  key={deal.id}
+                  deal={deal}
+                  isFoundingMember={isFoundingMember}
+                  onGetDeal={handleGetDeal}
+                />
+              ))}
+            </ScrollRow>
+          </motion.section>
+        )}
+
         {/* HERO DEAL */}
         {dealsLoading ? (
           <Skeleton className="h-56 rounded-xl" />
