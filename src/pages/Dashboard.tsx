@@ -26,6 +26,7 @@ import { resolveLocation } from "@/lib/deal-eligibility";
 import { citiesMatch, statesMatch } from "@/lib/state-codes";
 import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
 import { useDealClick } from "@/hooks/use-deal-click";
+import PushNotificationPrompt from "@/components/PushNotificationPrompt";
 
 /* ── Animations ── */
 const fadeUp = {
@@ -839,6 +840,9 @@ export default function Dashboard() {
             </div>
           </div>
         </motion.div>
+
+        {/* PUSH NOTIFICATION PROMPT */}
+        <PushNotificationPrompt />
 
         {/* DEAL STREAK */}
         <DealStreakWidget />

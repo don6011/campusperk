@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Bell, Plus, Trash2, Tag, Trophy } from "lucide-react";
+import { Bell, Plus, Trash2, Tag, Trophy, Smartphone } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 
 interface AlertSubscription {
   id: string;
@@ -29,6 +30,33 @@ interface Category {
   id: string;
   name: string;
   slug: string;
+}
+
+function PushNotificationRow() {
+  const { isSupported, isSubscribed, subscribe, unsubscribe } = usePushNotifications();
+  if (!isSupported) return null;
+  return (
+    <div className="flex items-center justify-between gap-4 p-3 rounded-lg border border-border mt-3">
+      <div className="flex items-center gap-3">
+        <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+          <Smartphone className="h-4 w-4 text-primary" />
+        </div>
+        <div>
+          <Label htmlFor="push-toggle" className="text-sm font-medium text-foreground cursor-pointer">
+            Push notifications
+          </Label>
+          <p className="text-xs text-muted-foreground">
+            Get notified even when CampusPerk is closed.
+          </p>
+        </div>
+      </div>
+      <Switch
+        id="push-toggle"
+        checked={isSubscribed}
+        onCheckedChange={(checked) => checked ? subscribe() : unsubscribe()}
+      />
+    </div>
+  );
 }
 
 export default function Alerts() {
@@ -170,6 +198,9 @@ export default function Alerts() {
                   disabled={leaderboardLoading}
                 />
               </div>
+
+              {/* Push Notifications Toggle */}
+              <PushNotificationRow />
             </CardContent>
           </Card>
         </motion.div>
