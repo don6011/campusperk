@@ -171,7 +171,8 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId, onGetDeal }: {
   deal: DealRow; onUpgrade: () => void; isPremium: boolean; userId?: string; onGetDeal: (dealId: string) => void;
 }) {
   const storeName = deal.stores?.name || "Featured Brand";
-  const isGated = isDealPremium(deal) && !isPremium;
+  const { isFoundingMember } = useAuth();
+  const isGated = isDealPremium(deal) && !isPremium && !isFoundingMember;
   const proof = socialProof(deal);
 
   return (
