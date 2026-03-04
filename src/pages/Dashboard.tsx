@@ -691,7 +691,7 @@ function SectionSkeleton() {
    MAIN DASHBOARD
    ═══════════════════════════════════════════ */
 export default function Dashboard() {
-  const { profile, user, isPremium } = useAuth();
+  const { profile, user, isPremium, isFoundingMember } = useAuth();
   const navigate = useNavigate();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const { logClick } = useDealClick();
