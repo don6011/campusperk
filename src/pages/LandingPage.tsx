@@ -417,7 +417,7 @@ const LandingPage = () => {
                     className="flex items-center justify-center rounded-xl w-[220px] h-[110px] transition-shadow duration-300 group-hover/brand:shadow-lg overflow-hidden"
                     style={{ backgroundColor: brand.bg }}
                   >
-                    <img src={brand.logo} alt={brand.name} className="h-12 w-auto max-w-[160px] object-contain brightness-0 invert drop-shadow-md" />
+                    <span className="text-white font-display text-2xl font-bold tracking-tight text-center leading-tight px-4">{brand.name}</span>
                   </div>
                   <span className="mt-2 text-xs font-semibold text-accent">{brand.discount}</span>
                 </div>
@@ -543,7 +543,7 @@ const LandingPage = () => {
                 className="group rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/40 hover:shadow-[var(--shadow-glow)]"
               >
                 <div className={`mb-4 flex h-20 w-full items-center justify-center rounded-xl ${deal.bgColor}`}>
-                  <img src={deal.logo} alt={deal.title} className="h-10 w-auto max-w-[120px] object-contain brightness-0 invert drop-shadow-md" />
+                  <span className="text-white font-display text-xl font-bold tracking-tight">{deal.brand.split(" ")[0] === "MacBooks" ? "Apple" : deal.title.split(" ")[0]}</span>
                 </div>
                 <h3 className="font-display text-lg font-semibold text-foreground">{deal.title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{deal.brand}</p>
