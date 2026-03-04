@@ -19,6 +19,7 @@ import {
   Send,
   Shield,
   Medal,
+  Trophy,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +44,7 @@ const navItems = [
   { title: "Favorites", url: "/favorites", icon: Heart },
   { title: "Submit Deal", url: "/submit", icon: Send },
   { title: "Alerts", url: "/alerts", icon: Bell },
+  { title: "Campus Leaderboard", url: "/campus-leaderboard", icon: Trophy },
   { title: "Ambassador", url: "/ambassador/dashboard", icon: Medal },
   { title: "Premium", url: "/pricing", icon: Crown, premiumUrl: "/premium" },
   { title: "Account Settings", url: "/settings", icon: Settings },
