@@ -99,7 +99,7 @@ export function SurpriseDropCard({ deal, isFoundingMember, onGetDeal, claimCount
           {/* Social proof */}
           <div className="flex items-center gap-3 text-[10px] text-muted-foreground/80 mb-2">
             <span className="flex items-center gap-1">
-              🔥 {displayCount} students grabbed this today
+              🔥 {displayCount} students{campusName ? ` at ${campusName}` : ""} grabbed this today
             </span>
           </div>
 
