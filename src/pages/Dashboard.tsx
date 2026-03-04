@@ -31,6 +31,7 @@ import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { NextDropWidget } from "@/components/dashboard/NextDropWidget";
 import { SurpriseDropCard } from "@/components/dashboard/SurpriseDropCard";
 import { isDealDropVisible } from "@/lib/deal-drops";
+import { useCampusTheme } from "@/contexts/CampusThemeContext";
 
 /* ── Animations ── */
 const fadeUp = {
@@ -151,13 +152,14 @@ function ScrollRow({ children, className = "" }: { children: React.ReactNode; cl
 }
 
 /* ── Social proof generator ── */
-function socialProof(deal: DealRow): { text: string; icon: typeof Flame } {
+function socialProof(deal: DealRow, campusName?: string | null): { text: string; icon: typeof Flame } {
   const hash = deal.id.charCodeAt(1) * 7 + deal.id.charCodeAt(3) * 13;
   const count = (hash % 120) + 18;
+  const campus = campusName || "campus";
   if (deal.expires_at && daysUntil(deal.expires_at) <= 3) return { text: `⏳ Ends Soon`, icon: Timer };
-  if (deal.featured) return { text: `🔥 ${count} students claimed today`, icon: Flame };
-  if (deal.sponsored) return { text: `⚡ Trending on campus`, icon: Zap };
-  return { text: `🔥 ${count} students claimed today`, icon: Flame };
+  if (deal.featured) return { text: `🔥 ${count} students at ${campus} grabbed this`, icon: Flame };
+  if (deal.sponsored) return { text: `⚡ Trending at ${campus}`, icon: Zap };
+  return { text: `🔥 ${count} students grabbed this today`, icon: Flame };
 }
 
 /* ── Format discount value with % ── */
@@ -260,21 +262,22 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId, onGetDeal }: {
 /* ═══════════════════════════════════════════
    2. LIVE ACTIVITY TICKER
    ═══════════════════════════════════════════ */
-function ActivityTicker({ deals }: { deals: DealRow[] }) {
+function ActivityTicker({ deals, campusName }: { deals: DealRow[]; campusName?: string | null }) {
+  const campus = campusName || "campus";
   const messages = useMemo(() => {
     const msgs: string[] = [];
     deals.slice(0, 12).forEach((d) => {
       const store = d.stores?.name || "a brand";
       const hash = d.id.charCodeAt(1) * 7 + d.id.charCodeAt(3) * 13;
       const count = (hash % 35) + 5;
-      msgs.push(`🔥 ${count} students claimed the ${store} deal today`);
+      msgs.push(`🔥 ${count} students at ${campus} claimed the ${store} deal`);
     });
     if (msgs.length < 4) {
-      msgs.push("🔥 GitHub Student Pack claimed 41 times this week");
-      msgs.push("🔥 Spotify Student trending at 12 campuses");
+      msgs.push(`🔥 GitHub Student Pack claimed 41 times at ${campus}`);
+      msgs.push(`🔥 Spotify Student trending at ${campus}`);
     }
     return msgs;
-  }, [deals]);
+  }, [deals, campus]);
 
   const [idx, setIdx] = useState(0);
 
@@ -403,17 +406,18 @@ function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; 
 /* ═══════════════════════════════════════════
    DEAL CARD — Reusable with social proof
    ═══════════════════════════════════════════ */
-function DealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onUpgrade, onGetDeal, badgeLabel, badgeIcon: BadgeIcon = Flame, showProof = true }: {
+function DealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onUpgrade, onGetDeal, badgeLabel, badgeIcon: BadgeIcon = Flame, showProof = true, campusName }: {
   deal: DealRow; index: number;
   favIds: Set<string>; onToggleFav: (id: string) => void;
   isPremiumUser: boolean; userId?: string; onUpgrade: () => void;
   onGetDeal: (dealId: string) => void;
   badgeLabel?: string; badgeIcon?: any; showProof?: boolean;
+  campusName?: string | null;
 }) {
   const storeName = deal.stores?.name || "Unknown";
   const isFav = favIds.has(deal.id);
   const isGated = isDealPremium(deal) && !isPremiumUser;
-  const proof = socialProof(deal);
+  const proof = socialProof(deal, campusName);
 
   const getBadge = () => {
     if (deal.expires_at && daysUntil(deal.expires_at) <= 3) return { label: "Ending Soon", icon: Timer, color: "bg-destructive/10 text-destructive border-destructive/20" };
@@ -697,6 +701,7 @@ function SectionSkeleton() {
    ═══════════════════════════════════════════ */
 export default function Dashboard() {
   const { profile, user, isPremium, isFoundingMember } = useAuth();
+  const { campusName } = useCampusTheme();
   const navigate = useNavigate();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const { logClick } = useDealClick();
@@ -798,7 +803,7 @@ export default function Dashboard() {
     );
   }, [deals, isFoundingMember]);
 
-  const sharedProps = { favIds, onToggleFav: toggleFav, isPremiumUser: isPremium, userId: user?.id, onUpgrade: () => setUpgradeOpen(true), onGetDeal: handleGetDeal };
+  const sharedProps = { favIds, onToggleFav: toggleFav, isPremiumUser: isPremium, userId: user?.id, onUpgrade: () => setUpgradeOpen(true), onGetDeal: handleGetDeal, campusName };
 
   // Local deals
   const locationEnabled = profile?.location_opt_in ?? false;
@@ -900,7 +905,7 @@ export default function Dashboard() {
         ) : null}
 
         {/* LIVE ACTIVITY TICKER */}
-        {!dealsLoading && deals.length > 0 && <ActivityTicker deals={deals} />}
+        {!dealsLoading && deals.length > 0 && <ActivityTicker deals={deals} campusName={campusName} />}
 
         {/* TRENDING STUDENT BRANDS */}
         <PopularBrandsSection stores={storeMap} />
@@ -910,7 +915,7 @@ export default function Dashboard() {
 
         {/* 🔥 TRENDING ON CAMPUS */}
         <motion.section initial="hidden" animate="visible" variants={stagger}>
-          <SectionHeader icon={Flame} title="Trending on Campus" linkTo="/explore" iconColor="text-destructive" subtitle="Most clicked deals by students right now" />
+          <SectionHeader icon={Flame} title={campusName ? `Trending at ${campusName}` : "Trending on Campus"} linkTo="/explore" iconColor="text-destructive" subtitle={campusName ? `Most clicked deals by ${campusName} students` : "Most clicked deals by students right now"} />
           {dealsLoading ? (
             <SectionSkeleton />
           ) : (

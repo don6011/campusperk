@@ -46,6 +46,10 @@ export default {
           gold: {
             DEFAULT: "hsl(var(--gold))",
           },
+          campus: {
+            DEFAULT: "hsl(var(--campus-primary))",
+            secondary: "hsl(var(--campus-secondary))",
+          },
           popover: {
             DEFAULT: "hsl(var(--popover))",
             foreground: "hsl(var(--popover-foreground))",

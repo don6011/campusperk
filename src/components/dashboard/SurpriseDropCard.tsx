@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { getEarlyAccessTimeRemaining, formatCountdown } from "@/lib/deal-drops";
+import { useCampusTheme } from "@/contexts/CampusThemeContext";
 
 interface SurpriseDropCardProps {
   deal: {
@@ -26,6 +27,7 @@ function formatDiscount(val: string | null): string {
 }
 
 export function SurpriseDropCard({ deal, isFoundingMember, onGetDeal, claimCount }: SurpriseDropCardProps) {
+  const { campusName } = useCampusTheme();
   const [now, setNow] = useState(new Date());
   const earlyAccessMs = getEarlyAccessTimeRemaining(deal.drop_time, now);
   const isEarlyAccess = isFoundingMember && earlyAccessMs !== null && earlyAccessMs > 0;
@@ -97,7 +99,7 @@ export function SurpriseDropCard({ deal, isFoundingMember, onGetDeal, claimCount
           {/* Social proof */}
           <div className="flex items-center gap-3 text-[10px] text-muted-foreground/80 mb-2">
             <span className="flex items-center gap-1">
-              🔥 {displayCount} students grabbed this today
+              🔥 {displayCount} students{campusName ? ` at ${campusName}` : ""} grabbed this today
             </span>
           </div>
 

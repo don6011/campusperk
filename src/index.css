@@ -38,6 +38,10 @@
 
     --gold: 45 93% 56%;
 
+    /* Campus theming — overridden at runtime when a campus has colors */
+    --campus-primary: var(--primary);
+    --campus-secondary: var(--accent);
+
     --sidebar-background: 220 40% 9%;
     --sidebar-foreground: 210 40% 96%;
     --sidebar-primary: 217 91% 60%;
