@@ -371,14 +371,14 @@ function DealStreakWidget() {
    TRENDING STUDENT BRANDS — Rakuten-style
    ═══════════════════════════════════════════ */
 const popularBrands = [
-  { name: "Nike", slug: "nike", logo: "/logos/nike.png" },
-  { name: "Apple", slug: "apple", logo: "/logos/apple.png" },
-  { name: "Spotify", slug: "spotify", logo: "/logos/spotify.png" },
-  { name: "Amazon", slug: "amazon", logo: "/logos/amazon.png" },
-  { name: "Samsung", slug: "samsung", logo: "/logos/samsung.png" },
-  { name: "Best Buy", slug: "best-buy", logo: "/logos/bestbuy.png" },
-  { name: "Adidas", slug: "adidas", logo: "/logos/adidas.png" },
-  { name: "DoorDash", slug: "doordash", logo: "/logos/doordash.png" },
+  { name: "Nike", slug: "nike", logo: "/logos/nike.png", bg: "#000000", discount: "15% Off" },
+  { name: "Apple", slug: "apple", logo: "/logos/apple.png", bg: "#000000", discount: "Up to 20% Off" },
+  { name: "Spotify", slug: "spotify", logo: "/logos/spotify.png", bg: "#1DB954", discount: "50% Off" },
+  { name: "Amazon", slug: "amazon", logo: "/logos/amazon.png", bg: "#232F3E", discount: "Free Trial" },
+  { name: "Samsung", slug: "samsung", logo: "/logos/samsung.png", bg: "#1428A0", discount: "30% Off" },
+  { name: "Best Buy", slug: "best-buy", logo: "/logos/bestbuy.png", bg: "#0046BE", discount: "Student Deals" },
+  { name: "Adidas", slug: "adidas", logo: "/logos/adidas.png", bg: "#000000", discount: "30% Off" },
+  { name: "DoorDash", slug: "doordash", logo: "/logos/doordash.png", bg: "#FF3008", discount: "50% Off" },
 ];
 
 function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; logo_url: string | null; dealCount: number }> }) {
@@ -395,18 +395,27 @@ function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; 
               className="snap-start shrink-0"
             >
               <Link to={`/explore?brand=${brand.slug}`}>
-                <div className="w-[160px] sm:w-[180px] h-[120px] rounded-2xl bg-card border border-border/50 flex flex-col items-center justify-center gap-2.5 cursor-pointer hover:border-primary/40 transition-all duration-150 hover:shadow-[0_4px_30px_-8px_hsl(var(--primary)/0.3)]">
-                  <img
-                    src={brand.logo}
-                    alt={brand.name}
-                    className="h-12 w-12 object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = 'none';
-                    }}
-                  />
-                  <div className="text-sm font-bold text-foreground">{brand.name}</div>
+                <div className="flex flex-col items-center gap-2 cursor-pointer">
+                  <div
+                    className="w-[160px] sm:w-[180px] h-[110px] rounded-2xl flex items-center justify-center p-4 transition-all duration-150 hover:shadow-xl hover:scale-105"
+                    style={{ backgroundColor: brand.bg }}
+                  >
+                    <img
+                      src={brand.logo}
+                      alt={brand.name}
+                      className="max-h-[60px] max-w-[120px] w-auto h-auto object-contain drop-shadow-lg"
+                      style={{ filter: "brightness(0) invert(1)" }}
+                      onError={(e) => {
+                        const el = e.target as HTMLImageElement;
+                        el.style.display = 'none';
+                        el.parentElement!.innerHTML = `<span class="text-white font-display text-xl font-bold">${brand.name}</span>`;
+                      }}
+                    />
+                  </div>
+                  <span className="text-sm font-bold text-foreground">{brand.name}</span>
+                  <span className="text-xs font-semibold text-accent -mt-1">{brand.discount}</span>
                   {storeData && storeData.dealCount > 0 && (
-                    <div className="text-[11px] text-accent font-semibold -mt-1">{storeData.dealCount} deal{storeData.dealCount > 1 ? "s" : ""}</div>
+                    <span className="text-[10px] text-muted-foreground -mt-1">{storeData.dealCount} deal{storeData.dealCount > 1 ? "s" : ""}</span>
                   )}
                 </div>
               </Link>
@@ -512,12 +521,12 @@ function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, use
    STUDENT ESSENTIALS SECTION
    ═══════════════════════════════════════════ */
 const studentEssentials = [
-  { name: "Spotify Student", brand: "Spotify", logo: "/logos/spotify.png", desc: "Premium for $5.99/mo", value: "$5.99/mo" },
-  { name: "Amazon Prime Student", brand: "Amazon", logo: "/logos/amazon.png", desc: "6-month free trial + 50% off", value: "50% Off" },
-  { name: "Adobe Creative Cloud", brand: "Adobe", logo: "/logos/adobe.png", desc: "All apps at 60% off", value: "60% Off" },
-  { name: "Apple Education", brand: "Apple", logo: "/logos/apple.png", desc: "Save up to $300 on Mac", value: "Save $300" },
-  { name: "GitHub Student Pack", brand: "GitHub", logo: "/logos/github.png", desc: "Free Pro + $200 in tools", value: "FREE" },
-  { name: "Notion Student", brand: "Notion", logo: "/logos/notion.png", desc: "Free Plus plan for students", value: "FREE" },
+  { name: "Spotify Student", brand: "Spotify", logo: "/logos/spotify.png", bg: "#1DB954", desc: "Premium for $5.99/mo", value: "$5.99/mo" },
+  { name: "Amazon Prime Student", brand: "Amazon", logo: "/logos/amazon.png", bg: "#232F3E", desc: "6-month free trial + 50% off", value: "50% Off" },
+  { name: "Adobe Creative Cloud", brand: "Adobe", logo: "/logos/adobe.png", bg: "#FF0000", desc: "All apps at 60% off", value: "60% Off" },
+  { name: "Apple Education", brand: "Apple", logo: "/logos/apple.png", bg: "#000000", desc: "Save up to $300 on Mac", value: "Save $300" },
+  { name: "GitHub Student Pack", brand: "GitHub", logo: "/logos/github.png", bg: "#24292E", desc: "Free Pro + $200 in tools", value: "FREE" },
+  { name: "Notion Student", brand: "Notion", logo: "/logos/notion.png", bg: "#000000", desc: "Free Plus plan for students", value: "FREE" },
 ];
 
 function StudentEssentialsSection({ deals }: { deals: DealRow[] }) {
@@ -530,10 +539,23 @@ function StudentEssentialsSection({ deals }: { deals: DealRow[] }) {
           return (
             <motion.div key={item.name} whileHover={{ y: -4, transition: { duration: 0.15 } }} className="snap-start shrink-0">
               <Link to={matchedDeal ? `/deals/${matchedDeal.id}` : "/explore"}>
-                <Card className="w-[220px] border-border/50 bg-card hover:border-gold/30 transition-all duration-150 cursor-pointer hover:shadow-[0_6px_30px_-8px_hsl(var(--gold)/0.2)] h-full">
+                 <Card className="w-[220px] border-border/50 bg-card hover:border-gold/30 transition-all duration-150 cursor-pointer hover:shadow-[0_6px_30px_-8px_hsl(var(--gold)/0.2)] h-full">
                   <CardContent className="p-5 flex flex-col items-center text-center gap-3">
-                    <div className="h-16 w-16 rounded-2xl bg-secondary/60 flex items-center justify-center border border-border/40">
-                      <img src={item.logo} alt={item.brand} className="h-10 w-10 object-contain" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
+                    <div
+                      className="h-16 w-full rounded-xl flex items-center justify-center p-3"
+                      style={{ backgroundColor: item.bg }}
+                    >
+                      <img
+                        src={item.logo}
+                        alt={item.brand}
+                        className="max-h-[40px] max-w-[100px] w-auto h-auto object-contain"
+                        style={{ filter: "brightness(0) invert(1)" }}
+                        onError={(e) => {
+                          const el = e.target as HTMLImageElement;
+                          el.style.display = 'none';
+                          el.parentElement!.innerHTML = `<span class="text-white font-display text-lg font-bold">${item.brand}</span>`;
+                        }}
+                      />
                     </div>
                     <div>
                       <div className="font-display text-sm font-bold text-foreground">{item.name}</div>
