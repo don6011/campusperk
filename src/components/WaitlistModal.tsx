@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
@@ -18,6 +18,7 @@ import {
   Loader2,
   Share2,
   Sparkles,
+  Plus,
 } from "lucide-react";
 
 function generateReferralCode(): string {
@@ -43,45 +44,68 @@ type SuccessData = {
   campusCount: number;
 };
 
+type CampusRow = {
+  id: string;
+  name: string;
+  city: string | null;
+  state: string | null;
+};
+
 const sourceOptions = ["TikTok", "Instagram", "Friend", "Campus org", "Other"];
 
 export default function WaitlistModal({ open, onOpenChange, referredBy }: WaitlistModalProps) {
   const isMobile = useIsMobile();
   const [email, setEmail] = useState("");
   const [campusQuery, setCampusQuery] = useState("");
-  const [selectedCampus, setSelectedCampus] = useState("");
-  const [campusList, setCampusList] = useState<{ id: string; campus_name: string | null; domain_root: string }[]>([]);
+  const [selectedCampus, setSelectedCampus] = useState<CampusRow | null>(null);
+  const [campusList, setCampusList] = useState<CampusRow[]>([]);
   const [showCampusDropdown, setShowCampusDropdown] = useState(false);
+  const [isManualEntry, setIsManualEntry] = useState(false);
   const [source, setSource] = useState("");
   const [showOptional, setShowOptional] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState<SuccessData | null>(null);
   const [errors, setErrors] = useState<{ email?: string; campus?: string }>({});
   const [copied, setCopied] = useState(false);
+  const [searchLoading, setSearchLoading] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Campus typeahead
+  // Close dropdown on outside click
   useEffect(() => {
-    if (campusQuery.length < 2) {
-      setCampusList([]);
+    const handler = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setShowCampusDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Campus typeahead against campuses table
+  useEffect(() => {
+    if (campusQuery.length < 2 || isManualEntry) {
+      if (!isManualEntry) setCampusList([]);
       return;
     }
+    setSearchLoading(true);
     const timeout = setTimeout(async () => {
       const { data } = await supabase
-        .from("campus_domains")
-        .select("id, campus_name, domain_root")
-        .ilike("campus_name", `%${campusQuery}%`)
-        .eq("is_approved", true)
+        .from("campuses" as any)
+        .select("id, name, city, state")
+        .or(`name.ilike.%${campusQuery}%,city.ilike.%${campusQuery}%,state.ilike.%${campusQuery}%`)
+        .eq("status", "active")
         .limit(8);
-      setCampusList(data ?? []);
+      setCampusList((data as any as CampusRow[]) ?? []);
       setShowCampusDropdown(true);
+      setSearchLoading(false);
     }, 250);
-    return () => clearTimeout(timeout);
-  }, [campusQuery]);
+    return () => { clearTimeout(timeout); setSearchLoading(false); };
+  }, [campusQuery, isManualEntry]);
 
   const validate = () => {
     const e: typeof errors = {};
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) e.email = "Please enter a valid email.";
-    if (!selectedCampus && !campusQuery.trim()) e.campus = "Please select your campus.";
+    if (!selectedCampus && !campusQuery.trim()) e.campus = "Please select or enter your school.";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -92,12 +116,25 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
     setSubmitting(true);
 
     const normalized = email.toLowerCase().trim();
-    const campus = selectedCampus || campusQuery.trim();
-    const campusSlug = slugify(campus);
+    const emailType = normalized.endsWith(".edu") ? "edu" : "other";
+    const campusName = selectedCampus?.name || campusQuery.trim();
+    const campusSlug = slugify(campusName);
     const referralCode = generateReferralCode();
 
     try {
-      // Check existing
+      // Resolve campus_id: use selected or create pending
+      let campusId: string | null = selectedCampus?.id || null;
+      if (!campusId && campusQuery.trim()) {
+        // Create pending campus
+        const { data: newCampus } = await supabase
+          .from("campuses" as any)
+          .insert({ name: campusQuery.trim(), status: "pending" } as any)
+          .select("id")
+          .single();
+        if (newCampus) campusId = (newCampus as any).id;
+      }
+
+      // Check existing signup
       const { data: existing } = await supabase
         .from("waitlist_signups" as any)
         .select("referral_code, campus")
@@ -105,7 +142,6 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
         .maybeSingle();
 
       if (existing) {
-        // Already on list — show success with their existing data
         const { count } = await supabase
           .from("waitlist_signups" as any)
           .select("id", { count: "exact", head: true })
@@ -120,50 +156,35 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
         return;
       }
 
-      // Insert new
+      // Insert
       const { error } = await supabase.from("waitlist_signups" as any).insert({
         email: normalized,
         email_normalized: normalized,
-        campus,
+        campus: campusName,
         campus_slug: campusSlug,
         referral_code: referralCode,
         referred_by: referredBy || null,
         source: source || null,
+        campus_id: campusId,
+        campus_text: selectedCampus ? null : campusQuery.trim(),
+        email_type: emailType,
       } as any);
 
       if (error) {
         if (error.code === "23505" && error.message?.includes("referral_code")) {
-          // Collision on referral code, try again
           const retry = generateReferralCode();
           await supabase.from("waitlist_signups" as any).insert({
-            email: normalized,
-            email_normalized: normalized,
-            campus,
-            campus_slug: campusSlug,
-            referral_code: retry,
-            referred_by: referredBy || null,
-            source: source || null,
+            email: normalized, email_normalized: normalized, campus: campusName,
+            campus_slug: campusSlug, referral_code: retry, referred_by: referredBy || null,
+            source: source || null, campus_id: campusId,
+            campus_text: selectedCampus ? null : campusQuery.trim(), email_type: emailType,
           } as any);
-          const { count } = await supabase
-            .from("waitlist_signups" as any)
-            .select("id", { count: "exact", head: true })
-            .eq("campus_slug", campusSlug);
-          setSuccess({ campus, referralCode: retry, campusCount: (count as number) ?? 1 });
+          const { count } = await supabase.from("waitlist_signups" as any).select("id", { count: "exact", head: true }).eq("campus_slug", campusSlug);
+          setSuccess({ campus: campusName, referralCode: retry, campusCount: (count as number) ?? 1 });
         } else if (error.code === "23505") {
-          // Email duplicate race condition
           toast("You're already on the list! 🎉");
-          const { data: ex } = await supabase
-            .from("waitlist_signups" as any)
-            .select("referral_code, campus")
-            .eq("email_normalized", normalized)
-            .maybeSingle();
-          if (ex) {
-            setSuccess({
-              campus: (ex as any).campus,
-              referralCode: (ex as any).referral_code,
-              campusCount: 1,
-            });
-          }
+          const { data: ex } = await supabase.from("waitlist_signups" as any).select("referral_code, campus").eq("email_normalized", normalized).maybeSingle();
+          if (ex) setSuccess({ campus: (ex as any).campus, referralCode: (ex as any).referral_code, campusCount: 1 });
         } else {
           toast.error("Something went wrong. Please try again.");
         }
@@ -171,12 +192,8 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
         return;
       }
 
-      const { count } = await supabase
-        .from("waitlist_signups" as any)
-        .select("id", { count: "exact", head: true })
-        .eq("campus_slug", campusSlug);
-
-      setSuccess({ campus, referralCode, campusCount: (count as number) ?? 1 });
+      const { count } = await supabase.from("waitlist_signups" as any).select("id", { count: "exact", head: true }).eq("campus_slug", campusSlug);
+      setSuccess({ campus: campusName, referralCode, campusCount: (count as number) ?? 1 });
     } catch {
       toast.error("Something went wrong. Please try again.");
     }
@@ -191,6 +208,13 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
     setCopied(true);
     toast.success("Link copied!");
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const formatCampusDisplay = (c: CampusRow) => {
+    const parts = [c.name];
+    const loc = [c.city, c.state].filter(Boolean).join(", ");
+    if (loc) parts.push(loc);
+    return parts;
   };
 
   const formContent = (
@@ -229,33 +253,21 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
             <p className="text-xs text-accent font-medium mb-3">
               Invite 3 friends and get priority early access.
             </p>
-            <div className="flex gap-2 justify-center">
-              <a
-                href={`https://www.instagram.com/`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
-              >
+            <div className="flex gap-2 justify-center flex-wrap">
+              <a href="https://www.instagram.com/" target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-secondary transition-colors">
                 <Instagram className="h-3.5 w-3.5" /> Instagram
               </a>
-              <a
-                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
-              >
+              <a href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}`} target="_blank" rel="noopener noreferrer"
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-secondary transition-colors">
                 <Twitter className="h-3.5 w-3.5" /> X
               </a>
-              <a
-                href={`sms:?body=${encodeURIComponent(shareText)}`}
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
-              >
+              <a href={`sms:?body=${encodeURIComponent(shareText)}`}
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-secondary transition-colors">
                 <MessageCircle className="h-3.5 w-3.5" /> SMS
               </a>
-              <button
-                onClick={copyLink}
-                className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-secondary transition-colors"
-              >
+              <button onClick={copyLink}
+                className="flex items-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2 text-xs font-medium text-foreground hover:bg-secondary transition-colors">
                 <Copy className="h-3.5 w-3.5" /> {copied ? "Copied!" : "Copy"}
               </button>
             </div>
@@ -268,11 +280,12 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
             <p className="text-sm text-muted-foreground mt-1">Get launch updates + campus drops. No spam.</p>
           </div>
 
+          {/* Email */}
           <div>
             <Input
               type="email"
               required
-              placeholder="your@email.edu"
+              placeholder="your@email.com"
               value={email}
               onChange={(e) => { setEmail(e.target.value); setErrors((p) => ({ ...p, email: undefined })); }}
               className={`h-11 bg-secondary border-border text-base ${errors.email ? "border-destructive" : ""}`}
@@ -280,43 +293,94 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
             {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
           </div>
 
-          <div className="relative">
+          {/* Campus picker */}
+          <div className="relative" ref={dropdownRef}>
             <School className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground z-10" />
             <Input
-              placeholder="Search your campus / university"
+              placeholder={isManualEntry ? "Enter your school name" : "Search your school / campus"}
               value={campusQuery}
               onChange={(e) => {
                 setCampusQuery(e.target.value);
-                setSelectedCampus("");
+                setSelectedCampus(null);
+                if (isManualEntry) return;
                 setErrors((p) => ({ ...p, campus: undefined }));
               }}
-              onFocus={() => campusList.length > 0 && setShowCampusDropdown(true)}
+              onFocus={() => {
+                if (!isManualEntry && campusList.length > 0) setShowCampusDropdown(true);
+              }}
               className={`h-11 pl-10 bg-secondary border-border text-base ${errors.campus ? "border-destructive" : ""}`}
             />
             {errors.campus && <p className="text-xs text-destructive mt-1">{errors.campus}</p>}
-            {showCampusDropdown && campusList.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-lg z-30 overflow-hidden max-h-48 overflow-y-auto">
-                {campusList.map((c) => (
+
+            {/* Dropdown results */}
+            {showCampusDropdown && !isManualEntry && campusQuery.length >= 2 && (
+              <div className="absolute top-full left-0 right-0 mt-1 rounded-xl border border-border bg-card shadow-lg z-30 overflow-hidden max-h-56 overflow-y-auto">
+                {searchLoading && (
+                  <div className="px-4 py-3 flex items-center gap-2 text-sm text-muted-foreground">
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" /> Searching…
+                  </div>
+                )}
+                {!searchLoading && campusList.length === 0 && (
+                  <div className="px-4 py-3 text-sm text-muted-foreground">No schools found.</div>
+                )}
+                {campusList.map((c) => {
+                  const [name, loc] = formatCampusDisplay(c);
+                  return (
+                    <button
+                      key={c.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCampus(c);
+                        setCampusQuery(c.name);
+                        setShowCampusDropdown(false);
+                        setErrors((p) => ({ ...p, campus: undefined }));
+                      }}
+                      className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-secondary transition-colors"
+                    >
+                      <School className="h-4 w-4 text-primary shrink-0" />
+                      <div className="min-w-0">
+                        <span className="text-sm text-foreground font-medium">{name}</span>
+                        {loc && <span className="text-xs text-muted-foreground ml-1.5">— {loc}</span>}
+                      </div>
+                    </button>
+                  );
+                })}
+                {/* Manual entry CTA */}
+                {!searchLoading && (
                   <button
-                    key={c.id}
                     type="button"
                     onClick={() => {
-                      const name = c.campus_name ?? c.domain_root;
-                      setCampusQuery(name);
-                      setSelectedCampus(name);
+                      setIsManualEntry(true);
                       setShowCampusDropdown(false);
-                      setErrors((p) => ({ ...p, campus: undefined }));
+                      setCampusList([]);
                     }}
-                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-secondary transition-colors"
+                    className="w-full flex items-center gap-3 px-4 py-2.5 text-left hover:bg-secondary transition-colors border-t border-border"
                   >
-                    <School className="h-4 w-4 text-primary shrink-0" />
-                    <span className="text-sm text-foreground">{c.campus_name ?? c.domain_root}</span>
+                    <Plus className="h-4 w-4 text-accent shrink-0" />
+                    <span className="text-sm text-accent font-medium">Can't find your school? Add it</span>
                   </button>
-                ))}
+                )}
               </div>
+            )}
+
+            {/* Manual entry indicator */}
+            {isManualEntry && (
+              <button
+                type="button"
+                onClick={() => { setIsManualEntry(false); setCampusQuery(""); setSelectedCampus(null); }}
+                className="mt-1 text-xs text-primary hover:text-primary/80 transition-colors"
+              >
+                ← Back to search
+              </button>
             )}
           </div>
 
+          {/* Microcopy about verification */}
+          <p className="text-[11px] text-muted-foreground">
+            You can verify your student status after launch.
+          </p>
+
+          {/* Optional source */}
           {!showOptional ? (
             <button type="button" onClick={() => setShowOptional(true)} className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors">
               <ChevronDown className="h-3 w-3" /> More options
