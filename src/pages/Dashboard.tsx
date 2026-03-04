@@ -59,6 +59,7 @@ type DealRow = {
   requires_edu_email: boolean; expires_at: string | null; affiliate_link_url: string | null;
   direct_link_url: string | null; updated_at: string; created_at: string; category: string | null;
   visibility: string | null; stores: { name: string; logo_url: string | null } | null;
+  is_surprise_drop?: boolean; drop_window?: string | null; drop_time?: string | null;
 };
 
 /* ── Brand Logo ── */
