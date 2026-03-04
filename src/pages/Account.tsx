@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { motion } from "framer-motion";
 import {
   GraduationCap, BookOpen, Briefcase, Users, ShieldCheck, ShieldX,
