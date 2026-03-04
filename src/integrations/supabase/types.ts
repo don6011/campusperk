@@ -887,6 +887,39 @@ export type Database = {
           },
         ]
       }
+      partner_inquiries: {
+        Row: {
+          business_name: string
+          contact_name: string
+          created_at: string
+          deal_type: string | null
+          email: string
+          id: string
+          notes: string | null
+          website: string | null
+        }
+        Insert: {
+          business_name: string
+          contact_name: string
+          created_at?: string
+          deal_type?: string | null
+          email: string
+          id?: string
+          notes?: string | null
+          website?: string | null
+        }
+        Update: {
+          business_name?: string
+          contact_name?: string
+          created_at?: string
+          deal_type?: string | null
+          email?: string
+          id?: string
+          notes?: string | null
+          website?: string | null
+        }
+        Relationships: []
+      }
       partner_locations: {
         Row: {
           address: string | null
@@ -1565,30 +1598,42 @@ export type Database = {
         }
         Relationships: []
       }
-      waitlist: {
+      waitlist_signups: {
         Row: {
-          campus_name: string | null
+          campus: string
+          campus_slug: string
           created_at: string
           email: string
+          email_normalized: string
           id: string
-          position: number | null
-          referral_source: string | null
+          referral_code: string
+          referred_by: string | null
+          role: string
+          source: string | null
         }
         Insert: {
-          campus_name?: string | null
+          campus: string
+          campus_slug: string
           created_at?: string
           email: string
+          email_normalized: string
           id?: string
-          position?: number | null
-          referral_source?: string | null
+          referral_code: string
+          referred_by?: string | null
+          role?: string
+          source?: string | null
         }
         Update: {
-          campus_name?: string | null
+          campus?: string
+          campus_slug?: string
           created_at?: string
           email?: string
+          email_normalized?: string
           id?: string
-          position?: number | null
-          referral_source?: string | null
+          referral_code?: string
+          referred_by?: string | null
+          role?: string
+          source?: string | null
         }
         Relationships: []
       }
@@ -1634,7 +1679,6 @@ export type Database = {
         Args: { p_campus_name?: string; p_domain_root: string }
         Returns: string
       }
-      get_waitlist_position: { Args: { p_email: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
