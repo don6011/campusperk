@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-r
 import { AuthProvider } from "@/contexts/AuthContext";
 import { CampusThemeProvider } from "@/contexts/CampusThemeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
+import AdminRoute from "@/components/AdminRoute";
 import LandingPage from "./pages/LandingPage";
 import Dashboard from "./pages/Dashboard";
 import SignIn from "./pages/SignIn";
