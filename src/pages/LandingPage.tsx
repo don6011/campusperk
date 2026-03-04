@@ -407,19 +407,30 @@ const LandingPage = () => {
             <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
             <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
 
-            <div className="flex gap-5 animate-marquee w-max hover:[animation-play-state:paused]">
+          <div className="flex gap-5 animate-marquee w-max hover:[animation-play-state:paused]">
               {[...BRAND_LOGOS, ...BRAND_LOGOS].map((brand, i) => (
                 <div
                   key={`${brand.name}-${i}`}
                   className="flex flex-col items-center flex-shrink-0 transition-all duration-300 hover:scale-105 group/brand"
                 >
                   <div
-                    className="flex items-center justify-center rounded-xl w-[220px] h-[110px] transition-shadow duration-300 group-hover/brand:shadow-lg overflow-hidden"
+                    className="flex items-center justify-center rounded-2xl w-[200px] h-[120px] transition-shadow duration-300 group-hover/brand:shadow-xl overflow-hidden p-5"
                     style={{ backgroundColor: brand.bg }}
                   >
-                    <span className="text-white font-display text-2xl font-bold tracking-tight text-center leading-tight px-4">{brand.name}</span>
+                    <img
+                      src={brand.logo}
+                      alt={brand.name}
+                      className="max-h-[70px] max-w-[140px] w-auto h-auto object-contain drop-shadow-lg"
+                      style={{ filter: "brightness(0) invert(1)" }}
+                      onError={(e) => {
+                        const el = e.target as HTMLImageElement;
+                        el.style.display = 'none';
+                        el.parentElement!.innerHTML = `<span class="text-white font-display text-2xl font-bold tracking-tight text-center">${brand.name}</span>`;
+                      }}
+                    />
                   </div>
-                  <span className="mt-2 text-xs font-semibold text-accent">{brand.discount}</span>
+                  <span className="mt-2 text-sm font-bold text-foreground">{brand.name}</span>
+                  <span className="text-xs font-semibold text-accent">{brand.discount}</span>
                 </div>
               ))}
             </div>
@@ -542,8 +553,18 @@ const LandingPage = () => {
                 custom={i}
                 className="group rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/40 hover:shadow-[var(--shadow-glow)]"
               >
-                <div className={`mb-4 flex h-20 w-full items-center justify-center rounded-xl ${deal.bgColor}`}>
-                  <span className="text-white font-display text-xl font-bold tracking-tight">{deal.brand.split(" ")[0] === "MacBooks" ? "Apple" : deal.title.split(" ")[0]}</span>
+                <div className={`mb-4 flex h-20 w-full items-center justify-center rounded-xl ${deal.bgColor} p-4`}>
+                  <img
+                    src={deal.logo}
+                    alt={deal.title}
+                    className="max-h-[48px] max-w-[120px] w-auto h-auto object-contain"
+                    style={{ filter: "brightness(0) invert(1)" }}
+                    onError={(e) => {
+                      const el = e.target as HTMLImageElement;
+                      el.style.display = 'none';
+                      el.parentElement!.innerHTML = `<span class="text-white font-display text-xl font-bold">${deal.title.split(" ")[0]}</span>`;
+                    }}
+                  />
                 </div>
                 <h3 className="font-display text-lg font-semibold text-foreground">{deal.title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{deal.brand}</p>
