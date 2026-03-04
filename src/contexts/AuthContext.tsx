@@ -28,6 +28,7 @@ interface Profile {
   user_state: string | null;
   location_opt_in: boolean;
   use_campus_location: boolean;
+  is_founding_member: boolean;
 }
 
 interface AuthContextType {
