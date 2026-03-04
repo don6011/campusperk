@@ -27,6 +27,7 @@ import { citiesMatch, statesMatch } from "@/lib/state-codes";
 import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
 import { useDealClick } from "@/hooks/use-deal-click";
 import PushNotificationPrompt from "@/components/PushNotificationPrompt";
+import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 
 /* ── Animations ── */
 const fadeUp = {
