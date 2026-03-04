@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Button } from "@/components/ui/button";
 import { Check, X, Crown, ArrowLeft, Zap } from "lucide-react";
 import { Link } from "react-router-dom";

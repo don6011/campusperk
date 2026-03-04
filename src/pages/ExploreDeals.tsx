@@ -1,4 +1,5 @@
 import { useState, useMemo, useRef } from "react";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";

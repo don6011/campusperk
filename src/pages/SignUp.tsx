@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
