@@ -74,7 +74,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/go/:dealId" element={<OutboundRedirect />} />
-            <Route path="/deals/:dealId" element={<DealDetail />} />
+            <Route path="/deals/:dealId" element={<ProtectedRoute><DealDetail /></ProtectedRoute>} />
             <Route path="/partners/apply" element={<PartnerApply />} />
             <Route path="/partners/request" element={<PartnerRequest />} />
             <Route path="/partners" element={<PartnersPage />} />
