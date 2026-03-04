@@ -11,7 +11,7 @@ interface SurpriseDropCardProps {
     id: string;
     title: string;
     discount_value: string | null;
-    drop_time: string | null;
+    drop_time?: string | null;
     stores: { name: string; logo_url: string | null } | null;
   };
   isFoundingMember: boolean;
