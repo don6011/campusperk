@@ -371,14 +371,14 @@ function DealStreakWidget() {
    TRENDING STUDENT BRANDS — Rakuten-style
    ═══════════════════════════════════════════ */
 const popularBrands = [
-  { name: "Nike", slug: "nike", logo: "/logos/nike.png", bg: "#000000", discount: "15% Off" },
-  { name: "Apple", slug: "apple", logo: "/logos/apple.png", bg: "#000000", discount: "Up to 20% Off" },
-  { name: "Spotify", slug: "spotify", logo: "/logos/spotify.png", bg: "#1DB954", discount: "50% Off" },
-  { name: "Amazon", slug: "amazon", logo: "/logos/amazon.png", bg: "#232F3E", discount: "Free Trial" },
-  { name: "Samsung", slug: "samsung", logo: "/logos/samsung.png", bg: "#1428A0", discount: "30% Off" },
-  { name: "Best Buy", slug: "best-buy", logo: "/logos/bestbuy.png", bg: "#0046BE", discount: "Student Deals" },
-  { name: "Adidas", slug: "adidas", logo: "/logos/adidas.png", bg: "#000000", discount: "30% Off" },
-  { name: "DoorDash", slug: "doordash", logo: "/logos/doordash.png", bg: "#FF3008", discount: "50% Off" },
+  { name: "Nike", slug: "nike", logo: "/logos/nike-wordmark.svg", bg: "#000000", discount: "15% Off" },
+  { name: "Apple", slug: "apple", logo: "/logos/apple-wordmark.svg", bg: "#000000", discount: "Up to 20% Off" },
+  { name: "Spotify", slug: "spotify", logo: "/logos/spotify-wordmark.svg", bg: "#1DB954", discount: "50% Off" },
+  { name: "Amazon", slug: "amazon", logo: "/logos/amazon-wordmark.svg", bg: "#232F3E", discount: "Free Trial" },
+  { name: "Samsung", slug: "samsung", logo: "/logos/samsung-wordmark.svg", bg: "#1428A0", discount: "30% Off" },
+  { name: "Best Buy", slug: "best-buy", logo: "/logos/bestbuy-wordmark.svg", bg: "#0046BE", discount: "Student Deals" },
+  { name: "Adidas", slug: "adidas", logo: "/logos/adidas-wordmark.svg", bg: "#000000", discount: "30% Off" },
+  { name: "DoorDash", slug: "doordash", logo: "/logos/doordash-wordmark.svg", bg: "#FF3008", discount: "50% Off" },
 ];
 
 function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; logo_url: string | null; dealCount: number }> }) {
@@ -400,7 +400,7 @@ function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; 
                     className="w-[160px] sm:w-[180px] h-[110px] rounded-2xl flex items-center justify-center p-4 transition-all duration-150 hover:shadow-xl hover:scale-105"
                     style={{ backgroundColor: brand.bg }}
                   >
-                    <span className="text-white font-display text-2xl font-bold tracking-tight text-center leading-tight">{brand.name}</span>
+                    <img src={brand.logo} alt={brand.name} className="h-10 w-auto max-w-[130px] object-contain" />
                   </div>
                   <span className="text-xs font-semibold text-accent">{brand.discount}</span>
                   {storeData && storeData.dealCount > 0 && (
@@ -510,12 +510,12 @@ function TrendingDealCard({ deal, index, favIds, onToggleFav, isPremiumUser, use
    STUDENT ESSENTIALS SECTION
    ═══════════════════════════════════════════ */
 const studentEssentials = [
-  { name: "Spotify Student", brand: "Spotify", logo: "/logos/spotify.png", bg: "#1DB954", desc: "Premium for $5.99/mo", value: "$5.99/mo" },
-  { name: "Amazon Prime Student", brand: "Amazon", logo: "/logos/amazon.png", bg: "#232F3E", desc: "6-month free trial + 50% off", value: "50% Off" },
-  { name: "Adobe Creative Cloud", brand: "Adobe", logo: "/logos/adobe.png", bg: "#FF0000", desc: "All apps at 60% off", value: "60% Off" },
-  { name: "Apple Education", brand: "Apple", logo: "/logos/apple.png", bg: "#000000", desc: "Save up to $300 on Mac", value: "Save $300" },
-  { name: "GitHub Student Pack", brand: "GitHub", logo: "/logos/github.png", bg: "#24292E", desc: "Free Pro + $200 in tools", value: "FREE" },
-  { name: "Notion Student", brand: "Notion", logo: "/logos/notion.png", bg: "#000000", desc: "Free Plus plan for students", value: "FREE" },
+  { name: "Spotify Student", brand: "Spotify", logo: "/logos/spotify-wordmark.svg", bg: "#1DB954", desc: "Premium for $5.99/mo", value: "$5.99/mo" },
+  { name: "Amazon Prime Student", brand: "Amazon", logo: "/logos/amazon-wordmark.svg", bg: "#232F3E", desc: "6-month free trial + 50% off", value: "50% Off" },
+  { name: "Adobe Creative Cloud", brand: "Adobe", logo: "/logos/adobe-wordmark.svg", bg: "#FF0000", desc: "All apps at 60% off", value: "60% Off" },
+  { name: "Apple Education", brand: "Apple", logo: "/logos/apple-wordmark.svg", bg: "#000000", desc: "Save up to $300 on Mac", value: "Save $300" },
+  { name: "GitHub Student Pack", brand: "GitHub", logo: "/logos/github-wordmark.svg", bg: "#24292E", desc: "Free Pro + $200 in tools", value: "FREE" },
+  { name: "Notion Student", brand: "Notion", logo: "/logos/notion-wordmark.svg", bg: "#000000", desc: "Free Plus plan for students", value: "FREE" },
 ];
 
 function StudentEssentialsSection({ deals }: { deals: DealRow[] }) {
@@ -534,7 +534,7 @@ function StudentEssentialsSection({ deals }: { deals: DealRow[] }) {
                       className="h-16 w-full rounded-xl flex items-center justify-center p-3"
                       style={{ backgroundColor: item.bg }}
                     >
-                      <span className="text-white font-display text-lg font-bold tracking-tight text-center">{item.brand}</span>
+                      <img src={item.logo} alt={item.brand} className="h-8 w-auto max-w-[100px] object-contain" />
                     </div>
                     <div>
                       <div className="font-display text-sm font-bold text-foreground">{item.name}</div>
