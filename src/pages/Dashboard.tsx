@@ -262,21 +262,22 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId, onGetDeal }: {
 /* ═══════════════════════════════════════════
    2. LIVE ACTIVITY TICKER
    ═══════════════════════════════════════════ */
-function ActivityTicker({ deals }: { deals: DealRow[] }) {
+function ActivityTicker({ deals, campusName }: { deals: DealRow[]; campusName?: string | null }) {
+  const campus = campusName || "campus";
   const messages = useMemo(() => {
     const msgs: string[] = [];
     deals.slice(0, 12).forEach((d) => {
       const store = d.stores?.name || "a brand";
       const hash = d.id.charCodeAt(1) * 7 + d.id.charCodeAt(3) * 13;
       const count = (hash % 35) + 5;
-      msgs.push(`🔥 ${count} students claimed the ${store} deal today`);
+      msgs.push(`🔥 ${count} students at ${campus} claimed the ${store} deal`);
     });
     if (msgs.length < 4) {
-      msgs.push("🔥 GitHub Student Pack claimed 41 times this week");
-      msgs.push("🔥 Spotify Student trending at 12 campuses");
+      msgs.push(`🔥 GitHub Student Pack claimed 41 times at ${campus}`);
+      msgs.push(`🔥 Spotify Student trending at ${campus}`);
     }
     return msgs;
-  }, [deals]);
+  }, [deals, campus]);
 
   const [idx, setIdx] = useState(0);
 
