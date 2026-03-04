@@ -597,6 +597,45 @@ export type Database = {
           },
         ]
       }
+      deal_clicks: {
+        Row: {
+          campus_id: string | null
+          clicked_at: string
+          deal_id: string
+          id: string
+          user_id: string | null
+        }
+        Insert: {
+          campus_id?: string | null
+          clicked_at?: string
+          deal_id: string
+          id?: string
+          user_id?: string | null
+        }
+        Update: {
+          campus_id?: string | null
+          clicked_at?: string
+          deal_id?: string
+          id?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deal_clicks_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campus_domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "deal_clicks_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deal_redemptions: {
         Row: {
           campus_id: string
