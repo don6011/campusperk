@@ -1565,6 +1565,33 @@ export type Database = {
         }
         Relationships: []
       }
+      waitlist: {
+        Row: {
+          campus_name: string | null
+          created_at: string
+          email: string
+          id: string
+          position: number | null
+          referral_source: string | null
+        }
+        Insert: {
+          campus_name?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          position?: number | null
+          referral_source?: string | null
+        }
+        Update: {
+          campus_name?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          position?: number | null
+          referral_source?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -1607,6 +1634,7 @@ export type Database = {
         Args: { p_campus_name?: string; p_domain_root: string }
         Returns: string
       }
+      get_waitlist_position: { Args: { p_email: string }; Returns: number }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
