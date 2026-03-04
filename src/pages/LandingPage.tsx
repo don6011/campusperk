@@ -202,7 +202,7 @@ const LandingPage = () => {
             <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Reviews</a>
           </div>
           <div className="flex items-center gap-3">
-            <Link to="/partner-apply">
+            <Link to="/partners/apply">
               <Button variant="outline" size="sm" className="border-primary/40 text-primary hover:bg-primary/10 hidden sm:inline-flex">
                 For Partners
               </Button>
