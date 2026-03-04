@@ -34,6 +34,25 @@ const perks = [
 ];
 
 export default function AmbassadorApply() {
+  const navigate = useNavigate();
+
+  // Redirect authenticated ambassadors to their dashboard
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!session?.user) return;
+      supabase
+        .from("ambassadors")
+        .select("id")
+        .eq("user_id", session.user.id)
+        .eq("status", "active")
+        .limit(1)
+        .then(({ data }) => {
+          if (data && data.length > 0) {
+            navigate("/ambassador/dashboard", { replace: true });
+          }
+        });
+    });
+  }, [navigate]);
   const [form, setForm] = useState({
     name: "",
     email: "",
