@@ -41,12 +41,14 @@ import Alerts from "./pages/Alerts";
 import AmbassadorDashboard from "./pages/AmbassadorDashboard";
 import CampusLeaderboard from "./pages/CampusLeaderboard";
 import Splash from "./pages/Splash";
+import WaitlistPage from "./pages/WaitlistPage";
+import PartnersPage from "./pages/PartnersPage";
 
-// Redirect /join?ref=CODE to /sign-up?ref=CODE
+// Redirect /join?ref=CODE to waitlist
 function JoinRedirect() {
   const [params] = useSearchParams();
   const ref = params.get("ref") || "";
-  return <Navigate to={`/sign-up${ref ? `?ref=${ref}` : ""}`} replace />;
+  return <Navigate to={`/waitlist${ref ? `?ref=${ref}` : ""}`} replace />;
 }
 
 const queryClient = new QueryClient();
@@ -71,6 +73,8 @@ const App = () => (
             <Route path="/deals/:dealId" element={<DealDetail />} />
             <Route path="/partners/apply" element={<PartnerApply />} />
             <Route path="/partners/request" element={<PartnerRequest />} />
+            <Route path="/partners" element={<PartnersPage />} />
+            <Route path="/waitlist" element={<WaitlistPage />} />
             <Route path="/ambassador" element={<AmbassadorApply />} />
 
             {/* Protected routes */}
