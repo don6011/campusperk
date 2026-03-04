@@ -42,20 +42,20 @@ const fadeUp = {
 };
 
 const BRAND_LOGOS = [
-  { name: "Apple", logo: "/logos/apple.png", bg: "#000000", discount: "Up to 20% Off" },
-  { name: "Spotify", logo: "/logos/spotify.png", bg: "#1DB954", discount: "50% Off Premium" },
-  { name: "Amazon", logo: "/logos/amazon.png", bg: "#232F3E", discount: "Free Prime Trial" },
-  { name: "Adobe", logo: "/logos/adobe.png", bg: "#FF0000", discount: "60% Off Creative Cloud" },
-  { name: "Nike", logo: "/logos/nike.png", bg: "#000000", discount: "15% Student Discount" },
-  { name: "Samsung", logo: "/logos/samsung.png", bg: "#1428A0", discount: "Up to 30% Off" },
-  { name: "Best Buy", logo: "/logos/bestbuy.png", bg: "#0046BE", discount: "Student Deals" },
-  { name: "DoorDash", logo: "/logos/doordash.png", bg: "#FF3008", discount: "50% Off DashPass" },
-  { name: "Notion", logo: "/logos/notion.png", bg: "#000000", discount: "Free Plus Plan" },
-  { name: "GitHub", logo: "/logos/github.png", bg: "#24292E", discount: "Free Pro Access" },
-  { name: "Coursera", logo: "/logos/coursera.png", bg: "#0056D2", discount: "Free Courses" },
-  { name: "Headspace", logo: "/logos/headspace.png", bg: "#F47D31", discount: "85% Off" },
-  { name: "Adidas", logo: "/logos/adidas.png", bg: "#000000", discount: "30% Off" },
-  { name: "North Face", logo: "/logos/northface.png", bg: "#000000", discount: "10% Student Discount" },
+  { name: "Apple", logo: "/logos/apple-wordmark.svg", bg: "#000000", discount: "Up to 20% Off" },
+  { name: "Spotify", logo: "/logos/spotify-wordmark.svg", bg: "#1DB954", discount: "50% Off Premium" },
+  { name: "Amazon", logo: "/logos/amazon-wordmark.svg", bg: "#232F3E", discount: "Free Prime Trial" },
+  { name: "Adobe", logo: "/logos/adobe-wordmark.svg", bg: "#FF0000", discount: "60% Off Creative Cloud" },
+  { name: "Nike", logo: "/logos/nike-wordmark.svg", bg: "#000000", discount: "15% Student Discount" },
+  { name: "Samsung", logo: "/logos/samsung-wordmark.svg", bg: "#1428A0", discount: "Up to 30% Off" },
+  { name: "Best Buy", logo: "/logos/bestbuy-wordmark.svg", bg: "#0046BE", discount: "Student Deals" },
+  { name: "DoorDash", logo: "/logos/doordash-wordmark.svg", bg: "#FF3008", discount: "50% Off DashPass" },
+  { name: "Notion", logo: "/logos/notion-wordmark.svg", bg: "#000000", discount: "Free Plus Plan" },
+  { name: "GitHub", logo: "/logos/github-wordmark.svg", bg: "#24292E", discount: "Free Pro Access" },
+  { name: "Coursera", logo: "/logos/coursera-wordmark.svg", bg: "#0056D2", discount: "Free Courses" },
+  { name: "Headspace", logo: "/logos/headspace-wordmark.svg", bg: "#F47D31", discount: "85% Off" },
+  { name: "Adidas", logo: "/logos/adidas-wordmark.svg", bg: "#000000", discount: "30% Off" },
+  { name: "North Face", logo: "/logos/northface-wordmark.svg", bg: "#000000", discount: "10% Student Discount" },
 ];
 
 const categories = [
@@ -111,11 +111,11 @@ const testimonials = [
 ];
 
 const exampleDeals = [
-  { logo: "/logos/apple.png", title: "Apple Education", brand: "MacBooks, iPads & more", discount: "Free $150 Gift Card", bgColor: "bg-[#000000]" },
-  { logo: "/logos/spotify.png", title: "Spotify Student", brand: "Music & podcasts", discount: "50% off Premium", bgColor: "bg-[#1DB954]" },
-  { logo: "/logos/adobe.png", title: "Adobe Creative Cloud", brand: "Design & creative tools", discount: "60% off", bgColor: "bg-[#FF0000]" },
-  { logo: "/logos/nike.png", title: "Nike Student", brand: "Shoes, apparel & gear", discount: "10% off Sitewide", bgColor: "bg-[#000000]" },
-  { logo: "/logos/amazon.png", title: "Amazon Prime Student", brand: "Free delivery & streaming", discount: "6 Months Free", bgColor: "bg-[#232F3E]" },
+  { logo: "/logos/apple-wordmark.svg", title: "Apple Education", brand: "MacBooks, iPads & more", discount: "Free $150 Gift Card", bgColor: "bg-[#000000]" },
+  { logo: "/logos/spotify-wordmark.svg", title: "Spotify Student", brand: "Music & podcasts", discount: "50% off Premium", bgColor: "bg-[#1DB954]" },
+  { logo: "/logos/adobe-wordmark.svg", title: "Adobe Creative Cloud", brand: "Design & creative tools", discount: "60% off", bgColor: "bg-[#FF0000]" },
+  { logo: "/logos/nike-wordmark.svg", title: "Nike Student", brand: "Shoes, apparel & gear", discount: "10% off Sitewide", bgColor: "bg-[#000000]" },
+  { logo: "/logos/amazon-wordmark.svg", title: "Amazon Prime Student", brand: "Free delivery & streaming", discount: "6 Months Free", bgColor: "bg-[#232F3E]" },
 ];
 
 /* Animated counter hook */
@@ -417,7 +417,7 @@ const LandingPage = () => {
                     className="flex items-center justify-center rounded-2xl w-[200px] h-[120px] transition-shadow duration-300 group-hover/brand:shadow-xl overflow-hidden px-5"
                     style={{ backgroundColor: brand.bg }}
                   >
-                    <span className="text-white font-display text-2xl font-bold tracking-tight text-center leading-tight">{brand.name}</span>
+                    <img src={brand.logo} alt={brand.name} className="h-12 w-auto max-w-[150px] object-contain" />
                   </div>
                   <span className="mt-2 text-sm font-bold text-foreground">{brand.name}</span>
                   <span className="text-xs font-semibold text-accent">{brand.discount}</span>
@@ -544,7 +544,7 @@ const LandingPage = () => {
                 className="group rounded-2xl border border-border bg-card p-6 transition-all duration-300 hover:border-primary/40 hover:shadow-[var(--shadow-glow)]"
               >
                 <div className={`mb-4 flex h-20 w-full items-center justify-center rounded-xl ${deal.bgColor} px-4`}>
-                  <span className="text-white font-display text-xl font-bold tracking-tight text-center">{deal.title.split(" ")[0]}</span>
+                  <img src={deal.logo} alt={deal.title} className="h-10 w-auto max-w-[120px] object-contain" />
                 </div>
                 <h3 className="font-display text-lg font-semibold text-foreground">{deal.title}</h3>
                 <p className="mt-1 text-sm text-muted-foreground">{deal.brand}</p>
