@@ -14,3 +14,12 @@ verify_jwt = false
 
 [functions.notify-ranking-changes]
 verify_jwt = false
+
+[functions.send-push]
+verify_jwt = false
+
+[functions.notify-streak-reminder]
+verify_jwt = false
+
+[functions.notify-expiring-deals]
+verify_jwt = false
