@@ -1,4 +1,5 @@
 import { motion } from "framer-motion";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Button } from "@/components/ui/button";
 import { Check, X, Crown, ArrowLeft, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
@@ -26,6 +27,7 @@ const comparisonRows = [
 ];
 
 const Pricing = () => {
+  usePageTitle("Pricing");
   const { isLoggedIn } = useAuth();
   const backTo = isLoggedIn ? "/dashboard" : "/";
 

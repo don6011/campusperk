@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -27,6 +28,7 @@ const fadeUp = {
 type EduStatus = "idle" | "valid" | "invalid";
 
 export default function SignUp() {
+  usePageTitle("Sign Up");
   const [searchParams] = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

@@ -28,6 +28,7 @@ import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-uti
 import { useDealClick } from "@/hooks/use-deal-click";
 import PushNotificationPrompt from "@/components/PushNotificationPrompt";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { NextDropWidget } from "@/components/dashboard/NextDropWidget";
 import { SurpriseDropCard } from "@/components/dashboard/SurpriseDropCard";
 import { isDealDropVisible } from "@/lib/deal-drops";
@@ -700,6 +701,7 @@ function SectionSkeleton() {
    MAIN DASHBOARD
    ═══════════════════════════════════════════ */
 export default function Dashboard() {
+  usePageTitle("Dashboard");
   const { profile, user, isPremium, isFoundingMember } = useAuth();
   const { campusName } = useCampusTheme();
   const navigate = useNavigate();
