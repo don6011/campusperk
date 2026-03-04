@@ -905,7 +905,7 @@ export default function Dashboard() {
         ) : null}
 
         {/* LIVE ACTIVITY TICKER */}
-        {!dealsLoading && deals.length > 0 && <ActivityTicker deals={deals} />}
+        {!dealsLoading && deals.length > 0 && <ActivityTicker deals={deals} campusName={campusName} />}
 
         {/* TRENDING STUDENT BRANDS */}
         <PopularBrandsSection stores={storeMap} />
