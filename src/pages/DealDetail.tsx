@@ -89,7 +89,7 @@ export default function DealDetail() {
   }
 
   const isPremiumDeal = deal.visibility === "premium";
-  const isGated = isPremiumDeal && !userIsPremium;
+  const isGated = isPremiumDeal && !userIsPremium && !isFoundingMember;
   const isExpiring = deal.expiresAt && new Date(deal.expiresAt) > new Date();
   const daysLeft = deal.expiresAt
     ? Math.ceil((new Date(deal.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
