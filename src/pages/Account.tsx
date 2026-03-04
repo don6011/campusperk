@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   GraduationCap, BookOpen, Briefcase, Users, ShieldCheck, ShieldX,
   Clock, Upload, FileText, AlertTriangle, CheckCircle2, Loader2, Info,
-  TrendingUp, MapPin, Tag, ShoppingBag, DollarSign, Heart, Sparkles,
+  TrendingUp, MapPin, Tag, ShoppingBag, DollarSign, Heart, Sparkles, Bell, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -271,6 +271,24 @@ export default function Account() {
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
           <h1 className="font-display text-2xl font-bold text-foreground">Account Settings</h1>
           <p className="text-sm text-muted-foreground mt-1">Manage your campus verification and profile.</p>
+        </motion.div>
+
+        {/* Quick Links */}
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0.5}>
+          <Card className="border-border bg-card">
+            <CardContent className="py-3">
+              <a href="/notification-settings" className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/40 transition-colors">
+                <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Bell className="h-4 w-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">Notification Settings</p>
+                  <p className="text-xs text-muted-foreground">Manage push notifications, quiet hours & alert preferences</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              </a>
+            </CardContent>
+          </Card>
         </motion.div>
 
         {/* Profile Summary */}
