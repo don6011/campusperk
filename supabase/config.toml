@@ -23,3 +23,9 @@ verify_jwt = false
 
 [functions.notify-expiring-deals]
 verify_jwt = false
+
+[functions.notify-trending-deals]
+verify_jwt = false
+
+[functions.notify-deal-alerts]
+verify_jwt = false
