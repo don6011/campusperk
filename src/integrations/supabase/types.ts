@@ -489,6 +489,39 @@ export type Database = {
           },
         ]
       }
+      campuses: {
+        Row: {
+          city: string | null
+          country: string
+          created_at: string
+          domain: string | null
+          id: string
+          name: string
+          state: string | null
+          status: string
+        }
+        Insert: {
+          city?: string | null
+          country?: string
+          created_at?: string
+          domain?: string | null
+          id?: string
+          name: string
+          state?: string | null
+          status?: string
+        }
+        Update: {
+          city?: string | null
+          country?: string
+          created_at?: string
+          domain?: string | null
+          id?: string
+          name?: string
+          state?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       categories: {
         Row: {
           created_at: string
@@ -1601,10 +1634,13 @@ export type Database = {
       waitlist_signups: {
         Row: {
           campus: string
+          campus_id: string | null
           campus_slug: string
+          campus_text: string | null
           created_at: string
           email: string
           email_normalized: string
+          email_type: string
           id: string
           referral_code: string
           referred_by: string | null
@@ -1613,10 +1649,13 @@ export type Database = {
         }
         Insert: {
           campus: string
+          campus_id?: string | null
           campus_slug: string
+          campus_text?: string | null
           created_at?: string
           email: string
           email_normalized: string
+          email_type?: string
           id?: string
           referral_code: string
           referred_by?: string | null
@@ -1625,17 +1664,28 @@ export type Database = {
         }
         Update: {
           campus?: string
+          campus_id?: string | null
           campus_slug?: string
+          campus_text?: string | null
           created_at?: string
           email?: string
           email_normalized?: string
+          email_type?: string
           id?: string
           referral_code?: string
           referred_by?: string | null
           role?: string
           source?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "waitlist_signups_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campuses"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
