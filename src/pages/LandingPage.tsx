@@ -30,6 +30,10 @@ import {
   Trophy,
   Crown,
   Medal,
+  Sparkles,
+  Bell,
+  Award,
+  Rocket,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -178,10 +182,24 @@ const LandingPage = () => {
             <img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto" />
           </Link>
           <div className="hidden md:flex items-center gap-8">
-            <a href="#how-it-works" className="text-sm text-muted-foreground hover:text-foreground transition-colors">How It Works</a>
-            <a href="#deals" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Deals</a>
-            <a href="#categories" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Categories</a>
-            <a href="#testimonials" className="text-sm text-muted-foreground hover:text-foreground transition-colors">Reviews</a>
+            {[
+              { href: "#how-it-works", label: "How It Works" },
+              { href: "#deals", label: "Deals" },
+              { href: "#categories", label: "Categories" },
+              { href: "#testimonials", label: "Reviews" },
+            ].map((link) => (
+              <a
+                key={link.href}
+                href={link.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  document.querySelector(link.href)?.scrollIntoView({ behavior: "smooth" });
+                }}
+                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {link.label}
+              </a>
+            ))}
           </div>
           <div className="flex items-center gap-3">
             <Link to="/partners/apply">
@@ -363,6 +381,69 @@ const LandingPage = () => {
               </div>
             </motion.div>
           </div>
+        </div>
+      </section>
+
+      {/* ─── EARLY ACCESS BENEFITS ─── */}
+      <section className="py-20 md:py-28 border-t border-border/30">
+        <div className="container mx-auto px-4">
+          <motion.div
+            className="text-center mb-14"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-100px" }}
+          >
+            <motion.h2 variants={fadeUp} custom={0} className="font-display text-3xl font-bold md:text-5xl">
+              Join the First Students on{" "}
+              <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">CampusPerk</span>
+            </motion.h2>
+            <motion.p variants={fadeUp} custom={1} className="mx-auto mt-4 max-w-xl text-muted-foreground">
+              Get early access before the app launches nationwide.
+            </motion.p>
+          </motion.div>
+
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto">
+            {[
+              { icon: Rocket, title: "Early Deal Access", desc: "Be the first to see new student deals before everyone else." },
+              { icon: Sparkles, title: "Campus Deal Drops", desc: "Unlock exclusive deals that appear only for early users." },
+              { icon: Bell, title: "Smart Deal Alerts", desc: "Get notified when the best student discounts appear." },
+              { icon: Award, title: "Founding Member Badge", desc: "Early users receive a special profile badge inside the app." },
+            ].map((card, i) => (
+              <motion.div
+                key={card.title}
+                initial="hidden"
+                whileInView="visible"
+                viewport={{ once: true, margin: "-30px" }}
+                variants={fadeUp}
+                custom={i}
+                className="group rounded-2xl border border-border bg-card p-6 text-center transition-all duration-300 hover:border-primary/40 hover:shadow-[var(--shadow-glow)] hover:-translate-y-1"
+              >
+                <div className="mx-auto mb-4 w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary transition-colors group-hover:bg-primary/20">
+                  <card.icon className="h-6 w-6" />
+                </div>
+                <h3 className="font-display text-lg font-semibold text-foreground mb-2">{card.title}</h3>
+                <p className="text-sm text-muted-foreground leading-relaxed">{card.desc}</p>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div
+            className="mt-10 text-center"
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true }}
+            variants={fadeUp}
+            custom={4}
+          >
+            <p className="text-sm font-medium text-[hsl(var(--gold))] mb-4">
+              ✦ First 1,000 students receive Founding Member status.
+            </p>
+            <Link to="/sign-up">
+              <Button size="lg" className="bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-8 h-12 text-base gap-2 shadow-[0_0_30px_-5px_hsl(var(--accent)/0.4)] hover:shadow-[0_0_40px_-5px_hsl(var(--accent)/0.6)] transition-shadow">
+                Join Early Access <ArrowRight className="h-4 w-4" />
+              </Button>
+            </Link>
+          </motion.div>
         </div>
       </section>
 
