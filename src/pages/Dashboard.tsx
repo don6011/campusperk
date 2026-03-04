@@ -152,13 +152,14 @@ function ScrollRow({ children, className = "" }: { children: React.ReactNode; cl
 }
 
 /* ── Social proof generator ── */
-function socialProof(deal: DealRow): { text: string; icon: typeof Flame } {
+function socialProof(deal: DealRow, campusName?: string | null): { text: string; icon: typeof Flame } {
   const hash = deal.id.charCodeAt(1) * 7 + deal.id.charCodeAt(3) * 13;
   const count = (hash % 120) + 18;
+  const campus = campusName || "campus";
   if (deal.expires_at && daysUntil(deal.expires_at) <= 3) return { text: `⏳ Ends Soon`, icon: Timer };
-  if (deal.featured) return { text: `🔥 ${count} students claimed today`, icon: Flame };
-  if (deal.sponsored) return { text: `⚡ Trending on campus`, icon: Zap };
-  return { text: `🔥 ${count} students claimed today`, icon: Flame };
+  if (deal.featured) return { text: `🔥 ${count} students at ${campus} grabbed this`, icon: Flame };
+  if (deal.sponsored) return { text: `⚡ Trending at ${campus}`, icon: Zap };
+  return { text: `🔥 ${count} students grabbed this today`, icon: Flame };
 }
 
 /* ── Format discount value with % ── */
