@@ -190,6 +190,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         campusRole: (profile?.campus_role as CampusRole | null) ?? null,
         campusRoleStatus: (profile?.campus_role_status as CampusRoleStatus) ?? "unselected",
         isPremium: profile?.premium_status ?? false,
+        isFoundingMember: profile?.is_founding_member ?? false,
         isLoading,
         signUp,
         signIn,
