@@ -701,6 +701,7 @@ function SectionSkeleton() {
    MAIN DASHBOARD
    ═══════════════════════════════════════════ */
 export default function Dashboard() {
+  usePageTitle("Dashboard");
   const { profile, user, isPremium, isFoundingMember } = useAuth();
   const { campusName } = useCampusTheme();
   const navigate = useNavigate();

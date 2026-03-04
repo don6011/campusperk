@@ -92,6 +92,7 @@ const fadeUp = {
 };
 
 export default function ExploreDeals() {
+  usePageTitle("Explore Deals");
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("newest");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);

@@ -28,6 +28,7 @@ const fadeUp = {
 type EduStatus = "idle" | "valid" | "invalid";
 
 export default function SignUp() {
+  usePageTitle("Sign Up");
   const [searchParams] = useSearchParams();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");

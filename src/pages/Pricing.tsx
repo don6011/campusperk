@@ -27,6 +27,7 @@ const comparisonRows = [
 ];
 
 const Pricing = () => {
+  usePageTitle("Pricing");
   const { isLoggedIn } = useAuth();
   const backTo = isLoggedIn ? "/dashboard" : "/";
 

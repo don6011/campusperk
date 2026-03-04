@@ -21,6 +21,7 @@ const fadeUp = {
 };
 
 export default function SignIn() {
+  usePageTitle("Sign In");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
