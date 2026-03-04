@@ -802,7 +802,7 @@ export default function Dashboard() {
     );
   }, [deals, isFoundingMember]);
 
-  const sharedProps = { favIds, onToggleFav: toggleFav, isPremiumUser: isPremium, userId: user?.id, onUpgrade: () => setUpgradeOpen(true), onGetDeal: handleGetDeal };
+  const sharedProps = { favIds, onToggleFav: toggleFav, isPremiumUser: isPremium, userId: user?.id, onUpgrade: () => setUpgradeOpen(true), onGetDeal: handleGetDeal, campusName };
 
   // Local deals
   const locationEnabled = profile?.location_opt_in ?? false;
