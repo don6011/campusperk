@@ -918,6 +918,78 @@ export type Database = {
           },
         ]
       }
+      notification_log: {
+        Row: {
+          body: string | null
+          id: string
+          sent_at: string | null
+          status: string | null
+          title: string | null
+          type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          body?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string | null
+          title?: string | null
+          type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          body?: string | null
+          id?: string
+          sent_at?: string | null
+          status?: string | null
+          title?: string | null
+          type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          deal_drops: boolean | null
+          ending_soon: boolean | null
+          frequency: string | null
+          local_deals: boolean | null
+          quiet_end: string | null
+          quiet_hours_enabled: boolean | null
+          quiet_start: string | null
+          savings_alerts: boolean | null
+          trending_deals: boolean | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          deal_drops?: boolean | null
+          ending_soon?: boolean | null
+          frequency?: string | null
+          local_deals?: boolean | null
+          quiet_end?: string | null
+          quiet_hours_enabled?: boolean | null
+          quiet_start?: string | null
+          savings_alerts?: boolean | null
+          trending_deals?: boolean | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          deal_drops?: boolean | null
+          ending_soon?: boolean | null
+          frequency?: string | null
+          local_deals?: boolean | null
+          quiet_end?: string | null
+          quiet_hours_enabled?: boolean | null
+          quiet_start?: string | null
+          savings_alerts?: boolean | null
+          trending_deals?: boolean | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string | null
@@ -1282,6 +1354,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      push_devices: {
+        Row: {
+          created_at: string | null
+          device_label: string | null
+          fcm_token: string
+          id: string
+          last_seen: string | null
+          platform: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          device_label?: string | null
+          fcm_token: string
+          id?: string
+          last_seen?: string | null
+          platform: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          device_label?: string | null
+          fcm_token?: string
+          id?: string
+          last_seen?: string | null
+          platform?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       push_subscriptions: {
         Row: {
