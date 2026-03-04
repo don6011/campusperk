@@ -327,6 +327,8 @@ export type Database = {
           is_blocked: boolean
           latitude: number | null
           longitude: number | null
+          primary_color: string | null
+          secondary_color: string | null
           state: string | null
           state_code: string | null
           updated_at: string
@@ -343,6 +345,8 @@ export type Database = {
           is_blocked?: boolean
           latitude?: number | null
           longitude?: number | null
+          primary_color?: string | null
+          secondary_color?: string | null
           state?: string | null
           state_code?: string | null
           updated_at?: string
@@ -359,6 +363,8 @@ export type Database = {
           is_blocked?: boolean
           latitude?: number | null
           longitude?: number | null
+          primary_color?: string | null
+          secondary_color?: string | null
           state?: string | null
           state_code?: string | null
           updated_at?: string
