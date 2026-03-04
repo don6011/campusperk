@@ -168,6 +168,9 @@ export default function Alerts() {
           <p className="text-sm text-muted-foreground mt-1">
             Get notified when new deals drop in your favorite categories.
           </p>
+          <a href="/notification-settings" className="inline-flex items-center gap-1.5 mt-2 text-xs text-primary hover:underline font-medium">
+            <Settings className="h-3.5 w-3.5" /> Notification Settings
+          </a>
         </motion.div>
 
         {/* Notification Preferences */}

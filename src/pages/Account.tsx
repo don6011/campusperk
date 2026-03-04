@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import {
   GraduationCap, BookOpen, Briefcase, Users, ShieldCheck, ShieldX,
   Clock, Upload, FileText, AlertTriangle, CheckCircle2, Loader2, Info,
-  TrendingUp, MapPin, Tag, ShoppingBag, DollarSign, Heart, Sparkles,
+  TrendingUp, MapPin, Tag, ShoppingBag, DollarSign, Heart, Sparkles, Bell, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
