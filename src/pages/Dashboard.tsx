@@ -405,17 +405,18 @@ function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; 
 /* ═══════════════════════════════════════════
    DEAL CARD — Reusable with social proof
    ═══════════════════════════════════════════ */
-function DealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onUpgrade, onGetDeal, badgeLabel, badgeIcon: BadgeIcon = Flame, showProof = true }: {
+function DealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onUpgrade, onGetDeal, badgeLabel, badgeIcon: BadgeIcon = Flame, showProof = true, campusName }: {
   deal: DealRow; index: number;
   favIds: Set<string>; onToggleFav: (id: string) => void;
   isPremiumUser: boolean; userId?: string; onUpgrade: () => void;
   onGetDeal: (dealId: string) => void;
   badgeLabel?: string; badgeIcon?: any; showProof?: boolean;
+  campusName?: string | null;
 }) {
   const storeName = deal.stores?.name || "Unknown";
   const isFav = favIds.has(deal.id);
   const isGated = isDealPremium(deal) && !isPremiumUser;
-  const proof = socialProof(deal);
+  const proof = socialProof(deal, campusName);
 
   const getBadge = () => {
     if (deal.expires_at && daysUntil(deal.expires_at) <= 3) return { label: "Ending Soon", icon: Timer, color: "bg-destructive/10 text-destructive border-destructive/20" };
