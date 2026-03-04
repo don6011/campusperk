@@ -38,6 +38,7 @@ import AmbassadorsManager from "./pages/admin/AmbassadorsManager";
 import AffiliateSourcesManager from "./pages/admin/AffiliateSourcesManager";
 import DealImport from "./pages/admin/DealImport";
 import Alerts from "./pages/Alerts";
+import NotificationSettings from "./pages/NotificationSettings";
 import AmbassadorDashboard from "./pages/AmbassadorDashboard";
 import CampusLeaderboard from "./pages/CampusLeaderboard";
 import Splash from "./pages/Splash";
@@ -84,6 +85,7 @@ const App = () => (
             <Route path="/favorites" element={<ProtectedRoute><Favorites /></ProtectedRoute>} />
             <Route path="/submit" element={<ProtectedRoute><SubmitDeal /></ProtectedRoute>} />
             <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
+            <Route path="/notification-settings" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
             <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
             <Route path="/categories/:slug" element={<ProtectedRoute><CategoryDetail /></ProtectedRoute>} />
             <Route path="/settings" element={<ProtectedRoute><Account /></ProtectedRoute>} />
