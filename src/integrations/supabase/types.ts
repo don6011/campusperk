@@ -558,6 +558,27 @@ export type Database = {
         }
         Relationships: []
       }
+      daily_notification_counts: {
+        Row: {
+          count: number
+          id: string
+          notification_date: string
+          user_id: string
+        }
+        Insert: {
+          count?: number
+          id?: string
+          notification_date?: string
+          user_id: string
+        }
+        Update: {
+          count?: number
+          id?: string
+          notification_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       deal_claims: {
         Row: {
           campus_id: string | null
@@ -692,6 +713,8 @@ export type Database = {
           direct_link_url: string | null
           discount_type: Database["public"]["Enums"]["discount_type"]
           discount_value: string | null
+          drop_time: string | null
+          drop_window: string | null
           early_access: boolean
           eligible_campuses: string[] | null
           eligible_cities: string[] | null
@@ -702,6 +725,7 @@ export type Database = {
           geo_radius_miles: number | null
           id: string
           is_affiliate: boolean
+          is_surprise_drop: boolean
           last_checked_at: string | null
           partner_id: string | null
           partner_offer_id: string | null
@@ -733,6 +757,8 @@ export type Database = {
           direct_link_url?: string | null
           discount_type?: Database["public"]["Enums"]["discount_type"]
           discount_value?: string | null
+          drop_time?: string | null
+          drop_window?: string | null
           early_access?: boolean
           eligible_campuses?: string[] | null
           eligible_cities?: string[] | null
@@ -743,6 +769,7 @@ export type Database = {
           geo_radius_miles?: number | null
           id?: string
           is_affiliate?: boolean
+          is_surprise_drop?: boolean
           last_checked_at?: string | null
           partner_id?: string | null
           partner_offer_id?: string | null
@@ -774,6 +801,8 @@ export type Database = {
           direct_link_url?: string | null
           discount_type?: Database["public"]["Enums"]["discount_type"]
           discount_value?: string | null
+          drop_time?: string | null
+          drop_window?: string | null
           early_access?: boolean
           eligible_campuses?: string[] | null
           eligible_cities?: string[] | null
@@ -784,6 +813,7 @@ export type Database = {
           geo_radius_miles?: number | null
           id?: string
           is_affiliate?: boolean
+          is_surprise_drop?: boolean
           last_checked_at?: string | null
           partner_id?: string | null
           partner_offer_id?: string | null
