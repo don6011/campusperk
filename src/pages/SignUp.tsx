@@ -136,7 +136,7 @@ export default function SignUp() {
             <motion.img
               src={campusperkLogo}
               alt="CampusPerk"
-              className="h-14 w-auto mx-auto mb-8"
+              className="h-28 w-auto mx-auto mb-8"
               variants={fadeUp}
               custom={0}
             />
@@ -172,7 +172,7 @@ export default function SignUp() {
           <motion.div className="w-full max-w-md" initial="hidden" animate="visible">
             <motion.div variants={fadeUp} custom={0} className="lg:hidden flex justify-center mb-8">
               <Link to="/">
-                <img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto" />
+                <img src={campusperkLogo} alt="CampusPerk" className="h-24 w-auto" />
               </Link>
             </motion.div>
 
