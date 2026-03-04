@@ -400,20 +400,9 @@ function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; 
                     className="w-[160px] sm:w-[180px] h-[110px] rounded-2xl flex items-center justify-center p-4 transition-all duration-150 hover:shadow-xl hover:scale-105"
                     style={{ backgroundColor: brand.bg }}
                   >
-                    <img
-                      src={brand.logo}
-                      alt={brand.name}
-                      className="max-h-[60px] max-w-[120px] w-auto h-auto object-contain drop-shadow-lg"
-                      style={{ filter: "brightness(0) invert(1)" }}
-                      onError={(e) => {
-                        const el = e.target as HTMLImageElement;
-                        el.style.display = 'none';
-                        el.parentElement!.innerHTML = `<span class="text-white font-display text-xl font-bold">${brand.name}</span>`;
-                      }}
-                    />
+                    <span className="text-white font-display text-2xl font-bold tracking-tight text-center leading-tight">{brand.name}</span>
                   </div>
-                  <span className="text-sm font-bold text-foreground">{brand.name}</span>
-                  <span className="text-xs font-semibold text-accent -mt-1">{brand.discount}</span>
+                  <span className="text-xs font-semibold text-accent">{brand.discount}</span>
                   {storeData && storeData.dealCount > 0 && (
                     <span className="text-[10px] text-muted-foreground -mt-1">{storeData.dealCount} deal{storeData.dealCount > 1 ? "s" : ""}</span>
                   )}
@@ -545,17 +534,7 @@ function StudentEssentialsSection({ deals }: { deals: DealRow[] }) {
                       className="h-16 w-full rounded-xl flex items-center justify-center p-3"
                       style={{ backgroundColor: item.bg }}
                     >
-                      <img
-                        src={item.logo}
-                        alt={item.brand}
-                        className="max-h-[40px] max-w-[100px] w-auto h-auto object-contain"
-                        style={{ filter: "brightness(0) invert(1)" }}
-                        onError={(e) => {
-                          const el = e.target as HTMLImageElement;
-                          el.style.display = 'none';
-                          el.parentElement!.innerHTML = `<span class="text-white font-display text-lg font-bold">${item.brand}</span>`;
-                        }}
-                      />
+                      <span className="text-white font-display text-lg font-bold tracking-tight text-center">{item.brand}</span>
                     </div>
                     <div>
                       <div className="font-display text-sm font-bold text-foreground">{item.name}</div>
