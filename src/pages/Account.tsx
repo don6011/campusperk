@@ -321,6 +321,12 @@ export default function Account() {
                   <span className="text-sm font-medium capitalize">{campusRole}</span>
                 </div>
               )}
+              {profile?.is_founding_member && (
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Status</span>
+                  <FoundingMemberBadge />
+                </div>
+              )}
               {/* Verification Strength Score */}
               {profile?.verification_strength_score != null && profile.verification_strength_score > 0 && (
                 <div className="space-y-1.5 pt-1">
