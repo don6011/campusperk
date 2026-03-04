@@ -379,6 +379,10 @@ const popularBrands = [
   { name: "Best Buy", slug: "best-buy", logo: "/logos/bestbuy-wordmark.svg", bg: "#0046BE", discount: "Student Deals" },
   { name: "Adidas", slug: "adidas", logo: "/logos/adidas-wordmark.svg", bg: "#000000", discount: "30% Off" },
   { name: "DoorDash", slug: "doordash", logo: "/logos/doordash-wordmark.svg", bg: "#FF3008", discount: "50% Off" },
+  { name: "Uber Eats", slug: "uber-eats", logo: "/logos/ubereats-wordmark.svg", bg: "#06C167", discount: "$0 Delivery Fee" },
+  { name: "Chegg", slug: "chegg", logo: "/logos/chegg-wordmark.svg", bg: "#F27C38", discount: "Free Trial" },
+  { name: "ASOS", slug: "asos", logo: "/logos/asos-wordmark.svg", bg: "#2D2D2D", discount: "20% Off" },
+  { name: "Amtrak", slug: "amtrak", logo: "/logos/amtrak-wordmark.svg", bg: "#1A4B8C", discount: "15% Off" },
 ];
 
 function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; logo_url: string | null; dealCount: number }> }) {
