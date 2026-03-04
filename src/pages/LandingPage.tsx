@@ -69,10 +69,10 @@ const testimonials = [
 ];
 
 const trendingDeals = [
-  { logo: "/logos/spotify-wordmark.svg", title: "Spotify Student", savings: "$1.99/month", bgColor: "#1DB954" },
-  { logo: "/logos/apple-wordmark.svg", title: "Apple Education Discount", savings: "Save up to $200", bgColor: "#000000" },
-  { logo: "/logos/amazon-wordmark.svg", title: "Amazon Prime Student", savings: "6 months free", bgColor: "#232F3E" },
-  { logo: "/logos/adobe-wordmark.svg", title: "Adobe Creative Cloud", savings: "60% student discount", bgColor: "#FF0000" },
+  { logo: "/logos/nike-wordmark.svg", title: "Nike Student Discount", savings: "15% off everything", bgColor: "#000000" },
+  { logo: "/logos/notion-wordmark.svg", title: "Notion Plus Plan", savings: "Free for students", bgColor: "#000000" },
+  { logo: "/logos/doordash-wordmark.svg", title: "DoorDash DashPass", savings: "50% off membership", bgColor: "#FF3008" },
+  { logo: "/logos/github-wordmark.svg", title: "GitHub Student Pack", savings: "Free Pro + $200 credits", bgColor: "#24292E" },
 ];
 
 const leaderboardData = [
