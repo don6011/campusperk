@@ -27,6 +27,7 @@ function formatDiscount(val: string | null): string {
 }
 
 export function SurpriseDropCard({ deal, isFoundingMember, onGetDeal, claimCount }: SurpriseDropCardProps) {
+  const { campusName } = useCampusTheme();
   const [now, setNow] = useState(new Date());
   const earlyAccessMs = getEarlyAccessTimeRemaining(deal.drop_time, now);
   const isEarlyAccess = isFoundingMember && earlyAccessMs !== null && earlyAccessMs > 0;
