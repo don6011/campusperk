@@ -41,6 +41,7 @@ interface AuthContextType {
   campusRole: CampusRole | null;
   campusRoleStatus: CampusRoleStatus;
   isPremium: boolean;
+  isFoundingMember: boolean;
   isLoading: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
