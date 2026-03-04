@@ -914,7 +914,7 @@ export default function Dashboard() {
 
         {/* 🔥 TRENDING ON CAMPUS */}
         <motion.section initial="hidden" animate="visible" variants={stagger}>
-          <SectionHeader icon={Flame} title="Trending on Campus" linkTo="/explore" iconColor="text-destructive" subtitle="Most clicked deals by students right now" />
+          <SectionHeader icon={Flame} title={campusName ? `Trending at ${campusName}` : "Trending on Campus"} linkTo="/explore" iconColor="text-destructive" subtitle={campusName ? `Most clicked deals by ${campusName} students` : "Most clicked deals by students right now"} />
           {dealsLoading ? (
             <SectionSkeleton />
           ) : (
