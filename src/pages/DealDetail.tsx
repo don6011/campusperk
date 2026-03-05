@@ -32,6 +32,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { MissedDealAlert } from "@/components/MissedDealAlert";
+import { PremiumNudgeModal } from "@/components/PremiumNudgeModal";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { VerifiedStudentBadge } from "@/components/VerifiedStudentBadge";
 import { mockDeals } from "@/lib/mock-data";
