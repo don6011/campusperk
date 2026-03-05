@@ -82,7 +82,10 @@ const App = () => (
             <Route path="/partners/request" element={<PartnerRequest />} />
             <Route path="/partners" element={<PartnersPage />} />
             <Route path="/waitlist" element={<WaitlistPage />} />
-            <Route path="/ambassador" element={<AmbassadorApply />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<TermsOfService />} />
+            <Route path="/contact" element={<Contact />} />
+
 
             {/* Protected routes */}
             <Route path="/splash" element={<ProtectedRoute><Splash /></ProtectedRoute>} />
