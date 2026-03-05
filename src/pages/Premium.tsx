@@ -86,7 +86,7 @@ export default function Premium() {
     const fetchDeals = async () => {
       const [earlyRes, premRes] = await Promise.all([
         supabase.from("deals")
-          .select("id, title, discount_value, discount_type, early_access_minutes, stores(name, logo_url)")
+          .select("id, title, discount_value, discount_type, stores(name, logo_url)")
           .eq("early_access", true).eq("status", "active")
           .order("created_at", { ascending: false }).limit(4),
         supabase.from("deals")
