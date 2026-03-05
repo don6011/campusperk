@@ -97,6 +97,7 @@ const App = () => (
             <Route path="/campus-leaderboard" element={<ProtectedRoute><CampusLeaderboard /></ProtectedRoute>} />
 
             {/* Admin routes (role-gated) */}
+            <Route path="/admin" element={<Navigate to="/admin/deals" replace />} />
             <Route path="/admin/deals" element={<AdminRoute><DealsManager /></AdminRoute>} />
             <Route path="/admin/submissions" element={<AdminRoute><SubmissionsQueue /></AdminRoute>} />
             <Route path="/admin/scans" element={<AdminRoute><ScansPage /></AdminRoute>} />
