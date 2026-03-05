@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { ExternalLink, ArrowLeft, Loader2, Shield, AlertTriangle, Crown } from "lucide-react";
+import { ExternalLink, ArrowLeft, Loader2, AlertTriangle, Crown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -9,48 +9,46 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 
+interface DealRedirectData {
+  id: string;
+  title: string;
+  status: string;
+  visibility: string;
+  sponsored: boolean;
+  deal_scope: string;
+  affiliate_link_url?: string;
+  direct_link_url?: string;
+  store_name?: string;
+  store_logo?: string;
+  blocked_reason?: string;
+}
+
 const OutboundRedirect = () => {
   const { dealId } = useParams<{ dealId: string }>();
   const { user, profile } = useAuth();
-  const [deal, setDeal] = useState<any>(null);
+  const [deal, setDeal] = useState<DealRedirectData | null>(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(3);
   const [clickLogged, setClickLogged] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
-  const [blocked, setBlocked] = useState<string | null>(null);
 
-  // Fetch deal from Supabase
+  // Fetch deal via server-side RPC (masks URLs for non-premium users)
   useEffect(() => {
     if (!dealId) return;
     (async () => {
-      const { data, error } = await supabase
-        .from("deals")
-        .select("*, stores(name, logo_url)")
-        .eq("id", dealId)
-        .single();
-      if (error || !data) {
+      const { data, error } = await supabase.rpc("get_deal_redirect", {
+        p_deal_id: dealId,
+      });
+      if (error || !data || (data as any).error === "not_found") {
         setLoading(false);
         return;
       }
-      setDeal(data);
-
-      // Block expired deals
-      if (data.status === "expired") {
-        setBlocked("expired");
-        setLoading(false);
-        return;
-      }
-
-      // Block premium deals for free users
-      if (data.visibility === "premium" && !profile?.premium_status) {
-        setBlocked("premium_gated");
-        setLoading(false);
-        return;
-      }
-
+      setDeal(data as unknown as DealRedirectData);
       setLoading(false);
     })();
   }, [dealId]);
+
+  const blocked = deal?.blocked_reason || null;
 
   // Log blocked attempt
   useEffect(() => {
@@ -78,13 +76,11 @@ const OutboundRedirect = () => {
   useEffect(() => {
     if (!deal || clickLogged || blocked) return;
 
-    // Detect device type
     const ua = navigator.userAgent;
     let deviceType = "desktop";
     if (/Mobile|Android|iPhone/i.test(ua)) deviceType = "mobile";
     else if (/Tablet|iPad/i.test(ua)) deviceType = "tablet";
 
-    // Log click
     const refCode = localStorage.getItem("campusperk_ref") || null;
 
     (async () => {
@@ -96,14 +92,13 @@ const OutboundRedirect = () => {
         is_verified_student: profile?.student_verified || false,
         is_premium_user: profile?.premium_status || false,
         campus_id: profile?.campus_id || null,
-        scope: (deal as any).deal_scope || "national",
+        scope: deal.deal_scope || "national",
         referral_code: refCode,
         is_sponsored: deal.sponsored || false,
       } as any);
       setClickLogged(true);
     })();
 
-    // Countdown timer
     const timer = setInterval(() => {
       setCountdown((c) => {
         if (c <= 1) {
@@ -192,7 +187,7 @@ const OutboundRedirect = () => {
   }
 
   const redirectUrl = deal.affiliate_link_url || deal.direct_link_url;
-  const storeName = deal.stores?.name || "the store";
+  const storeName = deal.store_name || "the store";
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">

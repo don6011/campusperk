@@ -2037,6 +2037,7 @@ export type Database = {
         Args: { p_campus_name?: string; p_domain_root: string }
         Returns: string
       }
+      get_deal_redirect: { Args: { p_deal_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
