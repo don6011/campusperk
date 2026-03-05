@@ -70,6 +70,7 @@ export default function DealDetail() {
   const { toast } = useToast();
   const { isPremium: userIsPremium, isFoundingMember, user } = useAuth();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [nudgeOpen, setNudgeOpen] = useState(false);
   const [fav, setFav] = useState(false);
   const { recordRedemption } = useRecordRedemption();
   const claimDeal = useClaimDeal();
