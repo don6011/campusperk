@@ -319,6 +319,17 @@ export default function DealDetail() {
                 </ul>
               </div>
 
+              {/* CampusPerk Stack™ Calculator */}
+              {(userIsPremium || isFoundingMember) && (
+                <div className="my-6">
+                  <DealStackCalculator
+                    dealDiscount={deal.discountValue}
+                    dealDiscountType={deal.discountType}
+                    storeName={deal.storeName}
+                  />
+                </div>
+              )}
+
               <Separator className="my-6" />
 
               {/* Social proof */}
