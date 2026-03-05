@@ -46,6 +46,9 @@ import CampusLeaderboard from "./pages/CampusLeaderboard";
 import Splash from "./pages/Splash";
 import WaitlistPage from "./pages/WaitlistPage";
 import PartnersPage from "./pages/PartnersPage";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
+import Contact from "./pages/Contact";
 
 // Redirect /join?ref=CODE to waitlist
 function JoinRedirect() {
