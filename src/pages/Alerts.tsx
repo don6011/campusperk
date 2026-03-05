@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PremiumNudgeModal } from "@/components/PremiumNudgeModal";
 import { Bell, Plus, Trash2, Tag, Trophy, Smartphone, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
