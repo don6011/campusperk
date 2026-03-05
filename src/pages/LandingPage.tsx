@@ -12,6 +12,7 @@ import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 import WaitlistModal from "@/components/WaitlistModal";
+import LegalFooter from "@/components/LegalFooter";
 import PartnerInquiryModal from "@/components/PartnerInquiryModal";
 
 const fadeUp = {
@@ -591,6 +592,9 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
+
+      {/* ─── FOOTER ─── */}
+      <LegalFooter />
 
       {/* ─── FLOATING MOBILE CTA ─── */}
       <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
