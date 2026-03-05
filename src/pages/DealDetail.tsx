@@ -32,6 +32,8 @@ import { Separator } from "@/components/ui/separator";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { UpgradeModal } from "@/components/UpgradeModal";
+import { MissedDealAlert } from "@/components/MissedDealAlert";
+import { PremiumNudgeModal } from "@/components/PremiumNudgeModal";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { VerifiedStudentBadge } from "@/components/VerifiedStudentBadge";
 import { mockDeals } from "@/lib/mock-data";
@@ -68,6 +70,7 @@ export default function DealDetail() {
   const { toast } = useToast();
   const { isPremium: userIsPremium, isFoundingMember, user } = useAuth();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [nudgeOpen, setNudgeOpen] = useState(false);
   const [fav, setFav] = useState(false);
   const { recordRedemption } = useRecordRedemption();
   const claimDeal = useClaimDeal();
@@ -98,7 +101,7 @@ export default function DealDetail() {
 
   const handleGoToOffer = () => {
     if (isGated) {
-      setUpgradeOpen(true);
+      setNudgeOpen(true);
       logPaywallView(deal.id, "deal_detail", user?.id);
       return;
     }
@@ -440,7 +443,18 @@ export default function DealDetail() {
         </motion.div>
       </div>
 
+      {/* Missed deal alert for gated deals */}
+      {isGated && (
+        <div className="mt-6">
+          <MissedDealAlert
+            estimatedSavings={deal.discountValue ? parseInt(deal.discountValue.replace(/[^0-9]/g, '') || '40') : 40}
+            onUpgrade={() => setNudgeOpen(true)}
+          />
+        </div>
+      )}
+
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <PremiumNudgeModal open={nudgeOpen} onOpenChange={setNudgeOpen} reason="premium_deal" />
     </DashboardLayout>
   );
 }

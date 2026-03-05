@@ -33,6 +33,10 @@ import { NextDropWidget } from "@/components/dashboard/NextDropWidget";
 import { SurpriseDropCard } from "@/components/dashboard/SurpriseDropCard";
 import { isDealDropVisible } from "@/lib/deal-drops";
 import { useCampusTheme } from "@/contexts/CampusThemeContext";
+import { SavingsCounter } from "@/components/SavingsCounter";
+import { MissedDealFeedCard } from "@/components/MissedDealFeedCard";
+import { FoundingPremiumBanner } from "@/components/FoundingPremiumBanner";
+import { PremiumNudgeModal } from "@/components/PremiumNudgeModal";
 
 /* ── Animations ── */
 const fadeUp = {
@@ -706,6 +710,8 @@ export default function Dashboard() {
   const { campusName } = useCampusTheme();
   const navigate = useNavigate();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [nudgeOpen, setNudgeOpen] = useState(false);
+  const [nudgeReason, setNudgeReason] = useState<"premium_deal" | "alert_limit" | "group_deal">("premium_deal");
   const { logClick } = useDealClick();
 
   const handleGetDeal = useCallback(async (dealId: string) => {
@@ -805,7 +811,29 @@ export default function Dashboard() {
     );
   }, [deals, isFoundingMember]);
 
-  const sharedProps = { favIds, onToggleFav: toggleFav, isPremiumUser: isPremium, userId: user?.id, onUpgrade: () => setUpgradeOpen(true), onGetDeal: handleGetDeal, campusName };
+  const handlePremiumNudge = (reason: "premium_deal" | "alert_limit" | "group_deal" = "premium_deal") => {
+    setNudgeReason(reason);
+    setNudgeOpen(true);
+  };
+
+  const sharedProps = { favIds, onToggleFav: toggleFav, isPremiumUser: isPremium, userId: user?.id, onUpgrade: () => handlePremiumNudge("premium_deal"), onGetDeal: handleGetDeal, campusName };
+
+  // Missed deals for free users — expired premium deals
+  const missedDeals = useMemo(() => {
+    if (isPremium) return [];
+    return deals
+      .filter(d => isDealPremium(d) && d.expires_at && new Date(d.expires_at) < new Date())
+      .slice(0, 5);
+  }, [deals, isPremium]);
+
+  // Savings tracker — sum of discount values from claimed/favorited deals
+  const totalSaved = useMemo(() => {
+    const favDeals = deals.filter(d => favIds.has(d.id));
+    return favDeals.reduce((sum, d) => {
+      const val = d.discount_value?.replace(/[^0-9.]/g, '');
+      return sum + (val ? parseFloat(val) * 2.5 : 0); // rough savings estimate
+    }, 0);
+  }, [deals, favIds]);
 
   // Local deals
   const locationEnabled = profile?.location_opt_in ?? false;
@@ -865,6 +893,14 @@ export default function Dashboard() {
 
         {/* PUSH NOTIFICATION PROMPT */}
         <PushNotificationPrompt />
+
+        {/* SAVINGS COUNTER */}
+        <SavingsCounter totalSaved={totalSaved} isPremium={isPremium} />
+
+        {/* FOUNDING PREMIUM BANNER — only for free users */}
+        {!isPremium && !isFoundingMember && (
+          <FoundingPremiumBanner onUpgrade={() => handlePremiumNudge("premium_deal")} />
+        )}
 
         {/* DEAL STREAK */}
         <DealStreakWidget />
@@ -1004,6 +1040,18 @@ export default function Dashboard() {
           )}
         </motion.section>
 
+        {/* MISSED PREMIUM DEALS — free users only */}
+        {missedDeals.length > 0 && !isPremium && (
+          <motion.section initial="hidden" animate="visible" variants={stagger}>
+            <SectionHeader icon={Lock} title="Deals You Missed" iconColor="text-gold" subtitle="These Premium deals have expired — don't miss the next one" />
+            <ScrollRow>
+              {missedDeals.map((deal) => (
+                <MissedDealFeedCard key={deal.id} deal={deal} onUpgrade={() => handlePremiumNudge("premium_deal")} />
+              ))}
+            </ScrollRow>
+          </motion.section>
+        )}
+
         {/* BROWSE CATEGORIES */}
         <motion.section initial="hidden" animate="visible" variants={stagger}>
           <SectionHeader icon={Tag} title="Browse Categories" linkTo="/categories" iconColor="text-primary" />
@@ -1039,6 +1087,7 @@ export default function Dashboard() {
         )}
       </div>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <PremiumNudgeModal open={nudgeOpen} onOpenChange={setNudgeOpen} reason={nudgeReason} />
     </DashboardLayout>
   );
 }

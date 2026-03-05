@@ -8,6 +8,6 @@ export async function logPaywallView(dealId: string, sourcePage: string, userId?
   } as any);
 }
 
-export function isDealPremium(deal: { visibility?: string; featured?: boolean }): boolean {
-  return deal.visibility === "premium";
+export function isDealPremium(deal: { visibility?: string; featured?: boolean; premium_only?: boolean }): boolean {
+  return deal.visibility === "premium" || deal.premium_only === true;
 }

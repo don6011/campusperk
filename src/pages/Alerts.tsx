@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { PremiumNudgeModal } from "@/components/PremiumNudgeModal";
 import { Bell, Plus, Trash2, Tag, Trophy, Smartphone, Settings } from "lucide-react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
@@ -68,6 +69,7 @@ export default function Alerts() {
   const [loading, setLoading] = useState(true);
   const [leaderboardEnabled, setLeaderboardEnabled] = useState(true);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [nudgeOpen, setNudgeOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -230,7 +232,13 @@ export default function Alerts() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button size="sm" disabled={!selectedCategory || atLimit} onClick={handleAdd} className="shrink-0">
+                <Button size="sm" disabled={!selectedCategory} onClick={() => {
+                  if (atLimit && !profile?.premium_status) {
+                    setNudgeOpen(true);
+                    return;
+                  }
+                  handleAdd();
+                }} className="shrink-0">
                   Subscribe
                 </Button>
               </div>
@@ -298,6 +306,7 @@ export default function Alerts() {
           </Card>
         </motion.div>
       </div>
+      <PremiumNudgeModal open={nudgeOpen} onOpenChange={setNudgeOpen} reason="alert_limit" />
     </DashboardLayout>
   );
 }
