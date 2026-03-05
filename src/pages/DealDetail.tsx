@@ -101,7 +101,7 @@ export default function DealDetail() {
 
   const handleGoToOffer = () => {
     if (isGated) {
-      setUpgradeOpen(true);
+      setNudgeOpen(true);
       logPaywallView(deal.id, "deal_detail", user?.id);
       return;
     }
