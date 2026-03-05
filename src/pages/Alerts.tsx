@@ -69,6 +69,7 @@ export default function Alerts() {
   const [loading, setLoading] = useState(true);
   const [leaderboardEnabled, setLeaderboardEnabled] = useState(true);
   const [leaderboardLoading, setLeaderboardLoading] = useState(false);
+  const [nudgeOpen, setNudgeOpen] = useState(false);
 
   useEffect(() => {
     if (!user) return;
