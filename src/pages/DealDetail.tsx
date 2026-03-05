@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { logPaywallView } from "@/lib/paywall";
 import { useRecordRedemption } from "@/hooks/use-record-redemption";
+import { DealStackCalculator } from "@/components/DealStackCalculator";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
