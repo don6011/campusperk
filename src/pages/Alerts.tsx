@@ -232,8 +232,15 @@ export default function Alerts() {
                     ))}
                   </SelectContent>
                 </Select>
-                <Button size="sm" disabled={!selectedCategory || atLimit} onClick={handleAdd} className="shrink-0">
+                <Button size="sm" disabled={!selectedCategory || atLimit} onClick={() => {
+                  if (atLimit && !profile?.premium_status) {
+                    setNudgeOpen(true);
+                    return;
+                  }
+                  handleAdd();
+                }} className="shrink-0">
                   Subscribe
+                </Button>
                 </Button>
               </div>
               {atLimit && !profile?.premium_status && (
