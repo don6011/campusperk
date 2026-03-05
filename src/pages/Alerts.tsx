@@ -306,6 +306,7 @@ export default function Alerts() {
           </Card>
         </motion.div>
       </div>
+      <PremiumNudgeModal open={nudgeOpen} onOpenChange={setNudgeOpen} reason="alert_limit" />
     </DashboardLayout>
   );
 }
