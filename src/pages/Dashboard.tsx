@@ -894,6 +894,14 @@ export default function Dashboard() {
         {/* PUSH NOTIFICATION PROMPT */}
         <PushNotificationPrompt />
 
+        {/* SAVINGS COUNTER */}
+        <SavingsCounter totalSaved={totalSaved} isPremium={isPremium} />
+
+        {/* FOUNDING PREMIUM BANNER — only for free users */}
+        {!isPremium && !isFoundingMember && (
+          <FoundingPremiumBanner onUpgrade={() => handlePremiumNudge("premium_deal")} />
+        )}
+
         {/* DEAL STREAK */}
         <DealStreakWidget />
 
