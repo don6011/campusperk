@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { logPaywallView } from "@/lib/paywall";
 import { useRecordRedemption } from "@/hooks/use-record-redemption";
+import { DealStackCalculator } from "@/components/DealStackCalculator";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -317,6 +318,17 @@ export default function DealDetail() {
                   <li>CampusPerk is not responsible for merchant fulfillment</li>
                 </ul>
               </div>
+
+              {/* CampusPerk Stack™ Calculator */}
+              {(userIsPremium || isFoundingMember) && (
+                <div className="my-6">
+                  <DealStackCalculator
+                    dealDiscount={deal.discountValue}
+                    dealDiscountType={deal.discountType}
+                    storeName={deal.storeName}
+                  />
+                </div>
+              )}
 
               <Separator className="my-6" />
 

@@ -722,6 +722,7 @@ export type Database = {
           drop_time: string | null
           drop_window: string | null
           early_access: boolean
+          early_access_minutes: number
           eligible_campuses: string[] | null
           eligible_cities: string[] | null
           eligible_regions: string[] | null
@@ -735,6 +736,7 @@ export type Database = {
           last_checked_at: string | null
           partner_id: string | null
           partner_offer_id: string | null
+          premium_only: boolean
           requires_campus_verification: boolean
           requires_edu_email: boolean
           requires_role_verification: boolean
@@ -766,6 +768,7 @@ export type Database = {
           drop_time?: string | null
           drop_window?: string | null
           early_access?: boolean
+          early_access_minutes?: number
           eligible_campuses?: string[] | null
           eligible_cities?: string[] | null
           eligible_regions?: string[] | null
@@ -779,6 +782,7 @@ export type Database = {
           last_checked_at?: string | null
           partner_id?: string | null
           partner_offer_id?: string | null
+          premium_only?: boolean
           requires_campus_verification?: boolean
           requires_edu_email?: boolean
           requires_role_verification?: boolean
@@ -810,6 +814,7 @@ export type Database = {
           drop_time?: string | null
           drop_window?: string | null
           early_access?: boolean
+          early_access_minutes?: number
           eligible_campuses?: string[] | null
           eligible_cities?: string[] | null
           eligible_regions?: string[] | null
@@ -823,6 +828,7 @@ export type Database = {
           last_checked_at?: string | null
           partner_id?: string | null
           partner_offer_id?: string | null
+          premium_only?: boolean
           requires_campus_verification?: boolean
           requires_edu_email?: boolean
           requires_role_verification?: boolean
@@ -884,6 +890,98 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "favorites_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_deal_participants: {
+        Row: {
+          group_deal_id: string
+          id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          group_deal_id: string
+          id?: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          group_deal_id?: string
+          id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_deal_participants_group_deal_id_fkey"
+            columns: ["group_deal_id"]
+            isOneToOne: false
+            referencedRelation: "group_deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_deals: {
+        Row: {
+          campus_id: string | null
+          created_at: string
+          created_by: string
+          current_participants: number
+          deal_id: string
+          description: string | null
+          expires_at: string
+          id: string
+          required_participants: number
+          status: string
+          title: string
+          unlocked_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          campus_id?: string | null
+          created_at?: string
+          created_by: string
+          current_participants?: number
+          deal_id: string
+          description?: string | null
+          expires_at: string
+          id?: string
+          required_participants?: number
+          status?: string
+          title: string
+          unlocked_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          campus_id?: string | null
+          created_at?: string
+          created_by?: string
+          current_participants?: number
+          deal_id?: string
+          description?: string | null
+          expires_at?: string
+          id?: string
+          required_participants?: number
+          status?: string
+          title?: string
+          unlocked_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_deals_campus_id_fkey"
+            columns: ["campus_id"]
+            isOneToOne: false
+            referencedRelation: "campus_domains"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_deals_deal_id_fkey"
             columns: ["deal_id"]
             isOneToOne: false
             referencedRelation: "deals"
