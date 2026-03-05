@@ -593,6 +593,9 @@ const LandingPage = () => {
         </div>
       </footer>
 
+      {/* ─── FOOTER ─── */}
+      <LegalFooter />
+
       {/* ─── FLOATING MOBILE CTA ─── */}
       <div className="fixed bottom-4 left-4 right-4 z-50 md:hidden">
         <Button onClick={openWaitlist} className="w-full bg-accent hover:bg-accent/90 text-accent-foreground font-bold h-12 text-base gap-2 shadow-[0_0_30px_-5px_hsl(var(--accent)/0.5)] rounded-xl">
