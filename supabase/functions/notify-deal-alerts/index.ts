@@ -11,6 +11,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Internal secret check
+    const secret = req.headers.get("x-internal-secret");
+    if (secret !== Deno.env.get("INTERNAL_SECRET")) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { deal_id } = await req.json();
     if (!deal_id) {
       return new Response(JSON.stringify({ error: "deal_id required" }), {

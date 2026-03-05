@@ -65,6 +65,15 @@ serve(async (req) => {
   }
 
   try {
+    // Internal secret check
+    const secret = req.headers.get("x-internal-secret");
+    if (secret !== Deno.env.get("INTERNAL_SECRET")) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { user_id, user_ids, title, body, url, deal_id, tag, type } = await req.json();
 
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
