@@ -1087,6 +1087,7 @@ export default function Dashboard() {
         )}
       </div>
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <PremiumNudgeModal open={nudgeOpen} onOpenChange={setNudgeOpen} reason={nudgeReason} />
     </DashboardLayout>
   );
 }
