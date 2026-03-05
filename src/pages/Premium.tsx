@@ -82,16 +82,14 @@ export default function Premium() {
     if (!isPremium) return;
 
     const fetchDeals = async () => {
-      const [earlyRes, premRes] = await Promise.all([
-        supabase.from("deals")
-          .select("id, title, discount_value, discount_type, stores(name, logo_url)")
-          .eq("early_access", true).eq("status", "active")
-          .order("created_at", { ascending: false }).limit(4),
-        supabase.from("deals")
-          .select("id, title, discount_value, discount_type, premium_only, stores(name, logo_url)")
-          .eq("premium_only" as any, true).eq("status", "active")
-          .order("created_at", { ascending: false }).limit(6),
-      ]);
+      const earlyRes = await supabase.from("deals")
+        .select("id, title, discount_value, discount_type, stores(name, logo_url)")
+        .eq("early_access", true).eq("status", "active")
+        .order("created_at", { ascending: false }).limit(4);
+      const premRes = await supabase.from("deals")
+        .select("id, title, discount_value, discount_type, stores(name, logo_url)")
+        .eq("status", "active")
+        .order("created_at", { ascending: false }).limit(6);
       setExclusiveDeals(earlyRes.data || []);
       setPremiumOnlyDeals(premRes.data || []);
     };
