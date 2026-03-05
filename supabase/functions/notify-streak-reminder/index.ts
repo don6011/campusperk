@@ -70,6 +70,7 @@ serve(async (req) => {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${serviceRoleKey}`,
+        "x-internal-secret": Deno.env.get("INTERNAL_SECRET") || "",
       },
       body: JSON.stringify({
         user_ids: inactiveUserIds,
