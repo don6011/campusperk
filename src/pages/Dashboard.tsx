@@ -811,7 +811,29 @@ export default function Dashboard() {
     );
   }, [deals, isFoundingMember]);
 
-  const sharedProps = { favIds, onToggleFav: toggleFav, isPremiumUser: isPremium, userId: user?.id, onUpgrade: () => setUpgradeOpen(true), onGetDeal: handleGetDeal, campusName };
+  const handlePremiumNudge = (reason: "premium_deal" | "alert_limit" | "group_deal" = "premium_deal") => {
+    setNudgeReason(reason);
+    setNudgeOpen(true);
+  };
+
+  const sharedProps = { favIds, onToggleFav: toggleFav, isPremiumUser: isPremium, userId: user?.id, onUpgrade: () => handlePremiumNudge("premium_deal"), onGetDeal: handleGetDeal, campusName };
+
+  // Missed deals for free users — expired premium deals
+  const missedDeals = useMemo(() => {
+    if (isPremium) return [];
+    return deals
+      .filter(d => isDealPremium(d) && d.expires_at && new Date(d.expires_at) < new Date())
+      .slice(0, 5);
+  }, [deals, isPremium]);
+
+  // Savings tracker — sum of discount values from claimed/favorited deals
+  const totalSaved = useMemo(() => {
+    const favDeals = deals.filter(d => favIds.has(d.id));
+    return favDeals.reduce((sum, d) => {
+      const val = d.discount_value?.replace(/[^0-9.]/g, '');
+      return sum + (val ? parseFloat(val) * 2.5 : 0); // rough savings estimate
+    }, 0);
+  }, [deals, favIds]);
 
   // Local deals
   const locationEnabled = profile?.location_opt_in ?? false;
