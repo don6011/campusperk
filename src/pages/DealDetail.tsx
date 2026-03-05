@@ -443,7 +443,18 @@ export default function DealDetail() {
         </motion.div>
       </div>
 
+      {/* Missed deal alert for gated deals */}
+      {isGated && (
+        <div className="mt-6">
+          <MissedDealAlert
+            estimatedSavings={deal.discountValue ? parseInt(deal.discountValue.replace(/[^0-9]/g, '') || '40') : 40}
+            onUpgrade={() => setNudgeOpen(true)}
+          />
+        </div>
+      )}
+
       <UpgradeModal open={upgradeOpen} onOpenChange={setUpgradeOpen} />
+      <PremiumNudgeModal open={nudgeOpen} onOpenChange={setNudgeOpen} reason="premium_deal" />
     </DashboardLayout>
   );
 }
