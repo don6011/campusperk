@@ -579,21 +579,6 @@ const LandingPage = () => {
       </section>
 
       {/* ─── FOOTER ─── */}
-      <footer className="border-t border-border/30 py-12">
-        <div className="container mx-auto px-4">
-          <div className="flex flex-col items-center justify-between gap-6 md:flex-row">
-            <Link to="/" className="flex items-center gap-2"><img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto" /></Link>
-            <div className="flex gap-8 text-sm text-muted-foreground">
-              <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-              <a href="#" className="hover:text-foreground transition-colors">Terms</a>
-              <a href="#" className="hover:text-foreground transition-colors">Contact</a>
-            </div>
-            <div className="text-sm text-muted-foreground">© 2026 CampusPerk. All rights reserved.</div>
-          </div>
-        </div>
-      </footer>
-
-      {/* ─── FOOTER ─── */}
       <LegalFooter />
 
       {/* ─── FLOATING MOBILE CTA ─── */}
