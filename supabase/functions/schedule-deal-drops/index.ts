@@ -46,6 +46,15 @@ serve(async (req) => {
   }
 
   try {
+    // Internal secret check
+    const secret = req.headers.get("x-internal-secret");
+    if (secret !== Deno.env.get("INTERNAL_SECRET")) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, serviceRoleKey);
@@ -147,6 +156,7 @@ serve(async (req) => {
             headers: {
               "Content-Type": "application/json",
               Authorization: `Bearer ${serviceRoleKey}`,
+              "x-internal-secret": Deno.env.get("INTERNAL_SECRET") || "",
             },
             body: JSON.stringify({
               user_ids: eligibleUsers,

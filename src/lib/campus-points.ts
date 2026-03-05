@@ -8,14 +8,6 @@ const POINT_VALUES: Record<string, number> = {
   partner_added: 100,
 };
 
-function getWeekStart(): string {
-  const now = new Date();
-  const day = now.getDay();
-  const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-  const monday = new Date(now.getFullYear(), now.getMonth(), diff);
-  return monday.toISOString().split("T")[0];
-}
-
 export async function awardCampusPoints(
   userId: string,
   campusId: string,
@@ -24,13 +16,8 @@ export async function awardCampusPoints(
   const points = POINT_VALUES[action];
   if (!points || !campusId) return;
 
-  await supabase.from("campus_points").insert({
-    user_id: userId,
-    campus_id: campusId,
-    action,
-    points,
-    week_start: getWeekStart(),
-  });
+  // Use server-validated RPC instead of direct insert
+  await supabase.rpc("award_campus_points", { p_action: action });
 }
 
 export { POINT_VALUES };

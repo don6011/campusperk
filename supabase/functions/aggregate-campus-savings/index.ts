@@ -11,6 +11,15 @@ Deno.serve(async (req) => {
   }
 
   try {
+    // Internal secret check
+    const secret = req.headers.get("x-internal-secret");
+    if (secret !== Deno.env.get("INTERNAL_SECRET")) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -72,6 +81,7 @@ Deno.serve(async (req) => {
         headers: {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          "x-internal-secret": Deno.env.get("INTERNAL_SECRET") || "",
         },
       });
     } catch (notifyErr) {

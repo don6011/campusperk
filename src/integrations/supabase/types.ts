@@ -2000,6 +2000,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      award_campus_points: { Args: { p_action: string }; Returns: undefined }
       check_domain_abuse: {
         Args: {
           p_domain: string
