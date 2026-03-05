@@ -63,12 +63,10 @@ export default function Premium() {
     if (!user || !isPremium) return;
 
     const fetchStats = async () => {
-      const [favRes, alertRes, dealsRes, premRes] = await Promise.all([
-        supabase.from("favorites").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("alert_subscriptions").select("id", { count: "exact", head: true }).eq("user_id", user.id),
-        supabase.from("deals").select("id", { count: "exact", head: true }).eq("early_access", true).eq("status", "active"),
-        supabase.from("deals").select("id", { count: "exact", head: true }).eq("premium_only" as any, true).eq("status", "active"),
-      ]);
+      const favRes = await supabase.from("favorites").select("id", { count: "exact", head: true }).eq("user_id", user.id);
+      const alertRes = await supabase.from("alert_subscriptions").select("id", { count: "exact", head: true }).eq("user_id", user.id);
+      const dealsRes = await supabase.from("deals").select("id", { count: "exact", head: true }).eq("early_access", true).eq("status", "active");
+      const premRes = await supabase.from("deals").select("id", { count: "exact", head: true }).eq("status", "active");
       setStats({
         favoritesCount: favRes.count ?? 0,
         alertsCount: alertRes.count ?? 0,
