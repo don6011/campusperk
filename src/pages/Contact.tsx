@@ -90,7 +90,7 @@ export default function Contact() {
               </div>
               <div>
                 <h3 className="font-display text-sm font-semibold text-foreground mb-1">Partnerships / Affiliates</h3>
-                <a href="mailto:Business@campusperk.com" className="text-sm text-primary hover:underline">Business@campusperk.com</a>
+                <a href="mailto:partners@campusperk.com" className="text-sm text-primary hover:underline">partners@campusperk.com</a>
               </div>
             </div>
           </div>
