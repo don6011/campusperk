@@ -710,6 +710,8 @@ export default function Dashboard() {
   const { campusName } = useCampusTheme();
   const navigate = useNavigate();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [nudgeOpen, setNudgeOpen] = useState(false);
+  const [nudgeReason, setNudgeReason] = useState<"premium_deal" | "alert_limit" | "group_deal">("premium_deal");
   const { logClick } = useDealClick();
 
   const handleGetDeal = useCallback(async (dealId: string) => {
