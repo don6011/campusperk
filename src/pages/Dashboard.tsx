@@ -33,6 +33,10 @@ import { NextDropWidget } from "@/components/dashboard/NextDropWidget";
 import { SurpriseDropCard } from "@/components/dashboard/SurpriseDropCard";
 import { isDealDropVisible } from "@/lib/deal-drops";
 import { useCampusTheme } from "@/contexts/CampusThemeContext";
+import { SavingsCounter } from "@/components/SavingsCounter";
+import { MissedDealFeedCard } from "@/components/MissedDealFeedCard";
+import { FoundingPremiumBanner } from "@/components/FoundingPremiumBanner";
+import { PremiumNudgeModal } from "@/components/PremiumNudgeModal";
 
 /* ── Animations ── */
 const fadeUp = {
