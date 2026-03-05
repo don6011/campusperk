@@ -60,10 +60,43 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Format URL
+    // Format and validate URL
     let formattedUrl = url.trim();
     if (!formattedUrl.startsWith("http://") && !formattedUrl.startsWith("https://")) {
       formattedUrl = `https://${formattedUrl}`;
+    }
+
+    // Only allow https URLs and block internal/private IPs
+    if (!formattedUrl.startsWith("https://")) {
+      return new Response(JSON.stringify({ error: "Only HTTPS URLs are allowed" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    try {
+      const parsed = new URL(formattedUrl);
+      const hostname = parsed.hostname;
+      // Block private/internal hostnames
+      if (
+        hostname === "localhost" ||
+        hostname === "127.0.0.1" ||
+        hostname.startsWith("10.") ||
+        hostname.startsWith("192.168.") ||
+        hostname.startsWith("172.") ||
+        hostname.endsWith(".local") ||
+        hostname.endsWith(".internal")
+      ) {
+        return new Response(JSON.stringify({ error: "Internal URLs are not allowed" }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } catch {
+      return new Response(JSON.stringify({ error: "Invalid URL" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Step 1: Validate URL is live & check redirects
