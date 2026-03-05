@@ -1040,6 +1040,18 @@ export default function Dashboard() {
           )}
         </motion.section>
 
+        {/* MISSED PREMIUM DEALS — free users only */}
+        {missedDeals.length > 0 && !isPremium && (
+          <motion.section initial="hidden" animate="visible" variants={stagger}>
+            <SectionHeader icon={Lock} title="Deals You Missed" iconColor="text-gold" subtitle="These Premium deals have expired — don't miss the next one" />
+            <ScrollRow>
+              {missedDeals.map((deal) => (
+                <MissedDealFeedCard key={deal.id} deal={deal} onUpgrade={() => handlePremiumNudge("premium_deal")} />
+              ))}
+            </ScrollRow>
+          </motion.section>
+        )}
+
         {/* BROWSE CATEGORIES */}
         <motion.section initial="hidden" animate="visible" variants={stagger}>
           <SectionHeader icon={Tag} title="Browse Categories" linkTo="/categories" iconColor="text-primary" />
