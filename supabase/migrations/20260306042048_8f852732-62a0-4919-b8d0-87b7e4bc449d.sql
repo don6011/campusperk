@@ -1,0 +1,1 @@
+DROP POLICY IF EXISTS "Service can read all devices" ON public.push_devices;
