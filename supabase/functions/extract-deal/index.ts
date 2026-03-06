@@ -74,19 +74,27 @@ Deno.serve(async (req) => {
       });
     }
 
-    try {
-      const parsed = new URL(formattedUrl);
-      const hostname = parsed.hostname;
-      // Block private/internal hostnames
-      if (
+    function isBlockedHostname(hostname: string): boolean {
+      return (
         hostname === "localhost" ||
         hostname === "127.0.0.1" ||
+        hostname === "0.0.0.0" ||
+        hostname === "::1" ||
         hostname.startsWith("10.") ||
         hostname.startsWith("192.168.") ||
         hostname.startsWith("172.") ||
+        hostname.startsWith("169.254.") ||
+        hostname.startsWith("fe80") ||
+        hostname.startsWith("fc00") ||
+        hostname.startsWith("fd") ||
         hostname.endsWith(".local") ||
         hostname.endsWith(".internal")
-      ) {
+      );
+    }
+
+    try {
+      const parsed = new URL(formattedUrl);
+      if (isBlockedHostname(parsed.hostname)) {
         return new Response(JSON.stringify({ error: "Internal URLs are not allowed" }), {
           status: 400,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -99,17 +107,54 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Step 1: Validate URL is live & check redirects
+    // Step 1: Validate URL is live & check redirects (manual redirect to prevent SSRF)
     console.log("Validating URL:", formattedUrl);
     let urlValidation = { isLive: false, finalUrl: formattedUrl, redirectChain: [] as string[], statusCode: 0 };
 
     try {
-      const headResp = await fetch(formattedUrl, { method: "GET", redirect: "follow" });
-      urlValidation.isLive = headResp.ok;
-      urlValidation.statusCode = headResp.status;
-      urlValidation.finalUrl = headResp.url;
-      if (headResp.redirected && headResp.url !== formattedUrl) {
-        urlValidation.redirectChain = [formattedUrl, headResp.url];
+      let currentUrl = formattedUrl;
+      const chain: string[] = [currentUrl];
+      const maxRedirects = 5;
+
+      for (let i = 0; i < maxRedirects; i++) {
+        const resp = await fetch(currentUrl, { method: "GET", redirect: "manual" });
+        urlValidation.statusCode = resp.status;
+
+        if (resp.status >= 300 && resp.status < 400) {
+          const location = resp.headers.get("location");
+          if (!location) break;
+
+          // Resolve relative redirects
+          const resolvedUrl = new URL(location, currentUrl);
+
+          // Block non-HTTPS redirects
+          if (resolvedUrl.protocol !== "https:") {
+            return new Response(JSON.stringify({ error: "Redirect to non-HTTPS URL is not allowed" }), {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          // Validate redirect destination against blocklist
+          if (isBlockedHostname(resolvedUrl.hostname)) {
+            return new Response(JSON.stringify({ error: "Redirect to internal URL is not allowed" }), {
+              status: 400,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+
+          currentUrl = resolvedUrl.href;
+          chain.push(currentUrl);
+          continue;
+        }
+
+        // Not a redirect
+        urlValidation.isLive = resp.ok;
+        urlValidation.finalUrl = currentUrl;
+        if (chain.length > 1) {
+          urlValidation.redirectChain = chain;
+        }
+        break;
       }
     } catch (e) {
       console.error("URL validation failed:", e);
