@@ -32,7 +32,7 @@ const navItems = [
   { label: "Scans", href: "/admin/scans", icon: ScanSearch },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { label: "Ambassadors", href: "/admin/ambassadors", icon: Users },
-  { label: "Affiliate Sources", href: "/admin/affiliate-sources", icon: Rss },
+  { label: "Deal Pipeline", href: "/admin/affiliate-sources", icon: Rss },
   { label: "Deal Import", href: "/admin/deal-import", icon: Upload },
 ];
 
