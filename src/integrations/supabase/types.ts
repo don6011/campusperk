@@ -138,9 +138,11 @@ export type Database = {
       }
       affiliate_raw_deals: {
         Row: {
+          advertiser_id: string | null
           affiliate_url: string | null
           brand: string | null
           category: string | null
+          checksum: string | null
           created_at: string
           description: string | null
           external_id: string
@@ -149,12 +151,15 @@ export type Database = {
           network_name: string
           raw_data: Json | null
           source_id: string
+          status: string | null
           title: string
         }
         Insert: {
+          advertiser_id?: string | null
           affiliate_url?: string | null
           brand?: string | null
           category?: string | null
+          checksum?: string | null
           created_at?: string
           description?: string | null
           external_id: string
@@ -163,12 +168,15 @@ export type Database = {
           network_name: string
           raw_data?: Json | null
           source_id: string
+          status?: string | null
           title: string
         }
         Update: {
+          advertiser_id?: string | null
           affiliate_url?: string | null
           brand?: string | null
           category?: string | null
+          checksum?: string | null
           created_at?: string
           description?: string | null
           external_id?: string
@@ -177,6 +185,7 @@ export type Database = {
           network_name?: string
           raw_data?: Json | null
           source_id?: string
+          status?: string | null
           title?: string
         }
         Relationships: [
@@ -193,33 +202,42 @@ export type Database = {
         Row: {
           api_endpoint: string | null
           api_key_secret_name: string | null
+          auth_type: string | null
           created_at: string
+          credentials_json: Json | null
           feed_url: string | null
           id: string
           last_synced_at: string | null
           network_name: string
+          source_name: string | null
           status: string
           updated_at: string
         }
         Insert: {
           api_endpoint?: string | null
           api_key_secret_name?: string | null
+          auth_type?: string | null
           created_at?: string
+          credentials_json?: Json | null
           feed_url?: string | null
           id?: string
           last_synced_at?: string | null
           network_name: string
+          source_name?: string | null
           status?: string
           updated_at?: string
         }
         Update: {
           api_endpoint?: string | null
           api_key_secret_name?: string | null
+          auth_type?: string | null
           created_at?: string
+          credentials_json?: Json | null
           feed_url?: string | null
           id?: string
           last_synced_at?: string | null
           network_name?: string
+          source_name?: string | null
           status?: string
           updated_at?: string
         }
@@ -312,6 +330,27 @@ export type Database = {
           status?: string
           university?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      brand_aliases: {
+        Row: {
+          created_at: string | null
+          id: string
+          normalized_brand_name: string
+          raw_brand_name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          normalized_brand_name: string
+          raw_brand_name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          normalized_brand_name?: string
+          raw_brand_name?: string
         }
         Relationships: []
       }
@@ -991,46 +1030,121 @@ export type Database = {
       }
       normalized_deals: {
         Row: {
+          advertiser_id: string | null
+          advertiser_name: string | null
           affiliate_url: string | null
           brand: string | null
+          brand_name: string | null
+          campus_scope: string | null
           category: string | null
+          category_primary: string | null
+          category_secondary: string | null
+          coupon_code: string | null
           created_at: string
+          currency: string | null
+          deeplink_url: string | null
           description: string | null
+          domain: string | null
+          estimated_savings_amount: number | null
+          estimated_savings_percent: number | null
+          expires_at: string | null
           id: string
           image_url: string | null
+          is_coupon: boolean | null
+          is_local: boolean | null
+          is_premium_only: boolean | null
+          is_student_relevant: boolean | null
+          last_seen_at: string | null
+          long_description: string | null
+          network_item_id: string | null
+          price: number | null
           promoted_deal_id: string | null
           raw_deal_id: string | null
+          sale_price: number | null
+          short_description: string | null
           source_network: string
+          status: string | null
+          student_relevance_score: number | null
           title: string
           updated_at: string
           verified: boolean
         }
         Insert: {
+          advertiser_id?: string | null
+          advertiser_name?: string | null
           affiliate_url?: string | null
           brand?: string | null
+          brand_name?: string | null
+          campus_scope?: string | null
           category?: string | null
+          category_primary?: string | null
+          category_secondary?: string | null
+          coupon_code?: string | null
           created_at?: string
+          currency?: string | null
+          deeplink_url?: string | null
           description?: string | null
+          domain?: string | null
+          estimated_savings_amount?: number | null
+          estimated_savings_percent?: number | null
+          expires_at?: string | null
           id?: string
           image_url?: string | null
+          is_coupon?: boolean | null
+          is_local?: boolean | null
+          is_premium_only?: boolean | null
+          is_student_relevant?: boolean | null
+          last_seen_at?: string | null
+          long_description?: string | null
+          network_item_id?: string | null
+          price?: number | null
           promoted_deal_id?: string | null
           raw_deal_id?: string | null
+          sale_price?: number | null
+          short_description?: string | null
           source_network: string
+          status?: string | null
+          student_relevance_score?: number | null
           title: string
           updated_at?: string
           verified?: boolean
         }
         Update: {
+          advertiser_id?: string | null
+          advertiser_name?: string | null
           affiliate_url?: string | null
           brand?: string | null
+          brand_name?: string | null
+          campus_scope?: string | null
           category?: string | null
+          category_primary?: string | null
+          category_secondary?: string | null
+          coupon_code?: string | null
           created_at?: string
+          currency?: string | null
+          deeplink_url?: string | null
           description?: string | null
+          domain?: string | null
+          estimated_savings_amount?: number | null
+          estimated_savings_percent?: number | null
+          expires_at?: string | null
           id?: string
           image_url?: string | null
+          is_coupon?: boolean | null
+          is_local?: boolean | null
+          is_premium_only?: boolean | null
+          is_student_relevant?: boolean | null
+          last_seen_at?: string | null
+          long_description?: string | null
+          network_item_id?: string | null
+          price?: number | null
           promoted_deal_id?: string | null
           raw_deal_id?: string | null
+          sale_price?: number | null
+          short_description?: string | null
           source_network?: string
+          status?: string | null
+          student_relevance_score?: number | null
           title?: string
           updated_at?: string
           verified?: boolean
