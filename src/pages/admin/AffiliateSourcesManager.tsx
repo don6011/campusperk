@@ -68,13 +68,13 @@ export default function AffiliateSourcesManager() {
       let q = supabase
         .from("normalized_deals")
         .select("*")
-        .order("student_relevance_score", { ascending: false, nullsFirst: false })
-        .limit(200);
-      if (statusFilter !== "all") q = q.eq("status" as any, statusFilter);
+        .order("created_at", { ascending: false })
+        .limit(200) as any;
+      if (statusFilter !== "all") q = q.eq("status", statusFilter);
       if (searchQuery) q = q.or(`title.ilike.%${searchQuery}%,brand.ilike.%${searchQuery}%`);
       const { data, error } = await q;
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 
