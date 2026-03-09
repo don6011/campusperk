@@ -77,15 +77,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex relative noise-overlay">
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-border bg-sidebar transition-all duration-300 ${
+        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-border/30 glass-strong transition-all duration-300 ${
           sidebarOpen ? "w-60" : "w-0 -translate-x-full lg:w-16 lg:translate-x-0"
         }`}
       >
         {/* Logo */}
-        <Link to="/" className="flex h-16 items-center gap-2 border-b border-border px-4">
+        <Link to="/" className="flex h-16 items-center gap-2 border-b border-border/30 px-4">
           <img src={campusperkLogo} alt="CampusPerk" className="h-14 w-auto shrink-0" />
           {sidebarOpen && (
             <span className="font-display font-semibold text-foreground text-sm truncate">CampusPerk</span>
@@ -154,7 +154,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Upgrade CTA / Premium status */}
         {sidebarOpen && (
           profile?.premium_status ? (
-            <div className="m-3 rounded-xl border border-gold/30 bg-gold/10 p-4">
+            <div className="m-3 rounded-xl glass inner-glow border-gold/30 p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Crown className="h-4 w-4 text-gold" />
                 <span className="text-sm font-semibold text-gold">Premium Active</span>
@@ -164,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </p>
             </div>
           ) : (
-            <div className="m-3 rounded-xl border border-gold/30 bg-gold/5 p-4">
+            <div className="m-3 rounded-xl glass inner-glow border-gold/30 p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Crown className="h-4 w-4 text-gold" />
                 <span className="text-sm font-semibold text-gold">Go Premium</span>
@@ -185,7 +185,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main content */}
       <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? "lg:ml-60" : "lg:ml-16"}`}>
         {/* Top nav */}
-        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border bg-background/80 backdrop-blur-xl px-4 lg:px-6">
+        <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/30 glass-strong px-4 lg:px-6">
           <Button
             variant="ghost"
             size="icon"
@@ -200,7 +200,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search deals, stores, categories…"
-              className="pl-9 bg-secondary border-border h-9 text-sm"
+              className="pl-9 glass border-border/40 h-9 text-sm"
             />
           </div>
 

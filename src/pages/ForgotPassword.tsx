@@ -40,8 +40,12 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
-      <motion.div className="w-full max-w-md" initial="hidden" animate="visible">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12 relative noise-overlay">
+      <div className="fixed inset-0 pointer-events-none">
+        <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-primary/6 blur-[140px]" />
+      </div>
+
+      <motion.div className="w-full max-w-md relative z-10" initial="hidden" animate="visible">
         <motion.div variants={fadeUp} custom={0} className="flex justify-center mb-8">
           <Link to="/">
             <img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto" />
@@ -68,7 +72,7 @@ export default function ForgotPassword() {
                     placeholder="you@university.edu"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10 h-11 bg-secondary border-border"
+                    className="pl-10 h-11 glass border-border/40"
                     required
                   />
                 </div>
@@ -77,7 +81,7 @@ export default function ForgotPassword() {
               <Button
                 type="submit"
                 disabled={loading}
-                className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2"
+                className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2 shadow-[0_0_30px_-5px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_40px_-5px_hsl(var(--primary)/0.5)] transition-all duration-300"
               >
                 {loading ? "Sending…" : "Send Reset Link"}
                 {!loading && <ArrowRight className="h-4 w-4" />}
@@ -86,7 +90,7 @@ export default function ForgotPassword() {
           </>
         ) : (
           <motion.div variants={fadeUp} custom={1} className="text-center">
-            <div className="mx-auto h-16 w-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6">
+            <div className="mx-auto h-16 w-16 rounded-2xl glass inner-glow flex items-center justify-center mb-6">
               <Mail className="h-8 w-8 text-primary" />
             </div>
             <h1 className="font-display text-2xl font-bold text-foreground">Check your inbox</h1>
@@ -95,7 +99,7 @@ export default function ForgotPassword() {
               <span className="text-foreground font-medium">{email}</span>.
             </p>
 
-            <Card className="mt-8 border-border bg-card">
+            <Card className="mt-8 glass inner-glow gradient-border">
               <CardContent className="p-5 text-sm text-muted-foreground">
                 Didn't receive the email? Check your spam folder or{" "}
                 <button

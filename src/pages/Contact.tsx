@@ -59,17 +59,17 @@ export default function Contact() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative noise-overlay">
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-primary/6 blur-[160px]" />
       </div>
 
-      <nav className="sticky top-0 z-50 border-b border-border/30 bg-background/70 backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 glass-strong">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
             <img src={campusperkLogo} alt="CampusPerk" className="h-20 w-auto" />
           </Link>
-          <Link to="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
+          <Link to="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors duration-300">
             <ArrowLeft className="h-4 w-4" /> Back to Home
           </Link>
         </div>
@@ -84,7 +84,7 @@ export default function Contact() {
 
           {/* Contact methods */}
           <div className="grid sm:grid-cols-2 gap-4 mb-12">
-            <div className="rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm p-6 flex items-start gap-4">
+            <div className="rounded-xl glass inner-glow gradient-border p-6 flex items-start gap-4">
               <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                 <Mail className="h-5 w-5 text-primary" />
               </div>
@@ -93,7 +93,7 @@ export default function Contact() {
                 <a href="mailto:Business@campusperk.com" className="text-sm text-primary hover:underline">Business@campusperk.com</a>
               </div>
             </div>
-            <div className="rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm p-6 flex items-start gap-4">
+            <div className="rounded-xl glass inner-glow gradient-border p-6 flex items-start gap-4">
               <div className="w-10 h-10 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
                 <Handshake className="h-5 w-5 text-accent" />
               </div>
@@ -105,7 +105,7 @@ export default function Contact() {
           </div>
 
           {/* Contact form */}
-          <div className="rounded-xl border border-border/40 bg-card/40 backdrop-blur-sm p-6 md:p-8">
+          <div className="rounded-xl glass inner-glow gradient-border p-6 md:p-8">
             {submitted ? (
               <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col items-center justify-center py-12 text-center">
                 <CheckCircle className="h-14 w-14 text-accent mb-4" />
@@ -121,7 +121,7 @@ export default function Contact() {
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
                     placeholder="Your name"
-                    className="bg-secondary/50 border-border/60"
+                    className="glass border-border/40"
                   />
                   {errors.name && <p className="text-xs text-destructive mt-1">{errors.name}</p>}
                 </div>
@@ -133,7 +133,7 @@ export default function Contact() {
                     value={form.email}
                     onChange={(e) => setForm({ ...form, email: e.target.value })}
                     placeholder="you@example.com"
-                    className="bg-secondary/50 border-border/60"
+                    className="glass border-border/40"
                   />
                   {errors.email && <p className="text-xs text-destructive mt-1">{errors.email}</p>}
                 </div>
@@ -145,11 +145,11 @@ export default function Contact() {
                     onChange={(e) => setForm({ ...form, message: e.target.value })}
                     placeholder="How can we help?"
                     rows={5}
-                    className="bg-secondary/50 border-border/60 resize-none"
+                    className="glass border-border/40 resize-none"
                   />
                   {errors.message && <p className="text-xs text-destructive mt-1">{errors.message}</p>}
                 </div>
-                <Button type="submit" disabled={loading} className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold gap-2">
+                <Button type="submit" disabled={loading} className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold gap-2 shadow-[0_0_30px_-5px_hsl(var(--accent)/0.3)] hover:shadow-[0_0_40px_-5px_hsl(var(--accent)/0.5)] transition-all duration-300">
                   <Send className="h-4 w-4" />
                   {loading ? "Sending..." : "Send Message"}
                 </Button>
