@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,800,900&f[]=cabinet-grotesk@400,500,600,700,800&display=swap');
 
 @layer base {
   :root {
@@ -58,6 +58,11 @@
     --gradient-card: linear-gradient(135deg, hsl(220 33% 11%), hsl(220 33% 9%));
     --shadow-glow: 0 0 40px -10px hsl(217 91% 60% / 0.3);
     --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.3);
+
+    /* Glass tokens */
+    --glass-bg: hsl(220 33% 10% / 0.6);
+    --glass-border: hsl(210 40% 96% / 0.08);
+    --glass-highlight: hsl(210 40% 96% / 0.04);
   }
 
   .dark {
@@ -72,10 +77,103 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', sans-serif;
+    font-family: 'Satoshi', sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Space Grotesk', sans-serif;
+    font-family: 'Cabinet Grotesk', sans-serif;
+  }
+}
+
+@layer utilities {
+  /* Glass-morphism utility */
+  .glass {
+    background: var(--glass-bg);
+    backdrop-filter: blur(20px) saturate(180%);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border: 1px solid var(--glass-border);
+  }
+
+  .glass-strong {
+    background: hsl(220 33% 10% / 0.8);
+    backdrop-filter: blur(32px) saturate(200%);
+    -webkit-backdrop-filter: blur(32px) saturate(200%);
+    border: 1px solid hsl(210 40% 96% / 0.1);
+  }
+
+  /* Noise texture overlay */
+  .noise-overlay::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    opacity: 0.03;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+    z-index: 0;
+  }
+
+  /* Gradient border utility */
+  .gradient-border {
+    position: relative;
+  }
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(217 91% 60% / 0.4), hsl(142 71% 45% / 0.2), hsl(217 91% 60% / 0.1));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Animated gradient border */
+  @keyframes gradient-rotate {
+    0% { --gradient-angle: 0deg; }
+    100% { --gradient-angle: 360deg; }
+  }
+
+  .animated-gradient-border {
+    position: relative;
+  }
+  .animated-gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1.5px;
+    background: conic-gradient(
+      from var(--gradient-angle, 0deg),
+      hsl(217 91% 60% / 0.6),
+      hsl(142 71% 45% / 0.3),
+      hsl(45 93% 56% / 0.2),
+      hsl(217 91% 60% / 0.6)
+    );
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    animation: gradient-rotate 4s linear infinite;
+  }
+
+  /* Gradient section divider */
+  .gradient-divider {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      hsl(217 91% 60% / 0.2) 20%,
+      hsl(142 71% 45% / 0.15) 50%,
+      hsl(217 91% 60% / 0.2) 80%,
+      transparent
+    );
+  }
+
+  /* Inner glow for premium elements */
+  .inner-glow {
+    box-shadow: inset 0 1px 0 0 hsl(210 40% 96% / 0.06);
   }
 }
