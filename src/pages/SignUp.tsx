@@ -9,7 +9,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -40,10 +39,8 @@ export default function SignUp() {
   const { toast } = useToast();
   const { signUp } = useAuth();
 
-  // Capture referral code from URL (?ref=CODE)
   const refCode = searchParams.get("ref") ?? localStorage.getItem("campusperk_ref") ?? "";
 
-  // Persist ref code so it survives page refreshes
   useEffect(() => {
     const urlRef = searchParams.get("ref");
     if (urlRef) {
@@ -79,7 +76,6 @@ export default function SignUp() {
     }
     setLoading(true);
 
-    // Pre-check domain abuse before signup
     const domain = email.split("@")[1]?.toLowerCase() ?? "";
     try {
       const { data: domainAbused } = await supabase.rpc("check_domain_abuse", {
@@ -97,7 +93,7 @@ export default function SignUp() {
         return;
       }
     } catch {
-      // If RPC fails (e.g. not logged in), proceed — the edge function will catch it later
+      // proceed
     }
 
     const { error } = await signUp(email, password, name);
@@ -105,17 +101,16 @@ export default function SignUp() {
     if (error) {
       toast({ title: "Sign up failed", description: error, variant: "destructive" });
     } else {
-      // Log referral if a ref code exists
       if (refCode) {
         try {
           await supabase.from("referrals").insert({
             referral_code: refCode,
-            referred_user_id: null, // Will be linked when user verifies email & logs in
+            referred_user_id: null,
             verified: false,
           });
           localStorage.removeItem("campusperk_ref");
         } catch {
-          // Non-critical — don't block signup
+          // Non-critical
         }
       }
       setStep("verify");
@@ -123,9 +118,9 @@ export default function SignUp() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex relative noise-overlay">
       {/* Left — branding panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden border-r border-border">
+      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden border-r border-border/30">
         <div className="absolute inset-0 bg-gradient-to-br from-accent/8 via-background to-background" />
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-accent/6 blur-[120px]" />
 
@@ -159,7 +154,7 @@ export default function SignUp() {
               "Price drop alerts & favorites",
               "Premium early access unlocks",
             ].map((text) => (
-              <div key={text} className="flex items-center gap-2.5 text-sm text-muted-foreground">
+              <div key={text} className="flex items-center gap-2.5 text-sm text-muted-foreground rounded-lg glass inner-glow px-4 py-2.5">
                 <CheckCircle2 className="h-4 w-4 text-accent shrink-0" />
                 <span>{text}</span>
               </div>
@@ -169,7 +164,7 @@ export default function SignUp() {
       </div>
 
       {/* Right — form / verification */}
-      <div className="flex-1 flex items-center justify-center px-4 py-12">
+      <div className="flex-1 flex items-center justify-center px-4 py-12 relative z-10">
         {step === "form" ? (
           <motion.div className="w-full max-w-md" initial="hidden" animate="visible">
             <motion.div variants={fadeUp} custom={0} className="lg:hidden flex justify-center mb-8">
@@ -180,7 +175,7 @@ export default function SignUp() {
 
             <motion.div variants={fadeUp} custom={0}>
               {refCode && (
-                <div className="mb-4 flex items-center gap-2 bg-accent/10 border border-accent/20 rounded-lg px-4 py-2.5">
+                <div className="mb-4 flex items-center gap-2 glass inner-glow border-accent/20 rounded-lg px-4 py-2.5">
                   <GraduationCap className="h-4 w-4 text-accent shrink-0" />
                   <span className="text-sm text-accent font-medium">You were referred by an ambassador!</span>
                 </div>
@@ -190,7 +185,6 @@ export default function SignUp() {
                 Use your .edu email to unlock student-exclusive deals.
               </p>
             </motion.div>
-
 
             <motion.form variants={fadeUp} custom={1} onSubmit={handleSubmit} className="mt-8 space-y-5">
               <div className="space-y-2">
@@ -203,7 +197,7 @@ export default function SignUp() {
                     placeholder="Alex Johnson"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="pl-10 h-11 bg-secondary border-border"
+                    className="pl-10 h-11 glass border-border/40"
                     required
                   />
                 </div>
@@ -219,7 +213,7 @@ export default function SignUp() {
                     placeholder="you@university.edu"
                     value={email}
                     onChange={(e) => handleEmailChange(e.target.value)}
-                    className={`pl-10 pr-10 h-11 bg-secondary border-border ${
+                    className={`pl-10 pr-10 h-11 glass border-border/40 ${
                       eduStatus === "valid"
                         ? "border-accent/50 focus-visible:ring-accent"
                         : eduStatus === "invalid"
@@ -260,7 +254,7 @@ export default function SignUp() {
                     placeholder="Min. 8 characters"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10 pr-10 h-11 bg-secondary border-border"
+                    className="pl-10 pr-10 h-11 glass border-border/40"
                     minLength={8}
                     required
                   />
@@ -295,7 +289,7 @@ export default function SignUp() {
               <Button
                 type="submit"
                 disabled={loading || eduStatus === "invalid"}
-                className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2"
+                className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2 shadow-[0_0_30px_-5px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_40px_-5px_hsl(var(--primary)/0.5)] transition-all duration-300"
               >
                 {loading ? "Creating account…" : "Create Account"}
                 {!loading && <ArrowRight className="h-4 w-4" />}
@@ -332,7 +326,7 @@ export default function SignUp() {
               your student email and activate your account.
             </p>
 
-            <Card className="mt-8 border-border bg-card">
+            <Card className="mt-8 glass inner-glow gradient-border">
               <CardContent className="p-5 space-y-3">
                 {[
                   { step: "1", text: "Open the email from CampusPerk" },
@@ -340,7 +334,7 @@ export default function SignUp() {
                   { step: "3", text: "Start exploring deals!" },
                 ].map((item) => (
                   <div key={item.step} className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <div className="h-6 w-6 rounded-full bg-secondary flex items-center justify-center text-xs font-semibold text-foreground shrink-0">
+                    <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center text-xs font-semibold text-primary shrink-0">
                       {item.step}
                     </div>
                     <span>{item.text}</span>
@@ -352,7 +346,7 @@ export default function SignUp() {
             <div className="mt-6 space-y-3">
               <Button
                 variant="outline"
-                className="w-full h-11 border-border text-foreground"
+                className="w-full h-11 glass border-border/40 text-foreground"
                 onClick={() => {
                   toast({ title: "Verification email resent!", description: "Check your inbox again." });
                 }}

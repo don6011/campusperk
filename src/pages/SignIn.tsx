@@ -44,9 +44,9 @@ export default function SignIn() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background flex relative noise-overlay">
       {/* Left — branding panel */}
-      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden border-r border-border">
+      <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden border-r border-border/30">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" />
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-primary/8 blur-[120px]" />
 
@@ -80,7 +80,7 @@ export default function SignIn() {
               { value: "$2.4M", label: "Saved" },
               { value: "98%", label: "Accuracy" },
             ].map((s) => (
-              <div key={s.label} className="text-center">
+              <div key={s.label} className="text-center rounded-xl glass inner-glow p-3">
                 <div className="font-display text-xl font-bold text-foreground">{s.value}</div>
                 <div className="text-xs text-muted-foreground">{s.label}</div>
               </div>
@@ -90,7 +90,7 @@ export default function SignIn() {
       </div>
 
       {/* Right — form */}
-      <div className="flex-1 flex items-center justify-center px-4 py-12">
+      <div className="flex-1 flex items-center justify-center px-4 py-12 relative z-10">
         <motion.div className="w-full max-w-md" initial="hidden" animate="visible">
           {/* Mobile logo */}
           <motion.div variants={fadeUp} custom={0} className="lg:hidden flex justify-center mb-8">
@@ -106,7 +106,6 @@ export default function SignIn() {
             </p>
           </motion.div>
 
-
           <motion.form variants={fadeUp} custom={1} onSubmit={handleSubmit} className="mt-8 space-y-5">
             <div className="space-y-2">
               <Label htmlFor="email" className="text-sm text-foreground">Email</Label>
@@ -118,7 +117,7 @@ export default function SignIn() {
                   placeholder="you@university.edu"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 h-11 bg-secondary border-border"
+                  className="pl-10 h-11 glass border-border/40"
                   required
                 />
               </div>
@@ -139,7 +138,7 @@ export default function SignIn() {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 pr-10 h-11 bg-secondary border-border"
+                  className="pl-10 pr-10 h-11 glass border-border/40"
                   required
                 />
                 <button
@@ -155,7 +154,7 @@ export default function SignIn() {
             <Button
               type="submit"
               disabled={loading}
-              className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2"
+              className="w-full h-11 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-2 shadow-[0_0_30px_-5px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_40px_-5px_hsl(var(--primary)/0.5)] transition-all duration-300"
             >
               {loading ? "Signing in…" : "Sign In"}
               {!loading && <ArrowRight className="h-4 w-4" />}
