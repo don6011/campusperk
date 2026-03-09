@@ -164,7 +164,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               </p>
             </div>
           ) : (
-            <div className="m-3 rounded-xl border border-gold/30 bg-gold/5 p-4">
+            <div className="m-3 rounded-xl glass inner-glow border-gold/30 p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Crown className="h-4 w-4 text-gold" />
                 <span className="text-sm font-semibold text-gold">Go Premium</span>
