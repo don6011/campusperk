@@ -11,14 +11,14 @@ const fadeUp = {
 
 export default function PrivacyPolicy() {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col relative noise-overlay">
       {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-primary/6 blur-[160px]" />
       </div>
 
       {/* Nav */}
-      <nav className="sticky top-0 z-50 border-b border-border/30 bg-background/70 backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 glass-strong">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
             <img src={campusperkLogo} alt="CampusPerk" className="h-20 w-auto" />
