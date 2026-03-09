@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { motion } from "framer-motion";
 import {
