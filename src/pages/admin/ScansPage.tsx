@@ -9,16 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { StatusBadge } from "@/components/StatusBadge";
-import { mockScanRuns, type ScanStatus } from "@/lib/mock-data";
-import { ScanSearch, RefreshCw } from "lucide-react";
+import { RefreshCw, ScanSearch } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-const scanStatusStyles: Record<ScanStatus, string> = {
-  success: "bg-accent/15 text-accent border-accent/30",
-  failed: "bg-destructive/15 text-destructive border-destructive/30",
-  needs_review: "bg-gold/15 text-gold border-gold/30",
-};
+// Placeholder: In the future, connect to a real scan_runs table.
+// For now show an empty state so we can remove the mock-data dependency.
 
 const ScansPage = () => {
   return (
@@ -27,9 +22,9 @@ const ScansPage = () => {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div>
             <h2 className="font-display text-2xl font-bold">Scan Runs</h2>
-            <p className="text-sm text-muted-foreground">{mockScanRuns.length} recent scan results</p>
+            <p className="text-sm text-muted-foreground">No scan results yet</p>
           </div>
-          <Button className="gap-2">
+          <Button className="gap-2" disabled>
             <RefreshCw className="h-4 w-4" />
             Run Full Scan
           </Button>
@@ -38,9 +33,9 @@ const ScansPage = () => {
         {/* Summary cards */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {[
-            { label: "Successful", count: mockScanRuns.filter((s) => s.status === "success").length, color: "text-accent" },
-            { label: "Failed", count: mockScanRuns.filter((s) => s.status === "failed").length, color: "text-destructive" },
-            { label: "Needs Review", count: mockScanRuns.filter((s) => s.status === "needs_review").length, color: "text-gold" },
+            { label: "Successful", count: 0, color: "text-accent" },
+            { label: "Failed", count: 0, color: "text-destructive" },
+            { label: "Needs Review", count: 0, color: "text-gold" },
           ].map((stat) => (
             <div key={stat.label} className="rounded-xl border border-border bg-card p-5">
               <div className={cn("text-2xl font-display font-bold", stat.color)}>{stat.count}</div>
@@ -63,38 +58,13 @@ const ScansPage = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockScanRuns.map((scan) => (
-                <TableRow key={scan.id}>
-                  <TableCell className="font-medium text-sm">{scan.dealTitle}</TableCell>
-                  <TableCell className="text-sm text-muted-foreground">{scan.storeName}</TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={cn("text-xs font-medium", scanStatusStyles[scan.status])}>
-                      {scan.status === "needs_review" ? "Needs Review" : scan.status.charAt(0).toUpperCase() + scan.status.slice(1)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-1.5 text-xs">
-                      <StatusBadge status={scan.previousStatus} />
-                      <span className="text-muted-foreground">→</span>
-                      <StatusBadge status={scan.newStatus} />
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <span className={cn(
-                      "text-xs font-mono",
-                      scan.responseCode && scan.responseCode < 400 ? "text-accent" : "text-destructive"
-                    )}>
-                      {scan.responseCode || "—"}
-                    </span>
-                  </TableCell>
-                  <TableCell>
-                    <div className="max-w-xs truncate text-xs text-muted-foreground">{scan.aiChangeNotes}</div>
-                  </TableCell>
-                  <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                    {new Date(scan.scannedAt).toLocaleString()}
-                  </TableCell>
-                </TableRow>
-              ))}
+              <TableRow>
+                <TableCell colSpan={7} className="text-center py-16">
+                  <ScanSearch className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">No scan runs recorded yet.</p>
+                  <p className="text-xs text-muted-foreground/60 mt-1">Scans will appear here once the deal health-check pipeline is configured.</p>
+                </TableCell>
+              </TableRow>
             </TableBody>
           </Table>
         </div>
