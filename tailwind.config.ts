@@ -14,8 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "sans-serif"],
-        display: ["Space Grotesk", "sans-serif"],
+        sans: ["Satoshi", "sans-serif"],
+        display: ["Cabinet Grotesk", "sans-serif"],
       },
         colors: {
           border: "hsl(var(--border))",
@@ -95,11 +95,19 @@ export default {
           "0%, 100%": { boxShadow: "0 0 3px 1px hsl(var(--gold) / 0.3)" },
           "50%": { boxShadow: "0 0 8px 3px hsl(var(--gold) / 0.6)" },
         },
-      },
         "marquee": {
           "0%": { transform: "translateX(0)" },
           "100%": { transform: "translateX(-50%)" },
         },
+        "shimmer": {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        "gradient-shift": {
+          "0%, 100%": { backgroundPosition: "0% 50%" },
+          "50%": { backgroundPosition: "100% 50%" },
+        },
+      },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
@@ -107,6 +115,8 @@ export default {
         "pulse-glow": "pulse-glow 3s ease-in-out infinite",
         "gold-glow": "gold-glow 2s ease-in-out infinite",
         "marquee": "marquee 30s linear infinite",
+        "shimmer": "shimmer 3s ease-in-out infinite",
+        "gradient-shift": "gradient-shift 6s ease infinite",
       },
     },
   },
