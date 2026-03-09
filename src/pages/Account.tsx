@@ -287,7 +287,7 @@ export default function Account() {
                   <p className="text-xs text-muted-foreground">Manage push notifications, quiet hours & alert preferences</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </a>
+              </Link>
             </CardContent>
           </Card>
         </motion.div>

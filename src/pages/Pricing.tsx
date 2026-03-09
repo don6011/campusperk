@@ -95,8 +95,8 @@ const Pricing = () => {
             <div className="text-4xl font-display font-bold mb-6">
               $4.99<span className="text-lg font-normal text-muted-foreground">/mo</span>
             </div>
-            <Button className="w-full bg-gold hover:bg-gold/90 text-background font-semibold h-11 mb-8 gap-2">
-              <Zap className="h-4 w-4" /> Upgrade Now
+            <Button asChild className="w-full bg-gold hover:bg-gold/90 text-background font-semibold h-11 mb-8 gap-2">
+              <Link to={isLoggedIn ? "/premium" : "/sign-up"}><Zap className="h-4 w-4" /> Upgrade Now</Link>
             </Button>
             <div className="space-y-3">
               {comparisonRows.map((row) => (
