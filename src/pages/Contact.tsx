@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { z } from "zod";
+import { supabase } from "@/integrations/supabase/client";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 import LegalFooter from "@/components/LegalFooter";
 
@@ -42,9 +43,17 @@ export default function Contact() {
     }
 
     setLoading(true);
-    // Simulate submission delay
-    await new Promise((r) => setTimeout(r, 800));
+    const { error } = await supabase.from("partner_inquiries").insert({
+      contact_name: result.data.name,
+      email: result.data.email,
+      business_name: "Contact Form",
+      notes: result.data.message,
+    });
     setLoading(false);
+    if (error) {
+      toast.error("Failed to send message. Please try again.");
+      return;
+    }
     setSubmitted(true);
     toast.success("Thanks for reaching out! We'll respond as soon as possible.");
   };
