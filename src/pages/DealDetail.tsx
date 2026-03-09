@@ -6,29 +6,15 @@ import { useRecordRedemption } from "@/hooks/use-record-redemption";
 import { DealStackCalculator } from "@/components/DealStackCalculator";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft,
-  ExternalLink,
-  Shield,
-  Clock,
-  Crown,
-  Info,
-  GraduationCap,
-  CheckCircle2,
-  Tag,
-  Calendar,
-  ShoppingBag,
-  AlertTriangle,
-  Heart,
-  Share2,
-  Copy,
-  Sparkles,
-  Flame,
-  TrendingUp,
+  ArrowLeft, ExternalLink, Shield, Clock, Crown, Info, GraduationCap,
+  CheckCircle2, Tag, Calendar, ShoppingBag, AlertTriangle, Heart,
+  Share2, Copy, Sparkles, Flame, TrendingUp,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { UpgradeModal } from "@/components/UpgradeModal";
@@ -36,46 +22,95 @@ import { MissedDealAlert } from "@/components/MissedDealAlert";
 import { PremiumNudgeModal } from "@/components/PremiumNudgeModal";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { VerifiedStudentBadge } from "@/components/VerifiedStudentBadge";
-import { mockDeals } from "@/lib/mock-data";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePageTitle } from "@/hooks/use-page-title";
 import { useDealClaimCounts, useClaimDeal } from "@/hooks/use-deal-claims";
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  if (hours < 1) return "Just now";
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
-
-function freshnessColor(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const days = diff / (1000 * 60 * 60 * 24);
-  if (days <= 1) return "text-accent";
-  if (days <= 7) return "text-gold";
-  return "text-destructive";
-}
+import { timeAgo, freshnessColor, daysUntil } from "@/lib/deal-utils";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
   visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
+    opacity: 1, y: 0,
     transition: { delay: i * 0.06, duration: 0.4, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] },
   }),
 };
 
 export default function DealDetail() {
+  usePageTitle("Deal");
   const { dealId } = useParams<{ dealId: string }>();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const { isPremium: userIsPremium, isFoundingMember, user } = useAuth();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [nudgeOpen, setNudgeOpen] = useState(false);
-  const [fav, setFav] = useState(false);
   const { recordRedemption } = useRecordRedemption();
   const claimDeal = useClaimDeal();
   const { data: claimCountsMap } = useDealClaimCounts(dealId ? [dealId] : []);
-  const deal = mockDeals.find((d) => d.id === dealId);
+
+  const { data: deal, isLoading } = useQuery({
+    queryKey: ["deal-detail", dealId],
+    enabled: !!dealId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deals")
+        .select("*, stores:store_id(name, logo_url, website_url)")
+        .eq("id", dealId!)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  // Favorites
+  const { data: isFav } = useQuery({
+    queryKey: ["deal-fav", dealId, user?.id],
+    enabled: !!user && !!dealId,
+    queryFn: async () => {
+      const { data } = await supabase.from("favorites").select("id").eq("user_id", user!.id).eq("deal_id", dealId!).maybeSingle();
+      return !!data;
+    },
+  });
+
+  const toggleFav = async () => {
+    if (!user || !dealId) return;
+    if (isFav) {
+      await supabase.from("favorites").delete().eq("user_id", user.id).eq("deal_id", dealId);
+    } else {
+      await supabase.from("favorites").insert({ user_id: user.id, deal_id: dealId });
+    }
+    queryClient.invalidateQueries({ queryKey: ["deal-fav", dealId] });
+    queryClient.invalidateQueries({ queryKey: ["favorites-page"] });
+    queryClient.invalidateQueries({ queryKey: ["explore-favorites"] });
+  };
+
+  // Related deals from same store
+  const { data: relatedDeals = [] } = useQuery({
+    queryKey: ["related-deals", deal?.store_id, dealId],
+    enabled: !!deal?.store_id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("deals")
+        .select("id, title, discount_value, stores:store_id(name, logo_url)")
+        .eq("store_id", deal!.store_id)
+        .neq("id", dealId!)
+        .eq("status", "active")
+        .limit(2);
+      return data ?? [];
+    },
+  });
+
+  if (isLoading) {
+    return (
+      <DashboardLayout>
+        <div className="max-w-3xl mx-auto space-y-4">
+          <Skeleton className="h-8 w-24" />
+          <Skeleton className="h-[400px] rounded-xl" />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (!deal) {
     return (
@@ -92,12 +127,11 @@ export default function DealDetail() {
     );
   }
 
-  const isPremiumDeal = deal.visibility === "premium";
+  const storeName = deal.stores?.name ?? "Store";
+  const isPremiumDeal = deal.premium_only;
   const isGated = isPremiumDeal && !userIsPremium && !isFoundingMember;
-  const isExpiring = deal.expiresAt && new Date(deal.expiresAt) > new Date();
-  const daysLeft = deal.expiresAt
-    ? Math.ceil((new Date(deal.expiresAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-    : null;
+  const daysLeft = deal.expires_at ? daysUntil(deal.expires_at) : null;
+  const lastChecked = deal.updated_at;
 
   const handleGoToOffer = () => {
     if (isGated) {
@@ -106,7 +140,7 @@ export default function DealDetail() {
       return;
     }
     claimDeal.mutate(deal.id);
-    recordRedemption(deal.id, deal.discountValue, deal.category);
+    recordRedemption(deal.id, deal.discount_value ?? "0", deal.category ?? "other");
     navigate(`/go/${deal.id}`);
   };
 
@@ -122,48 +156,36 @@ export default function DealDetail() {
   return (
     <DashboardLayout>
       <div className="max-w-3xl mx-auto">
-        {/* Back nav */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-muted-foreground hover:text-foreground gap-1.5 mb-6 -ml-2"
-            onClick={() => navigate(-1)}
-          >
+          <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground gap-1.5 mb-6 -ml-2" onClick={() => navigate(-1)}>
             <ArrowLeft className="h-4 w-4" /> Back
           </Button>
         </motion.div>
 
-        {/* Main card */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
           <Card className="border-border bg-card overflow-hidden">
-            {/* Header with premium gradient */}
-            {isPremiumDeal && (
-              <div className="h-1 bg-gradient-to-r from-gold via-gold/60 to-gold/20" />
-            )}
+            {isPremiumDeal && <div className="h-1 bg-gradient-to-r from-gold via-gold/60 to-gold/20" />}
 
             <CardContent className="p-6 sm:p-8">
               {/* Store + badges row */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
                   <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center shrink-0">
-                    <ShoppingBag className="h-7 w-7 text-muted-foreground" />
+                    {deal.stores?.logo_url ? (
+                      <img src={deal.stores.logo_url} alt={storeName} className="h-10 w-10 rounded-xl object-contain" />
+                    ) : (
+                      <ShoppingBag className="h-7 w-7 text-muted-foreground" />
+                    )}
                   </div>
                   <div>
-                    <div className="text-sm text-muted-foreground">{deal.storeName}</div>
-                    <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground mt-0.5">
-                      {deal.title}
-                    </h1>
+                    <div className="text-sm text-muted-foreground">{storeName}</div>
+                    <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground mt-0.5">{deal.title}</h1>
                   </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
-                  <motion.button
-                    whileTap={{ scale: 0.85 }}
-                    onClick={() => setFav(!fav)}
-                    className="p-2 rounded-lg hover:bg-secondary transition-colors"
-                  >
-                    <Heart className={`h-5 w-5 ${fav ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
+                  <motion.button whileTap={{ scale: 0.85 }} onClick={toggleFav} className="p-2 rounded-lg hover:bg-secondary transition-colors">
+                    <Heart className={`h-5 w-5 ${isFav ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
                   </motion.button>
                   <button onClick={handleCopyLink} className="p-2 rounded-lg hover:bg-secondary transition-colors">
                     <Share2 className="h-5 w-5 text-muted-foreground" />
@@ -175,51 +197,27 @@ export default function DealDetail() {
               <div className="flex flex-wrap items-center gap-2 mt-4">
                 <VerifiedStudentBadge />
                 {isPremiumDeal ? (
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Badge className="bg-gold/15 text-gold border-gold/30 text-xs font-semibold gap-1">
-                        <Crown className="h-3 w-3" /> Premium Only
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>This deal is available to Premium members only.</TooltipContent>
-                  </Tooltip>
+                  <Badge className="bg-gold/15 text-gold border-gold/30 text-xs font-semibold gap-1">
+                    <Crown className="h-3 w-3" /> Premium Only
+                  </Badge>
                 ) : (
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Badge className="bg-accent/15 text-accent border-accent/30 text-xs font-semibold gap-1">
-                        <Shield className="h-3 w-3" /> Verified
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent>Verified student deal via .edu or partner validation.</TooltipContent>
-                  </Tooltip>
+                  <Badge className="bg-accent/15 text-accent border-accent/30 text-xs font-semibold gap-1">
+                    <Shield className="h-3 w-3" /> Verified
+                  </Badge>
                 )}
-
                 {deal.sponsored && (
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Badge className="bg-primary/15 text-primary border-primary/30 text-xs gap-1">
-                        <Sparkles className="h-3 w-3" /> Sponsored
-                      </Badge>
-                    </TooltipTrigger>
-                    <TooltipContent className="text-xs">Paid placement.</TooltipContent>
-                  </Tooltip>
+                  <Badge className="bg-primary/15 text-primary border-primary/30 text-xs gap-1">
+                    <Sparkles className="h-3 w-3" /> Sponsored
+                  </Badge>
                 )}
-
-                {deal.requiresEduEmail && (
+                {deal.requires_edu_email && (
                   <Badge className="bg-primary/10 text-primary border-primary/20 text-xs gap-1">
                     <GraduationCap className="h-3 w-3" /> .edu Required
                   </Badge>
                 )}
-
-                <Tooltip>
-                  <TooltipTrigger>
-                    <span className={`text-xs flex items-center gap-1 font-medium ${freshnessColor(deal.lastCheckedAt)}`}>
-                      <span className={`h-1.5 w-1.5 rounded-full ${freshnessColor(deal.lastCheckedAt).replace("text-", "bg-")}`} />
-                      <Clock className="h-3 w-3" /> {timeAgo(deal.lastCheckedAt)}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>Last verified {timeAgo(deal.lastCheckedAt)}</TooltipContent>
-                </Tooltip>
+                <span className={`text-xs flex items-center gap-1 font-medium ${freshnessColor(lastChecked)}`}>
+                  <Clock className="h-3 w-3" /> {timeAgo(lastChecked)}
+                </span>
               </div>
 
               <Separator className="my-6" />
@@ -229,15 +227,14 @@ export default function DealDetail() {
                 <Tag className="h-6 w-6 text-primary shrink-0" />
                 <div>
                   <div className="font-display text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    {deal.discountValue}
+                    {deal.discount_value ?? "Special Offer"}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5 capitalize">{deal.discountType.replace("_", " ")} discount</div>
+                  <div className="text-xs text-muted-foreground mt-0.5 capitalize">{deal.discount_type?.replace("_", " ")} discount</div>
                 </div>
                 {daysLeft !== null && daysLeft > 0 && (
                   <Badge className={`ml-auto text-xs font-semibold gap-1 ${
                     daysLeft < 3 ? "bg-destructive/15 text-destructive border-destructive/30" :
-                    daysLeft <= 7 ? "bg-[hsl(25_95%_53%)]/15 text-[hsl(25_95%_53%)] border-[hsl(25_95%_53%)]/30" :
-                    daysLeft <= 14 ? "bg-gold/15 text-gold border-gold/30" :
+                    daysLeft <= 7 ? "bg-gold/15 text-gold border-gold/30" :
                     "bg-accent/15 text-accent border-accent/30"
                   }`}>
                     <Calendar className="h-3 w-3" />
@@ -250,15 +247,14 @@ export default function DealDetail() {
               <div className="mt-6 space-y-4">
                 <div>
                   <h3 className="text-sm font-semibold text-foreground mb-2">About This Deal</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{deal.description}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{deal.description || "No additional details provided."}</p>
                 </div>
-
-                {deal.aiSummary && (
+                {deal.ai_summary && (
                   <div className="p-4 rounded-lg bg-primary/5 border border-primary/10">
                     <div className="text-xs font-semibold text-primary mb-1 flex items-center gap-1">
                       <Shield className="h-3 w-3" /> AI Summary
                     </div>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{deal.aiSummary}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{deal.ai_summary}</p>
                   </div>
                 )}
               </div>
@@ -270,23 +266,20 @@ export default function DealDetail() {
                     <CheckCircle2 className="h-3.5 w-3.5 text-accent" /> Eligibility
                   </h4>
                   <ul className="space-y-2">
-                    {deal.requiresEduEmail && (
+                    {deal.requires_edu_email && (
                       <li className="text-xs text-muted-foreground flex items-center gap-2">
-                        <GraduationCap className="h-3 w-3 text-primary shrink-0" />
-                        Valid .edu email required
+                        <GraduationCap className="h-3 w-3 text-primary shrink-0" /> Valid .edu email required
                       </li>
                     )}
                     <li className="text-xs text-muted-foreground flex items-center gap-2">
-                      <CheckCircle2 className="h-3 w-3 text-accent shrink-0" />
-                      Active student enrollment
+                      <CheckCircle2 className="h-3 w-3 text-accent shrink-0" /> Active student enrollment
                     </li>
                     <li className="text-xs text-muted-foreground flex items-center gap-2">
                       <CheckCircle2 className="h-3 w-3 text-accent shrink-0" />
-                      {deal.requiresEduEmail ? "Verified via SheerID or .edu" : "No verification needed"}
+                      {deal.requires_edu_email ? "Verified via SheerID or .edu" : "No verification needed"}
                     </li>
                   </ul>
                 </div>
-
                 <div className="p-4 rounded-xl bg-secondary/40 border border-border">
                   <h4 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
                     <Tag className="h-3.5 w-3.5 text-primary" /> How to Redeem
@@ -298,7 +291,7 @@ export default function DealDetail() {
                     </li>
                     <li className="text-xs text-muted-foreground flex items-start gap-2">
                       <span className="h-4 w-4 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">2</span>
-                      {deal.requiresEduEmail ? "Verify with your .edu email" : "Sign up or log in"}
+                      {deal.requires_edu_email ? "Verify with your .edu email" : "Sign up or log in"}
                     </li>
                     <li className="text-xs text-muted-foreground flex items-start gap-2">
                       <span className="h-4 w-4 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</span>
@@ -308,7 +301,7 @@ export default function DealDetail() {
                 </div>
               </div>
 
-              {/* Terms & Conditions */}
+              {/* Terms */}
               <div className="mt-4 p-4 rounded-xl bg-secondary/40 border border-border">
                 <h4 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
                   <Info className="h-3.5 w-3.5 text-muted-foreground" /> Terms & Conditions
@@ -317,18 +310,18 @@ export default function DealDetail() {
                   <li>Offer valid for verified students only</li>
                   <li>Cannot be combined with other promotions</li>
                   <li>Subject to availability and merchant terms</li>
-                  {deal.expiresAt && <li>Expires on {new Date(deal.expiresAt).toLocaleDateString()}</li>}
+                  {deal.expires_at && <li>Expires on {new Date(deal.expires_at).toLocaleDateString()}</li>}
                   <li>CampusPerk is not responsible for merchant fulfillment</li>
                 </ul>
               </div>
 
-              {/* CampusPerk Stack™ Calculator */}
+              {/* Stack Calculator */}
               {(userIsPremium || isFoundingMember) && (
                 <div className="my-6">
                   <DealStackCalculator
-                    dealDiscount={deal.discountValue}
-                    dealDiscountType={deal.discountType}
-                    storeName={deal.storeName}
+                    dealDiscount={deal.discount_value ?? "0"}
+                    dealDiscountType={deal.discount_type}
+                    storeName={storeName}
                   />
                 </div>
               )}
@@ -343,56 +336,34 @@ export default function DealDetail() {
                 </span>
                 {todayClaims > 0 && (
                   <span className="flex items-center gap-1.5 text-destructive font-medium">
-                    <Flame className="h-3.5 w-3.5" />
-                    {todayClaims} claimed today
+                    <Flame className="h-3.5 w-3.5" /> {todayClaims} claimed today
                   </span>
                 )}
                 {claimCounts?.campusTrending && (
                   <span className="flex items-center gap-1.5 text-primary font-medium">
-                    <TrendingUp className="h-3.5 w-3.5" />
-                    Trending on campus
+                    <TrendingUp className="h-3.5 w-3.5" /> Trending on campus
                   </span>
                 )}
               </div>
 
-              {/* CTA row */}
-              <div className="flex items-center gap-3">
+              {/* CTA */}
+              <div className="flex items-center gap-3 mt-4">
                 <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} className="flex-1">
-                  <Button
-                    onClick={handleGoToOffer}
-                    className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base gap-2"
-                  >
+                  <Button onClick={handleGoToOffer} className="w-full h-12 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-base gap-2">
                     {isGated ? (
-                      <>
-                        <Crown className="h-5 w-5" /> Unlock Premium Deal
-                      </>
+                      <><Crown className="h-5 w-5" /> Unlock Premium Deal</>
                     ) : (
-                      <>
-                        <ExternalLink className="h-4 w-4" /> Unlock Deal
-                      </>
+                      <><ExternalLink className="h-4 w-4" /> Unlock Deal</>
                     )}
                   </Button>
                 </motion.div>
-                {daysLeft !== null && daysLeft > 0 && (
-                  <Badge className={`shrink-0 text-xs font-semibold gap-1 px-3 py-2 ${
-                    daysLeft < 3 ? "bg-destructive/15 text-destructive border-destructive/30" :
-                    daysLeft <= 7 ? "bg-[hsl(25_95%_53%)]/15 text-[hsl(25_95%_53%)] border-[hsl(25_95%_53%)]/30" :
-                    daysLeft <= 14 ? "bg-gold/15 text-gold border-gold/30" :
-                    "bg-accent/15 text-accent border-accent/30"
-                  }`}>
-                    ⏳ {daysLeft === 1 ? "Ends tomorrow" : `Ends in ${daysLeft} days`}
-                  </Badge>
-                )}
               </div>
 
-              {/* Trust line */}
-              <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/70">
-                <Clock className="h-3 w-3" />
-                Last verified {timeAgo(deal.lastCheckedAt)}
+              {/* Trust + Affiliate */}
+              <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/70 mt-4">
+                <Clock className="h-3 w-3" /> Last verified {timeAgo(lastChecked)}
               </div>
-
-              {/* Affiliate disclosure */}
-              {deal.affiliateLinkUrl && (
+              {deal.affiliate_link_url && (
                 <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/60">
                   <Info className="h-3 w-3" />
                   CampusPerk may earn a commission from this link at no extra cost to you.
@@ -401,16 +372,14 @@ export default function DealDetail() {
 
               {/* Meta footer */}
               <div className="mt-6 flex flex-wrap items-center gap-x-6 gap-y-2 text-[11px] text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Tag className="h-3 w-3" /> {deal.category}
-                </span>
-                {deal.expiresAt && (
-                  <span className="flex items-center gap-1">
-                    <Calendar className="h-3 w-3" /> Expires {new Date(deal.expiresAt).toLocaleDateString()}
-                  </span>
+                {deal.category && (
+                  <span className="flex items-center gap-1"><Tag className="h-3 w-3" /> {deal.category}</span>
                 )}
-                <span className={`flex items-center gap-1 ${freshnessColor(deal.lastCheckedAt)}`}>
-                  <Clock className="h-3 w-3" /> Checked {timeAgo(deal.lastCheckedAt)}
+                {deal.expires_at && (
+                  <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Expires {new Date(deal.expires_at).toLocaleDateString()}</span>
+                )}
+                <span className={`flex items-center gap-1 ${freshnessColor(lastChecked)}`}>
+                  <Clock className="h-3 w-3" /> Checked {timeAgo(lastChecked)}
                 </span>
               </div>
             </CardContent>
@@ -418,36 +387,38 @@ export default function DealDetail() {
         </motion.div>
 
         {/* Related deals */}
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2} className="mt-8">
-          <h2 className="font-display text-lg font-semibold text-foreground mb-4">More from {deal.storeName}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {mockDeals
-              .filter((d) => d.storeName === deal.storeName && d.id !== deal.id)
-              .slice(0, 2)
-              .map((related) => (
+        {relatedDeals.length > 0 && (
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2} className="mt-8">
+            <h2 className="font-display text-lg font-semibold text-foreground mb-4">More from {storeName}</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {relatedDeals.map((related: any) => (
                 <Link key={related.id} to={`/deals/${related.id}`}>
                   <Card className="border-border bg-card hover:border-primary/30 transition-all duration-300 hover:shadow-[var(--shadow-glow)]">
                     <CardContent className="p-5 flex items-center gap-4">
                       <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
-                        <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                        {related.stores?.logo_url ? (
+                          <img src={related.stores.logo_url} alt="" className="h-7 w-7 rounded-md object-contain" />
+                        ) : (
+                          <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                        )}
                       </div>
                       <div className="min-w-0">
                         <div className="font-medium text-sm text-foreground truncate">{related.title}</div>
-                        <div className="text-xs text-primary font-semibold mt-0.5">{related.discountValue}</div>
+                        <div className="text-xs text-primary font-semibold mt-0.5">{related.discount_value ?? "Deal"}</div>
                       </div>
                     </CardContent>
                   </Card>
                 </Link>
               ))}
-          </div>
-        </motion.div>
+            </div>
+          </motion.div>
+        )}
       </div>
 
-      {/* Missed deal alert for gated deals */}
       {isGated && (
         <div className="mt-6">
           <MissedDealAlert
-            estimatedSavings={deal.discountValue ? parseInt(deal.discountValue.replace(/[^0-9]/g, '') || '40') : 40}
+            estimatedSavings={deal.discount_value ? parseInt(deal.discount_value.replace(/[^0-9]/g, '') || '40') : 40}
             onUpgrade={() => setNudgeOpen(true)}
           />
         </div>
