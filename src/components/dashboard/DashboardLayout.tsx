@@ -154,7 +154,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Upgrade CTA / Premium status */}
         {sidebarOpen && (
           profile?.premium_status ? (
-            <div className="m-3 rounded-xl border border-gold/30 bg-gold/10 p-4">
+            <div className="m-3 rounded-xl glass inner-glow border-gold/30 p-4">
               <div className="flex items-center gap-2 mb-1">
                 <Crown className="h-4 w-4 text-gold" />
                 <span className="text-sm font-semibold text-gold">Premium Active</span>
