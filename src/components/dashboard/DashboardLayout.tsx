@@ -200,7 +200,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
               placeholder="Search deals, stores, categories…"
-              className="pl-9 bg-secondary border-border h-9 text-sm"
+              className="pl-9 glass border-border/40 h-9 text-sm"
             />
           </div>
 
