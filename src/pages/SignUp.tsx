@@ -303,8 +303,8 @@ export default function SignUp() {
 
               <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
                 By signing up, you agree to our{" "}
-                <a href="#" className="text-primary hover:underline">Terms</a> and{" "}
-                <a href="#" className="text-primary hover:underline">Privacy Policy</a>.
+                <Link to="/terms" className="text-primary hover:underline">Terms</Link> and{" "}
+                <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
               </p>
             </motion.form>
 

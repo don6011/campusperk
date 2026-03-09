@@ -1,4 +1,5 @@
 import { useState, useRef } from "react";
+import { Link } from "react-router-dom";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { motion } from "framer-motion";
 import {
@@ -278,7 +279,7 @@ export default function Account() {
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0.5}>
           <Card className="border-border bg-card">
             <CardContent className="py-3">
-              <a href="/notification-settings" className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/40 transition-colors">
+              <Link to="/notification-settings" className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/40 transition-colors">
                 <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                   <Bell className="h-4 w-4 text-primary" />
                 </div>
@@ -287,7 +288,7 @@ export default function Account() {
                   <p className="text-xs text-muted-foreground">Manage push notifications, quiet hours & alert preferences</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </a>
+              </Link>
             </CardContent>
           </Card>
         </motion.div>
