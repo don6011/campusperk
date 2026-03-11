@@ -48,7 +48,7 @@ export default function ForgotPassword() {
       <motion.div className="w-full max-w-md relative z-10" initial="hidden" animate="visible">
         <motion.div variants={fadeUp} custom={0} className="flex justify-center mb-8">
           <Link to="/">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto" />
+            <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
           </Link>
         </motion.div>
 

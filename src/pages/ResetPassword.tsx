@@ -89,7 +89,7 @@ export default function ResetPassword() {
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
       <motion.div className="w-full max-w-md" initial="hidden" animate="visible">
         <motion.div variants={fadeUp} custom={0} className="flex justify-center mb-8">
-          <Link to="/"><img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto" /></Link>
+          <Link to="/"><img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" /></Link>
         </motion.div>
 
         {!success ? (
