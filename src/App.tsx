@@ -49,6 +49,7 @@ import PartnersPage from "./pages/PartnersPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Contact from "./pages/Contact";
+import About from "./pages/About";
 
 // Redirect /join?ref=CODE to waitlist
 function JoinRedirect() {
@@ -85,6 +86,7 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/about" element={<About />} />
 
 
             {/* Protected routes */}
