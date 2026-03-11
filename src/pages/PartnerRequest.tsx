@@ -10,6 +10,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import campusperkLogo from "@/assets/campusperk-logo.png";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -65,6 +66,9 @@ export default function PartnerRequest() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-md mx-auto px-4 py-12 space-y-8">
+        <Link to="/" className="flex justify-center mb-4">
+          <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
+        </Link>
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0} className="text-center">
           <div className="h-12 w-12 rounded-xl bg-accent/10 flex items-center justify-center mx-auto mb-4">
             <MapPin className="h-6 w-6 text-accent" />

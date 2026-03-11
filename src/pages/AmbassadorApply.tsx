@@ -114,7 +114,7 @@ export default function AmbassadorApply() {
       <nav className="border-b border-border bg-card/50 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-8 w-auto" />
+            <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
           </Link>
           <Link to="/sign-up">
             <Button size="sm" variant="outline">Sign Up</Button>

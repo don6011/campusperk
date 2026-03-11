@@ -196,7 +196,7 @@ const OutboundRedirect = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-md w-full rounded-2xl border border-border bg-card p-8 text-center"
       >
-        <img src={campusperkLogo} alt="CampusPerk" className="h-10 mx-auto mb-6" />
+        <img src={campusperkLogo} alt="CampusPerk" className="h-14 mx-auto mb-6" />
 
         <div className="flex items-center justify-center gap-2 mb-4">
           <StatusBadge status={deal.status} />

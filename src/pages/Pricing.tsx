@@ -42,7 +42,7 @@ const Pricing = () => {
       <nav className="border-b border-border/30 glass-strong sticky top-0 z-50">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to={backTo} className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto" />
+            <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
           </Link>
           <Button asChild variant="ghost" size="sm">
             <Link to={backTo}><ArrowLeft className="h-4 w-4 mr-1" /> Back</Link>

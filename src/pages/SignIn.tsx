@@ -95,7 +95,7 @@ export default function SignIn() {
           {/* Mobile logo */}
           <motion.div variants={fadeUp} custom={0} className="lg:hidden flex justify-center mb-8">
             <Link to="/">
-              <img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto" />
+              <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
             </Link>
           </motion.div>
 

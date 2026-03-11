@@ -25,7 +25,7 @@ const NotFound = () => {
         transition={{ duration: 0.5 }}
       >
         <Link to="/" className="inline-block mb-8">
-          <img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto mx-auto" />
+          <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto mx-auto" />
         </Link>
 
         <div className="mx-auto h-16 w-16 rounded-2xl glass inner-glow flex items-center justify-center mb-6">

@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import campusperkLogo from "@/assets/campusperk-logo.png";
 
 const CATEGORIES = ["Food & Dining", "Fitness & Wellness", "Housing", "Transit", "Retail", "Entertainment", "Services", "Other"];
 
@@ -68,6 +69,9 @@ export default function PartnerApply() {
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-xl mx-auto px-4 py-12 space-y-8">
+        <Link to="/" className="flex justify-center mb-4">
+          <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
+        </Link>
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0} className="text-center">
           <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
             <Building2 className="h-6 w-6 text-primary" />
