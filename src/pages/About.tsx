@@ -41,7 +41,7 @@ export default function About() {
       <nav className="glass-strong sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto" />
+            <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
           </Link>
           <div className="flex items-center gap-4">
             <Link to="/waitlist" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">
