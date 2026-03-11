@@ -11,6 +11,7 @@ export default function LegalFooter() {
             <img src={campusperkLogo} alt="CampusPerk" className="h-14 w-auto" />
           </Link>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <Link to="/about" className="hover:text-foreground transition-colors duration-300">About</Link>
             <Link to="/privacy" className="hover:text-foreground transition-colors duration-300">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-foreground transition-colors duration-300">Terms of Service</Link>
             <Link to="/contact" className="hover:text-foreground transition-colors duration-300">Contact</Link>
