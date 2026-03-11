@@ -72,7 +72,7 @@ export default function ResetPassword() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <motion.div className="text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Link to="/"><img src={campusperkLogo} alt="CampusPerk" className="h-12 w-auto mx-auto mb-6" /></Link>
+          <Link to="/"><img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto mx-auto mb-6" /></Link>
           <h1 className="font-display text-xl font-bold text-foreground">Invalid Reset Link</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             This link is invalid or has expired.{" "}
