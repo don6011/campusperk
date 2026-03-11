@@ -11,6 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { Link } from "react-router-dom";
+import campusperkLogo from "@/assets/campusperk-logo.png";
 
 const CATEGORIES = ["Food & Dining", "Fitness & Wellness", "Housing", "Transit", "Retail", "Entertainment", "Services", "Other"];
 
