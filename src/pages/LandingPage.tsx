@@ -156,6 +156,7 @@ const LandingPage = () => {
                 onClick={(e) => { e.preventDefault(); document.querySelector(link.href)?.scrollIntoView({ behavior: "smooth" }); }}
                 className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300">{link.label}</a>
             ))}
+            <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors duration-300">About</Link>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={openPartner} className="border-primary/40 text-primary hover:bg-primary/10 hidden sm:inline-flex">
