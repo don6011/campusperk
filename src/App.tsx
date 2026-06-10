@@ -50,6 +50,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import Contact from "./pages/Contact";
 import About from "./pages/About";
+import FoundingMembers from "./pages/FoundingMembers";
+import AmbassadorProgram from "./pages/AmbassadorProgram";
 
 // Redirect /join?ref=CODE to waitlist
 function JoinRedirect() {
@@ -88,6 +90,8 @@ const App = () => (
             <Route path="/terms" element={<TermsOfService />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/about" element={<About />} />
+            <Route path="/founding-members" element={<FoundingMembers />} />
+            <Route path="/ambassador-program" element={<AmbassadorProgram />} />
 
 
             {/* Protected routes */}
