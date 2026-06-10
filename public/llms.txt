@@ -1,0 +1,22 @@
+# CampusPerk
+
+> CampusPerk is a student-first deals and perks platform that aggregates, verifies, and alerts college students to every student discount — software, tech, food, fashion, travel, and more — in one dashboard.
+
+CampusPerk requires a verified .edu email to access personalized deals. Public marketing, pricing, and legal pages are listed below.
+
+## Pages
+
+- [Home](/): Overview of CampusPerk, featured student deals, and waitlist signup.
+- [About](/about): Who CampusPerk serves (students, faculty, staff, alumni) and the categories of deals covered.
+- [Pricing](/pricing): Free vs Premium plan comparison.
+- [Partners](/partners): Information for brands interested in offering deals to students.
+- [Partner Request](/partners/request): Request a brand or local business to be added to CampusPerk.
+- [Contact](/contact): Reach the CampusPerk team for partnerships, press, or support.
+- [Sign In](/sign-in): Existing user login.
+- [Sign Up](/sign-up): Create an account with a verified .edu email.
+- [Waitlist](/waitlist): Join the launch waitlist and get a referral code.
+
+## Optional
+
+- [Privacy Policy](/privacy): How CampusPerk collects and protects user data.
+- [Terms of Service](/terms): Terms governing use of the CampusPerk platform.

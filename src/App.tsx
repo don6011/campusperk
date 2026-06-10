@@ -68,6 +68,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <main>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<LandingPage />} />
@@ -122,6 +123,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </main>
         </BrowserRouter>
       </TooltipProvider>
       </CampusThemeProvider>

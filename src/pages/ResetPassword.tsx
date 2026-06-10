@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import campusperkLogo from "@/assets/campusperk-logo.png";
+import SEO from "@/components/SEO";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -87,6 +88,11 @@ export default function ResetPassword() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4 py-12">
+      <SEO
+        title="Set a new CampusPerk password"
+        description="Choose a new secure password for your CampusPerk account."
+        path="/reset-password"
+      />
       <motion.div className="w-full max-w-md" initial="hidden" animate="visible">
         <motion.div variants={fadeUp} custom={0} className="flex justify-center mb-8">
           <Link to="/"><img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" /></Link>

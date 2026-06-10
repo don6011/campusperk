@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import campusperkLogo from "@/assets/campusperk-logo.png";
+import SEO from "@/components/SEO";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -45,6 +46,11 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen bg-background flex relative noise-overlay">
+      <SEO
+        title="Sign in to CampusPerk"
+        description="Sign in to your CampusPerk account to unlock verified student discounts, save favorites, and manage alerts."
+        path="/sign-in"
+      />
       {/* Left — branding panel */}
       <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden border-r border-border/30">
         <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-background to-background" />

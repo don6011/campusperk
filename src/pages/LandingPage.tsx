@@ -14,6 +14,7 @@ import campusperkLogo from "@/assets/campusperk-logo.png";
 import WaitlistModal from "@/components/WaitlistModal";
 import LegalFooter from "@/components/LegalFooter";
 import PartnerInquiryModal from "@/components/PartnerInquiryModal";
+import SEO from "@/components/SEO";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -136,6 +137,11 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background overflow-hidden scroll-smooth relative noise-overlay">
+      <SEO
+        title="CampusPerk — Every Student Discount. One Dashboard."
+        description="Aggregate, verify, and unlock every student discount — tech, food, fashion, travel — all in one student-first dashboard."
+        path="/"
+      />
       <WaitlistModal open={waitlistOpen} onOpenChange={setWaitlistOpen} referredBy={referredBy} />
       <PartnerInquiryModal open={partnerOpen} onOpenChange={setPartnerOpen} />
 
