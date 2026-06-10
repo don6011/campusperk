@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import campusperkLogo from "@/assets/campusperk-logo.png";
+import SEO from "@/components/SEO";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -119,6 +120,11 @@ export default function SignUp() {
 
   return (
     <div className="min-h-screen bg-background flex relative noise-overlay">
+      <SEO
+        title="Create your CampusPerk account"
+        description="Sign up with your .edu email to verify your campus and start saving on tech, food, travel, and more."
+        path="/sign-up"
+      />
       {/* Left — branding panel */}
       <div className="hidden lg:flex lg:w-1/2 relative items-center justify-center overflow-hidden border-r border-border/30">
         <div className="absolute inset-0 bg-gradient-to-br from-accent/8 via-background to-background" />

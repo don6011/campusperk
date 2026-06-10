@@ -10,6 +10,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 import LegalFooter from "@/components/LegalFooter";
+import SEO from "@/components/SEO";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -60,6 +61,11 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen bg-background flex flex-col relative noise-overlay">
+      <SEO
+        title="Contact CampusPerk — Partnerships & support"
+        description="Get in touch with the CampusPerk team for partnerships, press, support, or campus ambassador inquiries."
+        path="/contact"
+      />
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-primary/6 blur-[160px]" />
       </div>

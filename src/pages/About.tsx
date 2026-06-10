@@ -4,6 +4,7 @@ import { GraduationCap, Briefcase, Building2, Users, Target, ShieldCheck, Globe,
 import { usePageTitle } from "@/hooks/use-page-title";
 import LegalFooter from "@/components/LegalFooter";
 import campusperkLogo from "@/assets/campusperk-logo.png";
+import SEO from "@/components/SEO";
 
 const stagger = {
   hidden: {},
@@ -35,6 +36,11 @@ export default function About() {
 
   return (
     <div className="min-h-screen bg-background text-foreground relative">
+      <SEO
+        title="About CampusPerk — Built by students, for students"
+        description="Learn how CampusPerk helps students, faculty, alumni, and staff unlock verified discounts across tech, software, retail, travel, and food."
+        path="/about"
+      />
       <div className="noise-overlay" />
 
       {/* Nav */}

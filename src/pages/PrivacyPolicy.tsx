@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 import LegalFooter from "@/components/LegalFooter";
+import SEO from "@/components/SEO";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -12,6 +13,11 @@ const fadeUp = {
 export default function PrivacyPolicy() {
   return (
     <div className="min-h-screen bg-background flex flex-col relative noise-overlay">
+      <SEO
+        title="Privacy Policy — CampusPerk"
+        description="How CampusPerk collects, uses, and protects your information, including .edu verification, cookies, and analytics."
+        path="/privacy"
+      />
       {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-primary/6 blur-[160px]" />

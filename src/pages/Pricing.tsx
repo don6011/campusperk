@@ -5,6 +5,7 @@ import { Check, X, Crown, ArrowLeft, Zap } from "lucide-react";
 import { Link } from "react-router-dom";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
+import SEO from "@/components/SEO";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -33,6 +34,11 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-background relative noise-overlay">
+      <SEO
+        title="CampusPerk Pricing — Free & Premium plans"
+        description="Compare CampusPerk Free and Premium. Unlock unlimited favorites, alerts, premium-only deals, early access, and an ad-free experience."
+        path="/pricing"
+      />
       {/* Ambient glow */}
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[600px] rounded-full bg-gold/5 blur-[160px]" />

@@ -3,6 +3,7 @@ import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 import LegalFooter from "@/components/LegalFooter";
+import SEO from "@/components/SEO";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -12,6 +13,11 @@ const fadeUp = {
 export default function TermsOfService() {
   return (
     <div className="min-h-screen bg-background flex flex-col relative noise-overlay">
+      <SEO
+        title="Terms of Service — CampusPerk"
+        description="The terms governing your use of CampusPerk, including account eligibility, deals, partners, and acceptable use."
+        path="/terms"
+      />
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[600px] rounded-full bg-primary/6 blur-[160px]" />
       </div>
