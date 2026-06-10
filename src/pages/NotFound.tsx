@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import { ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import campusperkLogo from "@/assets/campusperk-logo.png";
+import SEO from "@/components/SEO";
 
 const NotFound = () => {
   const location = useLocation();
@@ -14,6 +15,11 @@ const NotFound = () => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 relative noise-overlay">
+      <SEO
+        title="Page not found — CampusPerk"
+        description="The page you're looking for doesn't exist. Head back to CampusPerk to keep browsing student deals."
+        path="/not-found"
+      />
       <div className="fixed inset-0 pointer-events-none">
         <div className="absolute top-1/3 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full bg-primary/6 blur-[140px]" />
       </div>
