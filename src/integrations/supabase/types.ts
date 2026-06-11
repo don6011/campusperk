@@ -275,10 +275,13 @@ export type Database = {
           id: string
           motivation_text: string | null
           name: string
+          referral_goal: number
           role: string
           social_handle: string | null
+          source: string | null
           status: string
           university: string
+          user_id: string | null
         }
         Insert: {
           created_at?: string
@@ -287,10 +290,13 @@ export type Database = {
           id?: string
           motivation_text?: string | null
           name: string
+          referral_goal?: number
           role?: string
           social_handle?: string | null
+          source?: string | null
           status?: string
           university: string
+          user_id?: string | null
         }
         Update: {
           created_at?: string
@@ -299,37 +305,111 @@ export type Database = {
           id?: string
           motivation_text?: string | null
           name?: string
+          referral_goal?: number
           role?: string
           social_handle?: string | null
+          source?: string | null
           status?: string
           university?: string
+          user_id?: string | null
         }
         Relationships: []
       }
-      ambassadors: {
+      ambassador_reward_unlocks: {
         Row: {
+          ambassador_id: string
+          claimed_at: string | null
           created_at: string
+          current_value: number
           id: string
-          referral_code: string
+          reward_key: string
+          reward_label: string
           status: string
-          university: string
+          threshold_type: string
+          threshold_value: number
+          unlocked_at: string
           user_id: string
         }
         Insert: {
+          ambassador_id: string
+          claimed_at?: string | null
           created_at?: string
+          current_value?: number
           id?: string
-          referral_code: string
+          reward_key: string
+          reward_label: string
           status?: string
-          university: string
+          threshold_type: string
+          threshold_value: number
+          unlocked_at?: string
           user_id: string
         }
         Update: {
+          ambassador_id?: string
+          claimed_at?: string | null
           created_at?: string
+          current_value?: number
           id?: string
-          referral_code?: string
+          reward_key?: string
+          reward_label?: string
           status?: string
+          threshold_type?: string
+          threshold_value?: number
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ambassador_reward_unlocks_ambassador_id_fkey"
+            columns: ["ambassador_id"]
+            isOneToOne: false
+            referencedRelation: "ambassadors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ambassadors: {
+        Row: {
+          approved_at: string | null
+          created_at: string
+          founding_conversion_goal: number
+          id: string
+          merchant_lead_goal: number
+          referral_code: string
+          reward_balance_cents: number
+          status: string
+          tier: string
+          university: string
+          user_id: string
+          verified_referral_goal: number
+        }
+        Insert: {
+          approved_at?: string | null
+          created_at?: string
+          founding_conversion_goal?: number
+          id?: string
+          merchant_lead_goal?: number
+          referral_code: string
+          reward_balance_cents?: number
+          status?: string
+          tier?: string
+          university: string
+          user_id: string
+          verified_referral_goal?: number
+        }
+        Update: {
+          approved_at?: string | null
+          created_at?: string
+          founding_conversion_goal?: number
+          id?: string
+          merchant_lead_goal?: number
+          referral_code?: string
+          reward_balance_cents?: number
+          status?: string
+          tier?: string
           university?: string
           user_id?: string
+          verified_referral_goal?: number
         }
         Relationships: []
       }
@@ -936,6 +1016,51 @@ export type Database = {
           },
         ]
       }
+      founding_member_reservations: {
+        Row: {
+          campus: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string | null
+          notes: string | null
+          price_cents: number
+          referral_code: string | null
+          source: string
+          status: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          campus?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name?: string | null
+          notes?: string | null
+          price_cents?: number
+          referral_code?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          campus?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string | null
+          notes?: string | null
+          price_cents?: number
+          referral_code?: string | null
+          source?: string
+          status?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       group_deal_participants: {
         Row: {
           group_deal_id: string
@@ -1027,6 +1152,102 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      merchant_submissions: {
+        Row: {
+          admin_notes: string | null
+          approved_offer_id: string | null
+          approved_partner_id: string | null
+          business_name: string
+          campus_target: string | null
+          category: string | null
+          city: string | null
+          contact_email: string
+          contact_name: string | null
+          contact_phone: string | null
+          created_at: string
+          discount_value: string | null
+          expires_at: string | null
+          id: string
+          monthly_budget_cents: number | null
+          offer_description: string | null
+          offer_title: string
+          proof_url: string | null
+          redemption_instructions: string | null
+          referral_code: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          source: string
+          sponsored_interest: boolean
+          state: string | null
+          status: string
+          submitted_by: string | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          admin_notes?: string | null
+          approved_offer_id?: string | null
+          approved_partner_id?: string | null
+          business_name: string
+          campus_target?: string | null
+          category?: string | null
+          city?: string | null
+          contact_email: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          discount_value?: string | null
+          expires_at?: string | null
+          id?: string
+          monthly_budget_cents?: number | null
+          offer_description?: string | null
+          offer_title: string
+          proof_url?: string | null
+          redemption_instructions?: string | null
+          referral_code?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          sponsored_interest?: boolean
+          state?: string | null
+          status?: string
+          submitted_by?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          admin_notes?: string | null
+          approved_offer_id?: string | null
+          approved_partner_id?: string | null
+          business_name?: string
+          campus_target?: string | null
+          category?: string | null
+          city?: string | null
+          contact_email?: string
+          contact_name?: string | null
+          contact_phone?: string | null
+          created_at?: string
+          discount_value?: string | null
+          expires_at?: string | null
+          id?: string
+          monthly_budget_cents?: number | null
+          offer_description?: string | null
+          offer_title?: string
+          proof_url?: string | null
+          redemption_instructions?: string | null
+          referral_code?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          source?: string
+          sponsored_interest?: boolean
+          state?: string | null
+          status?: string
+          submitted_by?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: []
       }
       normalized_deals: {
         Row: {
@@ -1523,6 +1744,9 @@ export type Database = {
           campus_verified: boolean
           created_at: string
           email: string | null
+          founding_member_number: number | null
+          founding_member_since: string | null
+          founding_member_source: string | null
           has_seen_splash: boolean
           id: string
           is_founding_member: boolean
@@ -1552,6 +1776,9 @@ export type Database = {
           campus_verified?: boolean
           created_at?: string
           email?: string | null
+          founding_member_number?: number | null
+          founding_member_since?: string | null
+          founding_member_source?: string | null
           has_seen_splash?: boolean
           id: string
           is_founding_member?: boolean
@@ -1581,6 +1808,9 @@ export type Database = {
           campus_verified?: boolean
           created_at?: string
           email?: string | null
+          founding_member_number?: number | null
+          founding_member_since?: string | null
+          founding_member_source?: string | null
           has_seen_splash?: boolean
           id?: string
           is_founding_member?: boolean
@@ -1668,24 +1898,42 @@ export type Database = {
       }
       referrals: {
         Row: {
+          ambassador_id: string | null
+          conversion_event: string
+          founding_converted_at: string | null
           id: string
+          premium_converted_at: string | null
           referral_code: string
           referred_user_id: string | null
+          reward_status: string
           signup_date: string
+          source_path: string | null
           verified: boolean
         }
         Insert: {
+          ambassador_id?: string | null
+          conversion_event?: string
+          founding_converted_at?: string | null
           id?: string
+          premium_converted_at?: string | null
           referral_code: string
           referred_user_id?: string | null
+          reward_status?: string
           signup_date?: string
+          source_path?: string | null
           verified?: boolean
         }
         Update: {
+          ambassador_id?: string | null
+          conversion_event?: string
+          founding_converted_at?: string | null
           id?: string
+          premium_converted_at?: string | null
           referral_code?: string
           referred_user_id?: string | null
+          reward_status?: string
           signup_date?: string
+          source_path?: string | null
           verified?: boolean
         }
         Relationships: []
@@ -2114,6 +2362,90 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_decide_verification_request: {
+        Args: { p_approve: boolean; p_reason: string; p_request_id: string }
+        Returns: undefined
+      }
+      admin_list_deals: {
+        Args: never
+        Returns: {
+          affiliate_link_url: string | null
+          affiliate_network: string | null
+          ai_summary: string | null
+          category: string | null
+          commission_rate: number | null
+          commission_type: string
+          created_at: string
+          deal_scope: Database["public"]["Enums"]["deal_scope"]
+          description: string | null
+          direct_link_url: string | null
+          discount_type: Database["public"]["Enums"]["discount_type"]
+          discount_value: string | null
+          drop_time: string | null
+          drop_window: string | null
+          early_access: boolean
+          early_access_minutes: number
+          eligible_campuses: string[] | null
+          eligible_cities: string[] | null
+          eligible_regions: string[] | null
+          eligible_roles: Database["public"]["Enums"]["campus_role"][] | null
+          expires_at: string | null
+          featured: boolean
+          geo_radius_miles: number | null
+          id: string
+          is_affiliate: boolean
+          is_surprise_drop: boolean
+          last_checked_at: string | null
+          partner_id: string | null
+          partner_offer_id: string | null
+          premium_only: boolean
+          requires_campus_verification: boolean
+          requires_edu_email: boolean
+          requires_role_verification: boolean
+          sponsor_end_at: string | null
+          sponsor_priority: number
+          sponsor_source: string | null
+          sponsor_start_at: string | null
+          sponsor_tier: number | null
+          sponsored: boolean
+          status: Database["public"]["Enums"]["deal_status"]
+          store_id: string
+          title: string
+          updated_at: string
+          visibility: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "deals"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_merge_campus_domain: {
+        Args: {
+          p_source_domain: string
+          p_source_id: string
+          p_target_domain: string
+        }
+        Returns: undefined
+      }
+      admin_set_premium_status: {
+        Args: { p_premium: boolean; p_reason: string; p_user_id: string }
+        Returns: undefined
+      }
+      admin_set_student_verification: {
+        Args: {
+          p_method?: string
+          p_reason: string
+          p_user_id: string
+          p_verified: boolean
+        }
+        Returns: undefined
+      }
+      approve_merchant_submission: {
+        Args: { p_submission_id: string }
+        Returns: Json
+      }
       award_campus_points: { Args: { p_action: string }; Returns: undefined }
       check_domain_abuse: {
         Args: {
@@ -2121,6 +2453,10 @@ export type Database = {
           p_max_accounts?: number
           p_window_hours?: number
         }
+        Returns: boolean
+      }
+      check_user_rate_limit: {
+        Args: { p_max: number; p_table: string; p_window: string }
         Returns: boolean
       }
       check_verification_rate_limit: {
@@ -2148,11 +2484,30 @@ export type Database = {
         }
         Returns: number
       }
+      create_founding_member_reservation: {
+        Args: {
+          p_campus?: string
+          p_email: string
+          p_name?: string
+          p_referral_code?: string
+        }
+        Returns: string
+      }
       ensure_campus_domain: {
         Args: { p_campus_name?: string; p_domain_root: string }
         Returns: string
       }
-      get_deal_redirect: { Args: { p_deal_id: string }; Returns: Json }
+      get_deal_redirect:
+        | { Args: { p_deal_id: string }; Returns: Json }
+        | {
+            Args: {
+              p_deal_id: string
+              p_device_type?: string
+              p_referral_code?: string
+              p_referrer?: string
+            }
+            Returns: Json
+          }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2162,6 +2517,75 @@ export type Database = {
       }
       normalize_campus_domain: {
         Args: { email_address: string }
+        Returns: string
+      }
+      record_ambassador_referral: {
+        Args: {
+          p_event?: string
+          p_referral_code: string
+          p_referred_user_id?: string
+          p_source_path?: string
+        }
+        Returns: string
+      }
+      record_deal_claim: { Args: { p_deal_id: string }; Returns: undefined }
+      record_deal_click: { Args: { p_deal_id: string }; Returns: undefined }
+      record_sponsored_click: {
+        Args: {
+          p_item_id: string
+          p_item_type?: string
+          p_scope?: string
+          p_sponsor_priority?: number
+          p_sponsor_tier?: number
+        }
+        Returns: undefined
+      }
+      record_sponsored_impressions: {
+        Args: { p_deal_ids: string[] }
+        Returns: undefined
+      }
+      refresh_ambassador_rewards: {
+        Args: { p_ambassador_id: string }
+        Returns: undefined
+      }
+      request_campus_verification: {
+        Args: {
+          p_domain_root: string
+          p_proof_upload_urls?: string[]
+          p_role: Database["public"]["Enums"]["campus_role"]
+          p_user_message?: string
+        }
+        Returns: undefined
+      }
+      self_auto_verify_campus_role: {
+        Args: {
+          p_domain_root: string
+          p_role: Database["public"]["Enums"]["campus_role"]
+          p_score?: number
+        }
+        Returns: undefined
+      }
+      submit_merchant_deal: {
+        Args: {
+          p_business_name: string
+          p_campus_target?: string
+          p_category?: string
+          p_city?: string
+          p_contact_email: string
+          p_contact_name?: string
+          p_contact_phone?: string
+          p_discount_value?: string
+          p_expires_at?: string
+          p_monthly_budget_cents?: number
+          p_offer_description?: string
+          p_offer_title: string
+          p_proof_url?: string
+          p_redemption_instructions?: string
+          p_referral_code?: string
+          p_sponsored_interest?: boolean
+          p_state?: string
+          p_website_url?: string
+        }
         Returns: string
       }
     }
