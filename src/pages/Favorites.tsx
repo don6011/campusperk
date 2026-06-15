@@ -102,7 +102,7 @@ export default function Favorites() {
   };
 
   const sorted = useMemo(() => {
-    let deals = [...favorites];
+    const deals = [...favorites];
     switch (sortBy) {
       case "expiring":
         deals.sort((a, b) => {

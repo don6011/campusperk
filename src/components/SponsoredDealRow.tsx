@@ -53,18 +53,13 @@ export function isSponsoredActive(item: {
 
 /** Log a sponsored click */
 export async function logSponsoredClick(deal: SponsoredDeal, userId?: string, profile?: any) {
-  await supabase.from("sponsored_clicks").insert({
-    user_id: userId ?? null,
-    item_type: "deal",
-    item_id: deal.id,
-    scope: deal.deal_scope ?? null,
-    campus_id: profile?.campus_id ?? null,
-    city: profile?.campus_city ?? profile?.user_city ?? null,
-    state: profile?.campus_state ?? profile?.user_state ?? null,
-    is_sponsored: true,
-    sponsor_tier: deal.sponsor_tier ?? null,
-    sponsor_priority: (deal as any).sponsor_priority ?? null,
-  } as any);
+  await supabase.rpc("record_sponsored_click" as any, {
+    p_item_id: deal.id,
+    p_item_type: "deal",
+    p_scope: deal.deal_scope ?? null,
+    p_sponsor_tier: deal.sponsor_tier ?? null,
+    p_sponsor_priority: (deal as any).sponsor_priority ?? null,
+  });
 }
 
 export function SponsoredDealRow({ deals, label = "Sponsored", maxItems = 3, scope }: SponsoredDealRowProps) {
@@ -136,19 +131,10 @@ export function SponsoredDealRow({ deals, label = "Sponsored", maxItems = 3, sco
   // Track impressions
   useEffect(() => {
     if (sorted.length === 0) return;
-    const impressions = sorted.map((deal) => ({
-      user_id: user?.id ?? null,
-      deal_id: deal.id,
-      item_type: "deal",
-      scope: scope ?? deal.deal_scope ?? null,
-      campus_id: (profile as any)?.campus_id ?? null,
-      city: (profile as any)?.campus_city ?? (profile as any)?.user_city ?? null,
-      state: (profile as any)?.campus_state ?? (profile as any)?.user_state ?? null,
-      is_verified: (profile as any)?.campus_verified ?? false,
-      is_premium: (profile as any)?.premium_status ?? false,
-    }));
-    supabase.from("sponsored_impressions").insert(impressions as any).then();
-  }, [sorted.length]);
+    supabase.rpc("record_sponsored_impressions" as any, {
+      p_deal_ids: sorted.map((deal) => deal.id),
+    }).then();
+  }, [sorted]);
 
   if (sorted.length === 0) return null;
 

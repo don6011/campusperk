@@ -104,12 +104,12 @@ export default function SignUp() {
     } else {
       if (refCode) {
         try {
-          await supabase.from("referrals").insert({
-            referral_code: refCode,
-            referred_user_id: null,
-            verified: false,
+          await supabase.rpc("record_ambassador_referral" as any, {
+            p_referral_code: refCode,
+            p_referred_user_id: null,
+            p_event: "signup_started",
+            p_source_path: window.location.pathname,
           });
-          localStorage.removeItem("campusperk_ref");
         } catch {
           // Non-critical
         }

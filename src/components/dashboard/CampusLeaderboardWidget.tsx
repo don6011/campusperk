@@ -41,10 +41,10 @@ export function CampusLeaderboardWidget() {
         </Link>
       </div>
 
-      <Card className="border-gold/20 bg-card relative overflow-hidden">
+      <Card className="border-gold/20 bg-card relative overflow-hidden glow-premium">
         <div className="absolute top-0 right-0 w-48 h-48 bg-gold/5 rounded-full blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/3" />
         <CardContent className="relative z-10 p-0">
-          {leaderboard.map((entry, i) => {
+          {leaderboard.length > 0 ? leaderboard.map((entry, i) => {
             const isUserCampus = userCampusName && entry.campus_name.toLowerCase().includes(userCampusName.toLowerCase());
             const RankIcon = rankIcons[i]?.icon;
             const rankColor = rankIcons[i]?.color;
@@ -88,7 +88,15 @@ export function CampusLeaderboardWidget() {
                 </div>
               </div>
             );
-          })}
+          }) : (
+            <div className="p-6 text-center">
+              <Trophy className="mx-auto mb-3 h-9 w-9 text-muted-foreground/40" />
+              <p className="text-sm font-semibold text-foreground">Beta Preview: no campus rankings yet</p>
+              <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+                Rankings will populate from real savings and claim events.
+              </p>
+            </div>
+          )}
 
           {/* CTA */}
           <div className="px-6 py-4 border-t border-border/30">

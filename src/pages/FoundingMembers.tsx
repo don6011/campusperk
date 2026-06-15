@@ -1,12 +1,15 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Award, Rocket, Lightbulb, Gift, ArrowRight, Check, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 
@@ -33,7 +36,11 @@ const fade = {
 };
 
 export default function FoundingMembers() {
+  const [searchParams] = useSearchParams();
   const [claimed, setClaimed] = useState<number>(0);
+  const [form, setForm] = useState({ name: "", email: "", campus: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [reserved, setReserved] = useState(false);
 
   useEffect(() => {
     supabase
@@ -44,6 +51,28 @@ export default function FoundingMembers() {
   }, []);
 
   const pct = Math.min(100, Math.round((claimed / TOTAL_SLOTS) * 100));
+  const referralCode = searchParams.get("ref") || localStorage.getItem("campusperk_ref") || "";
+
+  const reserveFoundingSpot = async () => {
+    if (!form.email.trim()) {
+      toast({ title: "Email required", description: "Enter your email to reserve a founding member spot.", variant: "destructive" });
+      return;
+    }
+    setSubmitting(true);
+    const { error } = await supabase.rpc("create_founding_member_reservation" as any, {
+      p_email: form.email.trim(),
+      p_name: form.name.trim() || null,
+      p_campus: form.campus.trim() || null,
+      p_referral_code: referralCode || null,
+    });
+    setSubmitting(false);
+    if (error) {
+      toast({ title: "Could not reserve spot", description: error.message, variant: "destructive" });
+      return;
+    }
+    setReserved(true);
+    toast({ title: "Founding spot reserved", description: "We will follow up with your founding member checkout link." });
+  };
 
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans">
@@ -236,12 +265,39 @@ export default function FoundingMembers() {
       <section className="py-24 bg-slate-50">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-3xl md:text-5xl font-bold text-slate-900">Claim Your Founding Member Status</h2>
-          <p className="mt-4 text-slate-600 text-lg">A one-time opportunity. Once we hit 1,000, the door closes.</p>
-          <Link to="/sign-up" className="inline-block mt-8">
-            <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white h-14 px-8 text-base gap-2">
-              <Check className="h-5 w-5" /> Join The First 1,000
-            </Button>
-          </Link>
+          <p className="mt-4 text-slate-600 text-lg">Reserve a spot now. We will send founding member checkout details before public launch.</p>
+          <Card className="mt-8 text-left border-slate-200">
+            <CardContent className="p-6 space-y-4">
+              {reserved ? (
+                <div className="text-center py-6">
+                  <Check className="h-10 w-10 text-emerald-600 mx-auto mb-3" />
+                  <p className="font-semibold text-slate-900">Your founding member spot is reserved.</p>
+                  <p className="text-sm text-slate-600 mt-1">Watch your inbox for the founding member checkout invite.</p>
+                </div>
+              ) : (
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-slate-700">Name</Label>
+                      <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} placeholder="Your name" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-slate-700">Email *</Label>
+                      <Input type="email" value={form.email} onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))} placeholder="you@school.edu" />
+                    </div>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-slate-700">Campus</Label>
+                    <Input value={form.campus} onChange={(e) => setForm((f) => ({ ...f, campus: e.target.value }))} placeholder="Your campus or city" />
+                  </div>
+                  <Button size="lg" onClick={reserveFoundingSpot} disabled={submitting || !form.email.trim()} className="w-full bg-blue-600 hover:bg-blue-700 text-white h-12 gap-2">
+                    <Check className="h-5 w-5" /> {submitting ? "Reserving..." : "Reserve Founding Spot"}
+                  </Button>
+                  <p className="text-xs text-slate-500 text-center">Already have an account? You can still reserve with the same email.</p>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
       </section>
 

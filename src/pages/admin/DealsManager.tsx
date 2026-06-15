@@ -76,12 +76,18 @@ const DealsManager = () => {
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ["admin-deals"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("deals")
-        .select("id, title, category, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, discount_value, direct_link_url, affiliate_link_url, commission_rate, commission_type, affiliate_network, is_affiliate, requires_edu_email, stores(name)")
-        .order("created_at", { ascending: false });
+      const { data, error } = await supabase.rpc("admin_list_deals" as any);
       if (error) throw error;
-      return data as DealWithStore[];
+      const deals = (data || []) as any[];
+      const storeIds = Array.from(new Set(deals.map((deal) => deal.store_id).filter(Boolean)));
+      const { data: stores } = storeIds.length
+        ? await supabase.from("stores").select("id, name").in("id", storeIds)
+        : { data: [] };
+      const storeMap = new Map((stores || []).map((store: any) => [store.id, { name: store.name }]));
+      return deals.map((deal) => ({
+        ...deal,
+        stores: storeMap.get(deal.store_id) ?? null,
+      })) as DealWithStore[];
     },
   });
 

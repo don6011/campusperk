@@ -18,8 +18,11 @@ import {
   User,
   Send,
   Shield,
+  Sparkles,
   Medal,
   Trophy,
+  Handshake,
+  Award,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,8 +47,12 @@ const navItems = [
   { title: "Favorites", url: "/favorites", icon: Heart },
   { title: "Submit Deal", url: "/submit", icon: Send },
   { title: "Alerts", url: "/alerts", icon: Bell },
+  { title: "Badges", url: "/badges", icon: Sparkles },
   { title: "Campus Leaderboard", url: "/campus-leaderboard", icon: Trophy },
+  { title: "UAGC Hub", url: "/uagc", icon: Handshake },
   { title: "Ambassador", url: "/ambassador/dashboard", icon: Medal },
+  { title: "Ambassador Board", url: "/ambassador/leaderboard", icon: Trophy },
+  { title: "Founders", url: "/founding-showcase", icon: Award },
   { title: "Premium", url: "/pricing", icon: Crown, premiumUrl: "/premium" },
   { title: "Account Settings", url: "/settings", icon: Settings },
 ];
@@ -240,6 +247,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuItem className="gap-2" onClick={() => navigate("/settings")}>
                   <User className="h-4 w-4" /> Account Settings
+                </DropdownMenuItem>
+                <DropdownMenuItem className="gap-2" onClick={() => navigate("/badges")}>
+                  <Sparkles className="h-4 w-4" /> Badge Collection
                 </DropdownMenuItem>
                 <DropdownMenuItem className="gap-2" onClick={() => navigate(profile?.premium_status ? "/premium" : "/pricing")}>
                   <Crown className={`h-4 w-4 ${profile?.premium_status ? "text-gold" : ""}`} />

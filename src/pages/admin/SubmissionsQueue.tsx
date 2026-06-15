@@ -96,7 +96,7 @@ const SubmissionsQueue = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("deals")
-        .select("id, title, store_id, direct_link_url, stores(name)")
+        .select("id, title, store_id, stores(name)")
         .eq("status", "active")
         .limit(500);
       return data || [];
@@ -112,7 +112,7 @@ const SubmissionsQueue = () => {
     const lower = storeName.toLowerCase();
     return existingDeals.filter((d: any) => {
       const sn = d.stores?.name?.toLowerCase() || "";
-      return sn === lower || sn.includes(lower) || (dealUrl && d.direct_link_url?.toLowerCase() === dealUrl.toLowerCase());
+      return sn === lower || sn.includes(lower);
     });
   };
 

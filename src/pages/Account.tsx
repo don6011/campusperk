@@ -1,6 +1,7 @@
 import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
+import { BadgeEngine } from "@/components/BadgeEngine";
 import { motion } from "framer-motion";
 import {
   GraduationCap, BookOpen, Briefcase, Users, ShieldCheck, ShieldX,
@@ -145,30 +146,11 @@ export default function Account() {
         hasProof: false,
       });
 
-      // Write audit log
-      await supabase.from("verification_audit_log").insert({
-        user_id: user.id,
-        admin_id: user.id,
-        previous_status: false,
-        new_status: true,
-        verification_method: "edu" as any,
-        reason: `Automatic verification (score: ${score})`,
-        action_type: "verification_approved" as any,
-        new_role: role as any,
-        new_campus_status: "verified" as any,
-        campus_verification_method: "edu_email" as any,
-      } as any);
-
-      // Update profile
-      const { error } = await supabase.from("profiles").update({
-        campus_role: role as any,
-        campus_role_status: "verified" as any,
-        campus_verification_method: "edu_email" as any,
-        campus_domain: normalizedDomain,
-        campus_verified: true,
-        student_verified: role === "student",
-        verification_strength_score: score,
-      }).eq("id", user.id);
+      const { error } = await supabase.rpc("self_auto_verify_campus_role" as any, {
+        p_role: role,
+        p_domain_root: normalizedDomain,
+        p_score: score,
+      });
 
       if (error) throw error;
       await refreshProfile();
@@ -207,45 +189,12 @@ export default function Account() {
     if (!user || !selectedRole) return;
     setSubmitting(true);
     try {
-      // Check rate limit
-      const { data: limited } = await supabase.rpc("check_verification_request_rate_limit", {
-        p_user_id: user.id,
-        p_max_requests: 3,
-        p_window_hours: 24,
-      } as any);
-      if (limited) {
-        toast({ title: "Rate limit reached", description: "Max 3 requests per 24h. Please wait.", variant: "destructive" });
-        return;
-      }
-
-      // Write audit log: role_selected
-      await supabase.from("verification_audit_log").insert({
-        user_id: user.id,
-        admin_id: user.id,
-        previous_status: false,
-        new_status: false,
-        verification_method: "manual" as any,
-        reason: "User selected campus role and requested manual verification",
-        action_type: "verification_requested" as any,
-        new_role: selectedRole as any,
-        new_campus_status: "pending" as any,
-      } as any);
-
-      // Update profile role + status
-      await supabase.from("profiles").update({
-        campus_role: selectedRole as any,
-        campus_role_status: "pending" as any,
-        campus_domain: normalizedDomain,
-      }).eq("id", user.id);
-
-      // Insert verification request
-      const { error } = await supabase.from("verification_requests").insert({
-        user_id: user.id,
-        campus_role_requested: selectedRole as any,
-        email_domain: normalizedDomain,
-        proof_upload_urls: uploadedUrls,
-        user_message: message.trim() || null,
-      } as any);
+      const { error } = await supabase.rpc("request_campus_verification" as any, {
+        p_role: selectedRole,
+        p_domain_root: normalizedDomain,
+        p_proof_upload_urls: uploadedUrls,
+        p_user_message: message.trim() || null,
+      });
       if (error) throw error;
 
       await refreshProfile();
@@ -285,7 +234,17 @@ export default function Account() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-foreground">Notification Settings</p>
-                  <p className="text-xs text-muted-foreground">Manage push notifications, quiet hours & alert preferences</p>
+                <p className="text-xs text-muted-foreground">Manage push notifications, quiet hours & alert preferences</p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            </Link>
+              <Link to="/badges" className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/40 transition-colors">
+                <div className="h-9 w-9 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                  <Sparkles className="h-4 w-4 text-accent" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-foreground">Badge Collection</p>
+                  <p className="text-xs text-muted-foreground">View earned badges, locked badges, rarity, and unlock progress</p>
                 </div>
                 <ChevronRight className="h-4 w-4 text-muted-foreground" />
               </Link>
@@ -348,6 +307,23 @@ export default function Account() {
 
         {/* Your Stats */}
         <AccountStatsSection userId={user?.id} />
+
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1.6}>
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Badge Engine
+              </CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Badges unlock from verification, founding member status, ambassador activity, and trust score.
+              </p>
+            </CardHeader>
+            <CardContent>
+              <BadgeEngine />
+            </CardContent>
+          </Card>
+        </motion.div>
 
 
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2}>
@@ -738,28 +714,10 @@ function AccountStatsSection({ userId }: { userId?: string }) {
   const uniqueRedeemed = new Set(userClicks.map(c => c.deal_id));
   const dealsRedeemed = uniqueRedeemed.size;
 
-  const AVG_PRICES: Record<string, number> = {
-    Software: 120, Subscriptions: 30, Tech: 350, Clothing: 85,
-    Food: 25, Learning: 60, Entertainment: 20, Fitness: 50, Travel: 200, Other: 50,
-  };
-
-  const lifetimeSavings = deals
-    .filter(d => uniqueRedeemed.has(d.id))
-    .reduce((sum, d: any) => {
-      const avgPrice = AVG_PRICES[d.category ?? "Other"] ?? 50;
-      const disc = d.discount_value ?? "";
-      const pct = disc.match(/(\d+)\s*%/);
-      const fixed = disc.match(/\$\s*([\d.]+)/);
-      if (pct) return sum + avgPrice * (parseInt(pct[1]) / 100);
-      if (fixed) return sum + parseFloat(fixed[1]);
-      if (/free/i.test(disc)) return sum + avgPrice;
-      return sum + avgPrice * 0.15;
-    }, 0);
-
   const stats = [
     { label: "Active Deals", value: `${deals.length}`, icon: Tag, color: "text-primary" },
     { label: "Deals Redeemed", value: `${dealsRedeemed}`, icon: ShoppingBag, color: "text-accent" },
-    { label: "Savings Unlocked", value: `$${lifetimeSavings.toFixed(0)}`, icon: DollarSign, color: "text-accent" },
+    { label: "Savings Tracking", value: "Preview", icon: DollarSign, color: "text-accent" },
     { label: "Your Favorites", value: `${favorites.length}`, icon: Heart, color: "text-destructive" },
   ];
 
@@ -785,22 +743,16 @@ function AccountStatsSection({ userId }: { userId?: string }) {
                 </div>
               </div>
             ))}
-          </div>
-
-          {lifetimeSavings > 0 && (
-            <div className="mt-4 pt-4 border-t border-accent/10">
-              <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                <Sparkles className="h-3 w-3 text-accent" />
-                {lifetimeSavings < 100
-                  ? `$${(100 - lifetimeSavings).toFixed(0)} more to reach $100 milestone!`
-                  : lifetimeSavings < 500
-                  ? `$${(500 - lifetimeSavings).toFixed(0)} more to reach $500 milestone!`
-                  : "🎉 Amazing saver! You've unlocked the $500+ tier!"}
-              </div>
+          </div>          <div className="mt-4 pt-4 border-t border-accent/10">
+            <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+              <Sparkles className="h-3 w-3 text-accent" />
+              Beta Preview: verified savings totals will appear after real redemption amounts are recorded.
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </motion.div>
   );
 }
+
+

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { logPaywallView } from "@/lib/paywall";
@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, ExternalLink, Shield, Clock, Crown, Info, GraduationCap,
   CheckCircle2, Tag, Calendar, ShoppingBag, AlertTriangle, Heart,
-  Share2, Copy, Sparkles, Flame, TrendingUp,
+  Share2, Copy, Sparkles, Flame, TrendingUp, Bell, BellOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,6 +36,25 @@ const fadeUp = {
   }),
 };
 
+const followStorageKey = "campusperk.followedMerchants";
+
+const readFollowedMerchants = () => {
+  try {
+    return new Set<string>(JSON.parse(localStorage.getItem(followStorageKey) || "[]"));
+  } catch {
+    return new Set<string>();
+  }
+};
+
+type RelatedDeal = {
+  id: string;
+  store_id: string;
+  title: string;
+  discount_value: string | null;
+  category: string | null;
+  stores?: { name?: string | null; logo_url?: string | null } | null;
+};
+
 export default function DealDetail() {
   usePageTitle("Deal");
   const { dealId } = useParams<{ dealId: string }>();
@@ -45,6 +64,7 @@ export default function DealDetail() {
   const { isPremium: userIsPremium, isFoundingMember, user } = useAuth();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [nudgeOpen, setNudgeOpen] = useState(false);
+  const [isFollowingMerchant, setIsFollowingMerchant] = useState(false);
   const { recordRedemption } = useRecordRedemption();
   const claimDeal = useClaimDeal();
   const { data: claimCountsMap } = useDealClaimCounts(dealId ? [dealId] : []);
@@ -55,7 +75,7 @@ export default function DealDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("*, stores:store_id(name, logo_url, website_url)")
+        .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, ai_summary, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, stores:store_id(name, logo_url, website_url)")
         .eq("id", dealId!)
         .maybeSingle();
       if (error) throw error;
@@ -85,21 +105,42 @@ export default function DealDetail() {
     queryClient.invalidateQueries({ queryKey: ["explore-favorites"] });
   };
 
-  // Related deals from same store
+  // Related recommendations from the same merchant and category
   const { data: relatedDeals = [] } = useQuery({
-    queryKey: ["related-deals", deal?.store_id, dealId],
-    enabled: !!deal?.store_id,
+    queryKey: ["related-deals", deal?.store_id, deal?.category, dealId],
+    enabled: !!deal?.store_id || !!deal?.category,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("deals")
-        .select("id, title, discount_value, stores:store_id(name, logo_url)")
-        .eq("store_id", deal!.store_id)
-        .neq("id", dealId!)
-        .eq("status", "active")
-        .limit(2);
-      return data ?? [];
+      const [storeDeals, categoryDeals] = await Promise.all([
+        deal?.store_id
+          ? supabase
+              .from("deals")
+              .select("id, store_id, title, discount_value, category, stores:store_id(name, logo_url)")
+              .eq("store_id", deal.store_id)
+              .neq("id", dealId!)
+              .eq("status", "active")
+              .limit(4)
+          : Promise.resolve({ data: [] }),
+        deal?.category
+          ? supabase
+              .from("deals")
+              .select("id, store_id, title, discount_value, category, stores:store_id(name, logo_url)")
+              .eq("category", deal.category)
+              .neq("id", dealId!)
+              .eq("status", "active")
+              .limit(6)
+          : Promise.resolve({ data: [] }),
+      ]);
+
+      const unique = new Map<string, RelatedDeal>();
+      ([...(storeDeals.data ?? []), ...(categoryDeals.data ?? [])] as RelatedDeal[]).forEach((item) => unique.set(item.id, item));
+      return Array.from(unique.values()).slice(0, 4);
     },
   });
+
+  useEffect(() => {
+    if (!deal?.store_id) return;
+    setIsFollowingMerchant(readFollowedMerchants().has(deal.store_id));
+  }, [deal?.store_id]);
 
   if (isLoading) {
     return (
@@ -151,6 +192,21 @@ export default function DealDetail() {
   const handleCopyLink = () => {
     navigator.clipboard.writeText(window.location.href);
     toast({ title: "Link copied!", description: "Deal link copied to clipboard." });
+  };
+
+  const toggleMerchantFollow = () => {
+    if (!deal?.store_id) return;
+    const followed = readFollowedMerchants();
+    if (followed.has(deal.store_id)) {
+      followed.delete(deal.store_id);
+      setIsFollowingMerchant(false);
+      toast({ title: `${storeName} unfollowed` });
+    } else {
+      followed.add(deal.store_id);
+      setIsFollowingMerchant(true);
+      toast({ title: `${storeName} followed`, description: "New merchant deals will be easier to find." });
+    }
+    localStorage.setItem(followStorageKey, JSON.stringify(Array.from(followed)));
   };
 
   return (
@@ -218,6 +274,18 @@ export default function DealDetail() {
                 <span className={`text-xs flex items-center gap-1 font-medium ${freshnessColor(lastChecked)}`}>
                   <Clock className="h-3 w-3" /> {timeAgo(lastChecked)}
                 </span>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 mt-4">
+                <Button asChild variant="outline" size="sm" className="gap-2">
+                  <Link to={`/merchants/${deal.store_id}`}>
+                    <ShoppingBag className="h-4 w-4" /> Merchant Profile
+                  </Link>
+                </Button>
+                <Button variant="outline" size="sm" className="gap-2" onClick={toggleMerchantFollow}>
+                  {isFollowingMerchant ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                  {isFollowingMerchant ? "Following Merchant" : "Follow Merchant"}
+                </Button>
               </div>
 
               <Separator className="my-6" />
@@ -363,7 +431,7 @@ export default function DealDetail() {
               <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/70 mt-4">
                 <Clock className="h-3 w-3" /> Last verified {timeAgo(lastChecked)}
               </div>
-              {deal.affiliate_link_url && (
+              {deal.is_affiliate && (
                 <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/60">
                   <Info className="h-3 w-3" />
                   CampusPerk may earn a commission from this link at no extra cost to you.
@@ -389,20 +457,29 @@ export default function DealDetail() {
         {/* Related deals */}
         {relatedDeals.length > 0 && (
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2} className="mt-8">
-            <h2 className="font-display text-lg font-semibold text-foreground mb-4">More from {storeName}</h2>
+            <div className="flex items-end justify-between gap-4 mb-4">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-primary">Recommended Next</p>
+                <h2 className="font-display text-lg font-semibold text-foreground">Related student deals</h2>
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <Link to="/collections">Browse Collections</Link>
+              </Button>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {relatedDeals.map((related: any) => (
+              {relatedDeals.map((related: RelatedDeal) => (
                 <Link key={related.id} to={`/deals/${related.id}`}>
-                  <Card className="border-border bg-card hover:border-primary/30 transition-all duration-300 hover:shadow-[var(--shadow-glow)]">
+                  <Card className="deal-card-premium hover:border-primary/30 transition-all duration-300">
                     <CardContent className="p-5 flex items-center gap-4">
-                      <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+                      <div className="logo-banner merchant-logo-panel merchant-logo-panel--cover h-16 w-24 shrink-0">
                         {related.stores?.logo_url ? (
-                          <img src={related.stores.logo_url} alt="" className="h-7 w-7 rounded-md object-contain" />
+                          <img src={related.stores.logo_url} alt={related.stores?.name ?? related.title} className="merchant-logo-img" />
                         ) : (
                           <ShoppingBag className="h-5 w-5 text-muted-foreground" />
                         )}
                       </div>
                       <div className="min-w-0">
+                        <div className="text-[11px] text-muted-foreground truncate">{related.stores?.name ?? "Merchant"}</div>
                         <div className="font-medium text-sm text-foreground truncate">{related.title}</div>
                         <div className="text-xs text-primary font-semibold mt-0.5">{related.discount_value ?? "Deal"}</div>
                       </div>

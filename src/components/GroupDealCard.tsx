@@ -59,7 +59,7 @@ export function GroupDealCard({ groupDeal, hasJoined, onJoin, isLoading }: Group
       transition={{ duration: 0.4 }}
       whileHover={{ y: -4, transition: { duration: 0.12 } }}
     >
-      <Card className={`relative overflow-hidden border-border bg-card ${isUnlocked ? "ring-2 ring-accent/40 border-accent/30" : ""}`}>
+      <Card className={`relative overflow-hidden border-border bg-card premium-hover ${isUnlocked ? "ring-2 ring-accent/40 border-accent/30 glow-verified" : ""}`}>
         {/* Flame header for group deals */}
         <div className="px-4 py-2 bg-gradient-to-r from-destructive/10 via-gold/10 to-accent/10 border-b border-border flex items-center gap-2">
           <Flame className="h-3.5 w-3.5 text-destructive" />
@@ -81,9 +81,11 @@ export function GroupDealCard({ groupDeal, hasJoined, onJoin, isLoading }: Group
           {/* Deal info */}
           <div className="flex items-center gap-3">
             {groupDeal.deal?.stores?.logo_url ? (
-              <img src={groupDeal.deal.stores.logo_url} alt={storeName} className="h-10 w-10 rounded-xl object-contain bg-secondary p-1" />
+              <div className="logo-banner flex h-14 w-24 shrink-0 items-center justify-center rounded-xl overflow-hidden p-0">
+                <img src={groupDeal.deal.stores.logo_url} alt={storeName} className="merchant-logo-panel--cover" />
+              </div>
             ) : (
-              <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0">
+              <div className="logo-banner h-14 w-24 rounded-xl flex items-center justify-center shrink-0">
                 <span className="font-display text-sm font-bold text-muted-foreground">{storeName.charAt(0) || "?"}</span>
               </div>
             )}

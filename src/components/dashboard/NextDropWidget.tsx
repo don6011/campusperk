@@ -23,7 +23,7 @@ export function NextDropWidget() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
     >
-      <Card className="border-primary/20 bg-card relative overflow-hidden">
+      <Card className="border-primary/20 bg-card relative overflow-hidden glow-featured">
         <div className="absolute top-0 right-0 w-20 h-20 bg-primary/8 rounded-full blur-[40px] pointer-events-none -translate-y-1/2 translate-x-1/2" />
         <CardContent className="relative z-10 p-3.5 flex items-center gap-3">
           <div

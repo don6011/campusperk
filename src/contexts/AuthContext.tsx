@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -62,44 +62,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const linkPendingReferral = async (userId: string) => {
-    // Check localStorage for a referral code saved during signup
+  const linkPendingReferral = useCallback(async (userId: string) => {
     const refCode = localStorage.getItem("campusperk_ref");
     if (!refCode) return;
 
-    // Find the most recent unlinked referral with this code
-    const { data: pending } = await supabase
-      .from("referrals")
-      .select("id")
-      .eq("referral_code", refCode)
-      .is("referred_user_id", null)
-      .order("signup_date", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
-    if (pending) {
-      await supabase
-        .from("referrals")
-        .update({ referred_user_id: userId, verified: true })
-        .eq("id", pending.id);
+    const { error } = await supabase.rpc("record_ambassador_referral" as any, {
+      p_referral_code: refCode,
+      p_referred_user_id: userId,
+      p_event: "verified_signup",
+      p_source_path: window.location.pathname,
+    });
+    if (!error) {
       localStorage.removeItem("campusperk_ref");
     }
-  };
+  }, []);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
       .select("id, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verification_method, campus_domain, campus_name, verification_notes, campus_verified, verification_strength_score, campus_id, campus_city, campus_state, user_city, user_state, location_opt_in, use_campus_location, has_seen_splash, is_founding_member")
       .eq("id", userId)
       .single();
     setProfile(data as Profile | null);
-  };
+  }, []);
 
-  const refreshProfile = async () => {
+  const refreshProfile = useCallback(async () => {
     if (user) {
       await fetchProfile(user.id);
     }
-  };
+  }, [fetchProfile, user]);
 
   useEffect(() => {
     // Set up auth listener FIRST
@@ -132,7 +123,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [fetchProfile, linkPendingReferral]);
 
   // Realtime subscription to keep profile in sync with DB changes
   useEffect(() => {
@@ -151,7 +142,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [user]);
 
   const signUp = async (email: string, password: string, name: string) => {
     if (!isEduEmail(email)) {

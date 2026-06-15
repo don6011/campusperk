@@ -44,8 +44,7 @@ interface DealWithStore {
   created_at: string;
   updated_at: string;
   last_checked_at: string | null;
-  affiliate_link_url: string | null;
-  direct_link_url: string | null;
+  is_affiliate?: boolean | null;
   visibility: string | null;
   sponsor_tier: number | null;
   sponsor_start_at: string | null;
@@ -174,7 +173,7 @@ export default function CategoryDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("*, stores(id, name, logo_url, website_url)")
+        .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as unknown as DealWithStore[]).filter(
@@ -227,7 +226,12 @@ export default function CategoryDetail() {
   const toggleStatus = (s: string) =>
     setSelectedStatuses((prev) => prev.includes(s) ? prev.filter((x) => x !== s) : [...prev, s]);
   const toggleFav = (id: string) =>
-    setFavorites((prev) => { const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; });
+    setFavorites((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   const resetFilters = () => {
     setSearch(""); setSelectedStatuses([]); setEduOnly(false);
     setPremiumOnly(false); setFreshnessDays(null); setVisibleCount(PAGE_SIZE);

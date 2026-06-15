@@ -12,16 +12,7 @@ export function usePushNotifications() {
 
   const isNative = Capacitor.isNativePlatform();
 
-  useEffect(() => {
-    if (!isNative) {
-      setIsSupported(false);
-      return;
-    }
-    setIsSupported(true);
-    checkExisting();
-  }, [isNative, user]);
-
-  const checkExisting = async () => {
+  const checkExisting = useCallback(async () => {
     if (!user) return;
     try {
       const { data } = await supabase
@@ -33,7 +24,16 @@ export function usePushNotifications() {
     } catch {
       // ignore
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!isNative) {
+      setIsSupported(false);
+      return;
+    }
+    setIsSupported(true);
+    checkExisting();
+  }, [checkExisting, isNative]);
 
   const subscribe = useCallback(async () => {
     if (!user || !isNative) return false;

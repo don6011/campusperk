@@ -128,6 +128,19 @@ export default function AmbassadorsManager() {
   // Approve and create ambassador
   const approveMutation = useMutation({
     mutationFn: async ({ app, code }: { app: any; code: string }) => {
+      let userId = app.user_id as string | null;
+      if (!userId && app.email) {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("id")
+          .eq("email", app.email)
+          .maybeSingle();
+        userId = profile?.id ?? null;
+      }
+      if (!userId) {
+        throw new Error("Approve after the applicant creates a CampusPerk account so the referral dashboard can be linked.");
+      }
+
       // Update application to approved
       const { error: appErr } = await supabase
         .from("ambassador_applications")
@@ -135,14 +148,15 @@ export default function AmbassadorsManager() {
         .eq("id", app.id);
       if (appErr) throw appErr;
 
-      // Create ambassador record (user_id is set to a placeholder since app may not have a user_id)
+      // Create ambassador record linked to the applicant's account
       const { error: ambErr } = await supabase
         .from("ambassadors")
         .insert({
-          user_id: "00000000-0000-0000-0000-000000000000",
+          user_id: userId,
           university: app.university,
           referral_code: code,
           status: "active",
+          approved_at: new Date().toISOString(),
         });
       if (ambErr) throw ambErr;
     },

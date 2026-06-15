@@ -160,17 +160,17 @@ export default function Premium() {
 
         {/* Savings highlight */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0.5}>
-          <Card className="border-accent/20 bg-gradient-to-br from-accent/5 via-card to-card overflow-hidden">
+          <Card className="border-accent/20 bg-gradient-to-br from-accent/5 via-card to-card overflow-hidden glow-premium premium-hover">
             <CardContent className="p-5 flex items-center gap-4">
               <div className="h-14 w-14 rounded-2xl bg-accent/15 flex items-center justify-center shrink-0 border border-accent/20">
                 <TrendingUp className="h-7 w-7 text-accent" />
               </div>
               <div>
                 <p className="font-display text-lg font-bold text-foreground">
-                  Average CampusPerk user saves <span className="text-accent">$300+</span> per year.
+                  Premium is active and ready for verified student inventory.
                 </p>
                 <p className="text-sm text-muted-foreground mt-0.5">
-                  Premium members save even more with exclusive deals and stacking intelligence.
+                  Your premium-only deals, alerts, referral rewards, and group-deal tools update from live account activity.
                 </p>
               </div>
             </CardContent>
@@ -179,7 +179,7 @@ export default function Premium() {
 
         {/* Subscription Status */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
-          <Card className="border-gold/30 bg-card overflow-hidden relative">
+          <Card className="border-gold/30 bg-card overflow-hidden relative glow-premium">
             <div className="absolute inset-0 bg-gradient-to-br from-gold/5 via-transparent to-transparent pointer-events-none" />
             <CardContent className="pt-6 space-y-4 relative">
               <div className="flex items-center gap-4">
@@ -213,7 +213,7 @@ export default function Premium() {
 
         {/* Usage Stats */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2}>
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card premium-hover">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-primary" /> Your Usage
@@ -240,7 +240,7 @@ export default function Premium() {
 
         {/* Premium Benefits */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3}>
-          <Card className="border-border bg-card">
+          <Card className="border-border bg-card premium-hover">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-gold" /> Your Benefits
@@ -266,7 +266,7 @@ export default function Premium() {
         {/* Premium-Only Deals */}
         {premiumOnlyDeals.length > 0 && (
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3.5}>
-            <Card className="border-border bg-card">
+            <Card className="border-border bg-card glow-premium">
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
                   <Crown className="h-4 w-4 text-gold" /> Premium-Only Deals
@@ -294,7 +294,7 @@ export default function Premium() {
         {/* Early Access Deals */}
         {exclusiveDeals.length > 0 && (
           <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={4}>
-            <Card className="border-border bg-card">
+            <Card className="border-border bg-card glow-premium">
               <CardHeader className="pb-3 flex flex-row items-center justify-between">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
                   <Zap className="h-4 w-4 text-gold" /> Early Access Deals

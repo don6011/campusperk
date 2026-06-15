@@ -1,8 +1,8 @@
+@import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,800,900&f[]=cabinet-grotesk@400,500,600,700,800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,800,900&f[]=cabinet-grotesk@400,500,600,700,800&display=swap');
 
 @layer base {
   :root {
@@ -56,12 +56,12 @@
     --gradient-accent: linear-gradient(135deg, hsl(142 71% 45%), hsl(160 84% 39%));
     --gradient-gold: linear-gradient(135deg, hsl(45 93% 56%), hsl(38 92% 50%));
     --gradient-card: linear-gradient(135deg, hsl(220 33% 11%), hsl(220 33% 9%));
-    --shadow-glow: 0 0 40px -10px hsl(217 91% 60% / 0.3);
-    --shadow-card: 0 4px 24px -4px hsl(0 0% 0% / 0.3);
+    --shadow-glow: 0 16px 40px rgba(0,0,0,.45), 0 0 20px rgba(59,130,246,.15);
+    --shadow-card: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04) inset;
 
     /* Glass tokens */
-    --glass-bg: hsl(220 33% 10% / 0.6);
-    --glass-border: hsl(210 40% 96% / 0.08);
+    --glass-bg: rgba(12,18,38,0.55);
+    --glass-border: rgba(255,255,255,0.12);
     --glass-highlight: hsl(210 40% 96% / 0.04);
   }
 
@@ -89,16 +89,144 @@
   /* Glass-morphism utility */
   .glass {
     background: var(--glass-bg);
-    backdrop-filter: blur(20px) saturate(180%);
-    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
+    box-shadow: var(--shadow-card);
   }
 
   .glass-strong {
-    background: hsl(220 33% 10% / 0.8);
-    backdrop-filter: blur(32px) saturate(200%);
-    -webkit-backdrop-filter: blur(32px) saturate(200%);
-    border: 1px solid hsl(210 40% 96% / 0.1);
+    background: rgba(12,18,38,0.72);
+    backdrop-filter: blur(26px);
+    -webkit-backdrop-filter: blur(26px);
+    border: 1px solid rgba(255,255,255,0.14);
+    box-shadow: var(--shadow-card);
+  }
+
+  .premium-glass-card {
+    background: rgba(12,18,38,0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04) inset;
+  }
+
+  .premium-hover {
+    transition: all .25s ease;
+  }
+
+  .premium-hover:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0,0,0,.45), 0 0 20px rgba(59,130,246,.15);
+  }
+
+  .deal-card-premium {
+    background: rgba(12,18,38,0.55);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.12);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04) inset;
+    transition: all .25s ease;
+  }
+
+  .deal-card-premium:hover {
+    transform: translateY(-6px);
+    border-color: hsl(var(--primary) / 0.45);
+    box-shadow: 0 16px 40px rgba(0,0,0,.45), 0 0 20px rgba(59,130,246,.15);
+  }
+
+  .logo-banner {
+    background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+  }
+
+  .merchant-logo-tile {
+    width: min(85%, 190px);
+    height: 82%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+  }
+
+  .merchant-logo-tile-sm {
+    width: min(85%, 118px);
+    height: 78%;
+    object-fit: contain;
+    object-position: center;
+    display: block;
+  }
+
+  .merchant-logo-panel {
+    width: 100%;
+    height: 100%;
+    max-width: var(--merchant-logo-max-w, 94%);
+    max-height: var(--merchant-logo-max-h, 90%);
+    object-fit: contain;
+    object-position: center;
+    display: block;
+  }
+
+  .merchant-logo-panel--cover {
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    object-fit: cover;
+    object-position: center;
+    display: block;
+    border-radius: inherit;
+  }
+
+  .brand-carousel-fade {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .brand-carousel-fade::before,
+  .brand-carousel-fade::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: clamp(2rem, 8vw, 6rem);
+    z-index: 12;
+    pointer-events: none;
+  }
+
+  .brand-carousel-fade::before {
+    left: 0;
+    background: linear-gradient(90deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.78) 38%, transparent 100%);
+  }
+
+  .brand-carousel-fade::after {
+    right: 0;
+    background: linear-gradient(270deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.78) 38%, transparent 100%);
+  }
+
+  .glow-verified {
+    box-shadow: 0 0 22px hsl(142 71% 45% / 0.22);
+  }
+
+  .glow-premium {
+    box-shadow: 0 0 24px hsl(var(--gold) / 0.25);
+  }
+
+  .glow-featured {
+    box-shadow: 0 0 24px hsl(var(--primary) / 0.22);
+  }
+
+  .glow-ambassador {
+    box-shadow: 0 0 24px hsl(265 89% 70% / 0.22);
+  }
+
+  .glow-sponsored {
+    box-shadow: 0 0 24px hsl(38 92% 50% / 0.22);
+  }
+
+  .hero-ambient-glow {
+    background-size: 180% 180%;
+    animation: gradient-shift 8s ease infinite;
   }
 
   /* Noise texture overlay */

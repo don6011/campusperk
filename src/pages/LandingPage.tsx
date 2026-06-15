@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   GraduationCap, Zap, Shield, TrendingUp, ShoppingBag, Monitor, Cpu, BookOpen,
-  CreditCard, Utensils, Plane, Dumbbell, Film, Lightbulb, Star, ArrowRight,
-  Search, DollarSign, Users, School, Wallet, Trophy, Crown, Medal,
-  Sparkles, Bell, Award, Rocket, Quote,
+  CreditCard, Utensils, Plane, Dumbbell, Film, Lightbulb, ArrowRight,
+  Search, DollarSign, Users, School, Wallet, Tag,
+  Sparkles, Bell, Award, Rocket, Store,
 } from "lucide-react";
 import { Link, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -40,38 +40,17 @@ const staggerItem = {
   },
 };
 
-const BRAND_LOGOS = [
-  { name: "Apple", logo: "/logos/apple-wordmark.svg", bg: "#000000", discount: "Up to 20% Off" },
-  { name: "Spotify", logo: "/logos/spotify-wordmark.svg", bg: "#1DB954", discount: "50% Student Discount" },
-  { name: "Amazon", logo: "/logos/amazon-wordmark.svg", bg: "#232F3E", discount: "Free Prime Trial" },
-  { name: "Adobe", logo: "/logos/adobe-wordmark.svg", bg: "#FF0000", discount: "60% Off Creative Cloud" },
-  { name: "Nike", logo: "/logos/nike-wordmark.svg", bg: "#000000", discount: "15% Student Discount" },
-  { name: "Samsung", logo: "/logos/samsung-wordmark.svg", bg: "#1428A0", discount: "Up to 30% Off" },
-  { name: "Best Buy", logo: "/logos/bestbuy-wordmark.svg", bg: "#0046BE", discount: "Student Deals" },
-  { name: "DoorDash", logo: "/logos/doordash-wordmark.svg", bg: "#FF3008", discount: "50% Off DashPass" },
-  { name: "Notion", logo: "/logos/notion-wordmark.svg", bg: "#000000", discount: "Free Plus Plan" },
-  { name: "GitHub", logo: "/logos/github-wordmark.svg", bg: "#24292E", discount: "Free Pro Access" },
-  { name: "Coursera", logo: "/logos/coursera-wordmark.svg", bg: "#0056D2", discount: "Free Courses" },
-  { name: "Headspace", logo: "/logos/headspace-wordmark.svg", bg: "#F47D31", discount: "85% Off" },
-  { name: "Adidas", logo: "/logos/adidas-wordmark.svg", bg: "#000000", discount: "30% Off" },
-  { name: "North Face", logo: "/logos/northface-wordmark.svg", bg: "#000000", discount: "10% Student Discount" },
-  { name: "Uber Eats", logo: "/logos/ubereats-wordmark.svg", bg: "#06C167", discount: "$0 Delivery Fee" },
-  { name: "Chegg", logo: "/logos/chegg-wordmark.svg", bg: "#F27C38", discount: "Free Trial" },
-  { name: "ASOS", logo: "/logos/asos-wordmark.svg", bg: "#2D2D2D", discount: "20% Off" },
-  { name: "Amtrak", logo: "/logos/amtrak-wordmark.svg", bg: "#1A4B8C", discount: "15% Off" },
-];
-
 const categories = [
-  { name: "Clothing", icon: ShoppingBag, deals: 24 },
-  { name: "Software", icon: Monitor, deals: 31 },
-  { name: "Tech", icon: Cpu, deals: 18 },
-  { name: "Books", icon: BookOpen, deals: 15 },
-  { name: "Subscriptions", icon: CreditCard, deals: 27 },
-  { name: "Food", icon: Utensils, deals: 12 },
-  { name: "Travel", icon: Plane, deals: 9 },
-  { name: "Fitness", icon: Dumbbell, deals: 14 },
-  { name: "Entertainment", icon: Film, deals: 21 },
-  { name: "Learning", icon: Lightbulb, deals: 19 },
+  { name: "Clothing", icon: ShoppingBag, matches: ["clothing", "fashion"] },
+  { name: "Software", icon: Monitor, matches: ["software", "productivity"] },
+  { name: "Tech", icon: Cpu, matches: ["technology", "tech"] },
+  { name: "Books", icon: BookOpen, matches: ["books", "education"] },
+  { name: "Subscriptions", icon: CreditCard, matches: ["subscriptions", "software"] },
+  { name: "Food", icon: Utensils, matches: ["food", "local deals"] },
+  { name: "Travel", icon: Plane, matches: ["travel"] },
+  { name: "Fitness", icon: Dumbbell, matches: ["fitness", "student essentials"] },
+  { name: "Entertainment", icon: Film, matches: ["entertainment", "student essentials"] },
+  { name: "Learning", icon: Lightbulb, matches: ["learning", "education", "career"] },
 ];
 
 const features = [
@@ -80,26 +59,73 @@ const features = [
   { icon: TrendingUp, title: "Price Drop Alerts", description: "Get notified the moment your favorite brands offer deeper discounts." },
 ];
 
-const testimonials = [
-  { name: "Sarah M.", school: "UCLA", text: "CampusPerk saved me over $400 on software alone this semester. Game changer.", rating: 5, initials: "SM", color: "from-primary to-primary/60" },
-  { name: "James K.", school: "MIT", text: "Finally, one place for all student discounts. No more hunting through Reddit threads.", rating: 5, initials: "JK", color: "from-accent to-accent/60" },
-  { name: "Priya R.", school: "Stanford", text: "The alerts feature is incredible. I got notified about a 70% off Adobe deal before anyone else.", rating: 5, initials: "PR", color: "from-gold to-gold/60" },
-];
+type HomepageDeal = {
+  id: string;
+  title: string;
+  category: string | null;
+  discount_value: string | null;
+  featured: boolean;
+  created_at: string;
+  stores: { name: string; logo_url: string | null } | null;
+};
 
-const trendingDeals = [
-  { logo: "/logos/nike-wordmark.svg", title: "Nike Student Discount", savings: "15% off everything", bgColor: "#000000" },
-  { logo: "/logos/notion-wordmark.svg", title: "Notion Plus Plan", savings: "Free for students", bgColor: "#000000" },
-  { logo: "/logos/doordash-wordmark.svg", title: "DoorDash DashPass", savings: "50% off membership", bgColor: "#FF3008" },
-  { logo: "/logos/github-wordmark.svg", title: "GitHub Student Pack", savings: "Free Pro + $200 credits", bgColor: "#24292E" },
-];
+type HomepageSectionItem = HomepageDeal | {
+  id: string;
+  placeholder: true;
+  title: string;
+  category: string | null;
+  discount_value: string | null;
+  stores: null;
+};
 
-const leaderboardData = [
-  { rank: 1, school: "University of Texas", icon: Crown },
-  { rank: 2, school: "UCLA", icon: Medal },
-  { rank: 3, school: "Michigan", icon: Medal },
-  { rank: 4, school: "Arizona State", icon: null },
-  { rank: 5, school: "Florida", icon: null },
+type HomepageSection = {
+  title: string;
+  eyebrow: string;
+  deals: HomepageSectionItem[];
+  realCount: number;
+};
+
+const HOMEPAGE_SECTION_SIZE = 4;
+
+const techCategories = ["technology", "tech", "software", "productivity"];
+const educationCategories = ["education", "learning", "books", "career"];
+const essentialsCategories = [
+  "food",
+  "local deals",
+  "clothing",
+  "fashion",
+  "student essentials",
+  "supplies",
+  "transportation",
+  "dorm living",
+  "fitness",
+  "entertainment",
 ];
+const travelCategories = ["travel", "transportation"];
+
+const isPlaceholderDeal = (deal: HomepageSectionItem): deal is Extract<HomepageSectionItem, { placeholder: true }> =>
+  "placeholder" in deal;
+
+const categoryMatches = (deal: HomepageDeal, categoriesToMatch: string[]) =>
+  categoriesToMatch.includes((deal.category || "").toLowerCase());
+
+const placeholderDeal = (sectionTitle: string, index: number): HomepageSectionItem => ({
+  id: `placeholder-${sectionTitle}-${index}`,
+  placeholder: true,
+  title: "More verified deals arriving soon",
+  category: null,
+  discount_value: "Beta preview",
+  stores: null,
+});
+
+const dealQualityScore = (deal: HomepageDeal, engagementScore = 0) => {
+  const hasLogo = deal.stores?.logo_url ? 12 : 0;
+  const hasStore = deal.stores?.name ? 8 : 0;
+  const hasDiscount = deal.discount_value ? 10 : 0;
+  const featured = deal.featured ? 18 : 0;
+  const recency = Math.max(0, 14 - Math.floor((Date.now() - new Date(deal.created_at).getTime()) / 86_400_000));
+  return featured + hasLogo + hasStore + hasDiscount + recency + engagementScore;
+};
 
 const LandingPage = () => {
   const [searchParams] = useSearchParams();
@@ -113,6 +139,10 @@ const LandingPage = () => {
   const [campuses, setCampuses] = useState<{ id: string; campus_name: string | null; domain_root: string }[]>([]);
   const [matchedDealsCount, setMatchedDealsCount] = useState<number | null>(null);
   const [searchLoading, setSearchLoading] = useState(false);
+  const [featuredMerchants, setFeaturedMerchants] = useState<{ id: string; partner_name: string; logo_url: string | null; affiliate_network: string | null; active_deals: number | null }[]>([]);
+  const [homepageDeals, setHomepageDeals] = useState<HomepageDeal[]>([]);
+  const [dealEngagement, setDealEngagement] = useState<Map<string, number>>(new Map());
+  const [verifiedCampusCount, setVerifiedCampusCount] = useState<number | null>(null);
 
   useEffect(() => {
     if (campusQuery.length < 2) { setCampuses([]); setMatchedDealsCount(null); return; }
@@ -122,6 +152,70 @@ const LandingPage = () => {
     }, 300);
     return () => clearTimeout(timeout);
   }, [campusQuery]);
+
+  useEffect(() => {
+    supabase
+      .from("partners" as any)
+      .select("id, partner_name, logo_url, affiliate_network, active_deals")
+      .eq("featured_merchant", true)
+      .eq("status", "active")
+      .order("updated_at", { ascending: false })
+      .limit(8)
+      .then(({ data }) => setFeaturedMerchants((data || []) as any));
+  }, []);
+
+  useEffect(() => {
+    supabase
+      .from("deals")
+      .select("id, title, category, discount_value, featured, created_at, stores(name, logo_url)")
+      .eq("status", "active")
+      .order("created_at", { ascending: false })
+      .limit(60)
+      .then(({ data }) => setHomepageDeals((data || []) as any));
+  }, []);
+
+  useEffect(() => {
+    const dealIds = homepageDeals.map((deal) => deal.id);
+    if (dealIds.length === 0) {
+      setDealEngagement(new Map());
+      return;
+    }
+
+    let cancelled = false;
+    const loadEngagement = async () => {
+      const [clicksResult, claimsResult, favoritesResult] = await Promise.all([
+        supabase.from("deal_clicks").select("deal_id").in("deal_id", dealIds),
+        supabase.from("deal_claims").select("deal_id").in("deal_id", dealIds),
+        supabase.from("favorites").select("deal_id").in("deal_id", dealIds),
+      ]);
+
+      if (cancelled) return;
+      const scores = new Map<string, number>();
+      const addScore = (dealId: string | null, value: number) => {
+        if (!dealId) return;
+        scores.set(dealId, (scores.get(dealId) || 0) + value);
+      };
+
+      (clicksResult.data || []).forEach((row) => addScore(row.deal_id, 1));
+      (favoritesResult.data || []).forEach((row) => addScore(row.deal_id, 2));
+      (claimsResult.data || []).forEach((row) => addScore(row.deal_id, 3));
+      setDealEngagement(scores);
+    };
+
+    loadEngagement();
+    return () => {
+      cancelled = true;
+    };
+  }, [homepageDeals]);
+
+  useEffect(() => {
+    supabase
+      .from("campus_domains")
+      .select("id", { count: "exact", head: true })
+      .eq("is_approved", true)
+      .eq("is_blocked", false)
+      .then(({ count }) => setVerifiedCampusCount(count ?? 0));
+  }, []);
 
   const handleCampusSelect = async (campus: typeof campuses[0]) => {
     setCampusQuery(campus.campus_name ?? campus.domain_root);
@@ -134,6 +228,90 @@ const LandingPage = () => {
 
   const openWaitlist = () => setWaitlistOpen(true);
   const openPartner = () => setPartnerOpen(true);
+  const displayedHomepageDeals = new Set<string>();
+  const reserveDeals = (title: string, candidates: HomepageDeal[], max = HOMEPAGE_SECTION_SIZE): HomepageSectionItem[] => {
+    const uniqueCandidates = candidates.filter((deal) => !displayedHomepageDeals.has(deal.id));
+    const selected = uniqueCandidates.slice(0, max);
+    selected.forEach((deal) => displayedHomepageDeals.add(deal.id));
+    return [
+      ...selected,
+      ...Array.from({ length: Math.max(0, max - selected.length) }, (_, index) => placeholderDeal(title, index)),
+    ];
+  };
+
+  const featuredDeals = reserveDeals(
+    "Featured Deals",
+    [...homepageDeals].sort((a, b) => dealQualityScore(b, dealEngagement.get(b.id) || 0) - dealQualityScore(a, dealEngagement.get(a.id) || 0))
+  );
+  const studentFavoriteDeals = reserveDeals(
+    "Student Favorites",
+    [...homepageDeals].sort((a, b) =>
+      (dealEngagement.get(b.id) || 0) - (dealEngagement.get(a.id) || 0) ||
+      Number(Boolean(b.featured)) - Number(Boolean(a.featured)) ||
+      dealQualityScore(b) - dealQualityScore(a)
+    )
+  );
+  const trendingDeals = reserveDeals(
+    "Trending Deals",
+    [...homepageDeals].sort((a, b) =>
+      (dealEngagement.get(b.id) || 0) - (dealEngagement.get(a.id) || 0) ||
+      dealQualityScore(b) - dealQualityScore(a) ||
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    )
+  );
+  const newestDeals = reserveDeals(
+    "Newest Deals",
+    [...homepageDeals].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  );
+  const technologyDeals = reserveDeals(
+    "Technology Deals",
+    homepageDeals
+      .filter((deal) => categoryMatches(deal, techCategories))
+      .sort((a, b) => dealQualityScore(b, dealEngagement.get(b.id) || 0) - dealQualityScore(a, dealEngagement.get(a.id) || 0))
+  );
+  const educationDeals = reserveDeals(
+    "Education Deals",
+    homepageDeals
+      .filter((deal) => categoryMatches(deal, educationCategories))
+      .sort((a, b) => dealQualityScore(b, dealEngagement.get(b.id) || 0) - dealQualityScore(a, dealEngagement.get(a.id) || 0))
+  );
+  const studentEssentialsDeals = reserveDeals(
+    "Student Essentials",
+    homepageDeals
+      .filter((deal) => categoryMatches(deal, essentialsCategories))
+      .sort((a, b) => dealQualityScore(b, dealEngagement.get(b.id) || 0) - dealQualityScore(a, dealEngagement.get(a.id) || 0))
+  );
+  const travelDeals = reserveDeals(
+    "Travel Deals",
+    homepageDeals
+      .filter((deal) => categoryMatches(deal, travelCategories))
+      .sort((a, b) => dealQualityScore(b, dealEngagement.get(b.id) || 0) - dealQualityScore(a, dealEngagement.get(a.id) || 0))
+  );
+  const realMerchantDeals = Array.from(
+    new Map(homepageDeals.filter((deal) => deal.stores?.name).map((deal) => [deal.stores!.name, deal])).values()
+  ).slice(0, 18);
+  const dealSections: HomepageSection[] = [
+    { title: "Featured Deals", eyebrow: "Highest quality student offers", deals: featuredDeals, realCount: featuredDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
+    { title: "Student Favorites", eyebrow: "Saved, claimed, and revisited by students", deals: studentFavoriteDeals, realCount: studentFavoriteDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
+    { title: "Trending Deals", eyebrow: "Clicks, saves, claims, and engagement", deals: trendingDeals, realCount: trendingDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
+    { title: "Newest Deals", eyebrow: "Recently imported", deals: newestDeals, realCount: newestDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
+    { title: "Technology Deals", eyebrow: "Software, tech, and productivity", deals: technologyDeals, realCount: technologyDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
+    { title: "Education Deals", eyebrow: "Courses, books, and career prep", deals: educationDeals, realCount: educationDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
+    { title: "Student Essentials", eyebrow: "Food, apparel, supplies, and dorm life", deals: studentEssentialsDeals, realCount: studentEssentialsDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
+    { title: "Travel Deals", eyebrow: "Transportation and student travel", deals: travelDeals, realCount: travelDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
+  ].filter((section) => section.realCount > 0 || homepageDeals.length > 0);
+  const categoryTiles = categories
+    .map((category) => ({
+      ...category,
+      deals: homepageDeals.filter((deal) => category.matches.includes((deal.category || "").toLowerCase())).length,
+    }))
+    .filter((category) => category.deals > 0);
+  const liveStats = [
+    { icon: ShoppingBag, label: "Active Deals", value: homepageDeals.length, color: "text-primary" },
+    { icon: Store, label: "Partner Merchants", value: realMerchantDeals.length, color: "text-amber-400" },
+    { icon: Tag, label: "Categories Available", value: categoryTiles.length, color: "text-accent" },
+    { icon: School, label: "Verified Campuses", value: verifiedCampusCount ?? 0, color: "text-gold" },
+  ].filter((stat) => stat.value > 0);
 
   return (
     <div className="min-h-screen bg-background overflow-hidden scroll-smooth relative noise-overlay">
@@ -156,7 +334,7 @@ const LandingPage = () => {
               { href: "#how-it-works", label: "How It Works" },
               { href: "#deals", label: "Deals" },
               { href: "#categories", label: "Categories" },
-              { href: "#testimonials", label: "Reviews" },
+              { href: "#beta", label: "Beta" },
             ].map((link) => (
               <a key={link.href} href={link.href}
                 onClick={(e) => { e.preventDefault(); document.querySelector(link.href)?.scrollIntoView({ behavior: "smooth" }); }}
@@ -178,6 +356,7 @@ const LandingPage = () => {
       {/* ─── HERO ─── */}
       <section className="relative pt-28 pb-8 md:pt-40 md:pb-16 overflow-hidden">
         <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 hero-ambient-glow bg-[radial-gradient(circle_at_20%_20%,hsl(var(--primary)/0.22),transparent_32%),radial-gradient(circle_at_82%_8%,hsl(var(--accent)/0.16),transparent_28%),radial-gradient(circle_at_50%_92%,hsl(var(--gold)/0.10),transparent_34%)]" />
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1200px] h-[800px] rounded-full bg-primary/8 blur-[180px] animate-pulse" />
           <div className="absolute top-1/3 right-0 w-[600px] h-[600px] rounded-full bg-accent/5 blur-[140px] animate-pulse" style={{ animationDelay: "1.5s" }} />
           <div className="absolute bottom-0 left-0 w-[500px] h-[500px] rounded-full bg-primary/6 blur-[120px] animate-pulse" style={{ animationDelay: "3s" }} />
@@ -192,13 +371,13 @@ const LandingPage = () => {
                 Now accepting early access signups
               </motion.div>
               <motion.h1 variants={fadeUp} custom={0.5} className="font-display text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.08] tracking-tight">
-                Big savings for students —{" "}
-                <span className="bg-gradient-to-r from-foreground via-foreground to-muted-foreground bg-clip-text text-transparent">
-                  without the fake coupon spam.
+                Save More. Spend Less.{" "}
+                <span className="bg-gradient-to-r from-emerald-300 via-foreground to-primary bg-clip-text text-transparent">
+                  Student Discounts Verified Daily.
                 </span>
               </motion.h1>
               <motion.p variants={fadeUp} custom={1} className="mt-6 text-base md:text-lg text-muted-foreground leading-relaxed max-w-md">
-                Verified student deals from top brands and local businesses near your campus. Curated, real, and eligibility-checked.
+                Software, tech, food, travel, and local deals curated for verified students nationwide.
               </motion.p>
               <motion.div variants={fadeUp} custom={2} className="mt-8 flex flex-col sm:flex-row gap-3">
                 <Button size="lg" onClick={openWaitlist} className="animated-gradient-border bg-accent hover:bg-accent/90 text-accent-foreground font-bold px-8 h-13 text-base gap-2 shadow-[0_0_40px_-5px_hsl(var(--accent)/0.5)] hover:shadow-[0_0_50px_-5px_hsl(var(--accent)/0.7)] transition-all duration-300 hover:scale-[1.02]">
@@ -208,9 +387,11 @@ const LandingPage = () => {
                   For Partners
                 </Button>
               </motion.div>
-              <motion.p variants={fadeUp} custom={3} className="mt-4 text-sm text-muted-foreground">
-                Trusted by campus shoppers nationwide. Launching soon.
-              </motion.p>
+              <motion.div variants={fadeUp} custom={3} className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-muted-foreground">
+                <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-emerald-300">Verified student flow</span>
+                <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary">Live inventory ready</span>
+                <span className="rounded-full border border-gold/20 bg-gold/10 px-3 py-1 text-gold">Private beta momentum</span>
+              </motion.div>
               <motion.div variants={fadeUp} custom={4} className="mt-8 flex gap-3">
                 <div className="flex items-center gap-3 rounded-xl glass inner-glow px-5 py-3 text-sm text-muted-foreground cursor-default hover:border-border/40 transition-all duration-300">
                   <svg viewBox="0 0 24 24" className="h-6 w-6 text-foreground" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
@@ -236,7 +417,7 @@ const LandingPage = () => {
               <div className="relative w-[340px] h-[520px]">
                 <div className="absolute -left-12 top-8 w-[200px] h-[380px] rounded-3xl glass inner-glow shadow-2xl rotate-[-8deg] overflow-hidden">
                   <div className="p-4">
-                    <div className="text-xs text-muted-foreground mb-2">Trending</div>
+                    <div className="text-xs text-muted-foreground mb-2">Beta Preview</div>
                     <div className="space-y-3">
                       {["Amazon", "Nike", "Spotify"].map((brand) => (
                         <div key={brand} className="flex items-center gap-2 rounded-lg bg-secondary/60 p-2">
@@ -245,7 +426,7 @@ const LandingPage = () => {
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="text-xs font-medium text-foreground truncate">{brand}</div>
-                            <div className="text-[10px] text-accent">Save 20%+</div>
+                            <div className="text-[10px] text-accent">Import-ready</div>
                           </div>
                         </div>
                       ))}
@@ -265,14 +446,14 @@ const LandingPage = () => {
                     <div className="rounded-xl bg-gradient-to-br from-primary/20 to-accent/10 border border-primary/20 p-3">
                       <div className="flex items-center gap-2 mb-1">
                         <img src="/logos/apple.png" alt="Apple" className="w-6 h-6 object-contain" />
-                        <span className="font-display text-sm font-bold text-foreground">Apple Student Discount</span>
+                        <span className="font-display text-sm font-bold text-foreground">Verified deal spotlight</span>
                       </div>
-                      <span className="text-xs text-accent font-semibold">Free $150 gift card</span>
+                      <span className="text-xs text-accent font-semibold">Real offers appear after import</span>
                     </div>
                     {[
-                      { name: "Uber Eats", caption: "McDonalds 20% Off", logo: "/logos/ubereats.png" },
-                      { name: "Spotify", caption: "Student Plan $5.99", logo: "/logos/spotify.png" },
-                      { name: "Adobe", caption: "60% off Creative Cloud", logo: "/logos/adobe.png" },
+                      { name: "Uber Eats", caption: "Awaiting approved offer", logo: "/logos/ubereats.png" },
+                      { name: "Spotify", caption: "Awaiting approved offer", logo: "/logos/spotify.png" },
+                      { name: "Adobe", caption: "Awaiting approved offer", logo: "/logos/adobe.png" },
                     ].map((deal) => (
                       <div key={deal.name} className="flex items-center gap-3 rounded-lg bg-secondary/50 p-2.5">
                         <div className="w-9 h-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
@@ -288,12 +469,12 @@ const LandingPage = () => {
                 </div>
                 <div className="absolute -right-8 top-16 w-[160px] h-[340px] rounded-3xl glass inner-glow shadow-xl rotate-[6deg] overflow-hidden">
                   <div className="p-3">
-                    <div className="text-[10px] text-muted-foreground mb-2">Local Near Campus</div>
+                    <div className="text-[10px] text-muted-foreground mb-2">Local Merchant Preview</div>
                     <div className="space-y-2.5">
                       {["Smoothie Cafe", "Burrito Shop", "Campus Bookstore"].map((place) => (
                         <div key={place} className="rounded-lg bg-secondary/50 p-2">
                           <div className="text-[10px] font-medium text-foreground">{place}</div>
-                          <div className="text-[9px] text-accent mt-0.5">20% Off</div>
+                          <div className="text-[9px] text-accent mt-0.5">Awaiting offer</div>
                         </div>
                       ))}
                     </div>
@@ -346,27 +527,29 @@ const LandingPage = () => {
 
       {/* ─── BRAND TRUST ─── */}
       <div className="gradient-divider" />
-      <section className="py-12 md:py-16">
+      <section className={realMerchantDeals.length > 0 ? "py-12 md:py-16" : "hidden"}>
         <div className="container mx-auto px-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center">
             <motion.h2 variants={fadeUp} custom={0} className="font-display text-2xl md:text-3xl font-bold text-foreground mb-2">
-              Deals from brands students already use.
+              Save More. Spend Less. Student Discounts Verified Daily.
             </motion.h2>
             <motion.p variants={fadeUp} custom={1} className="text-sm text-muted-foreground mb-10">
-              These are examples of deal categories we support. Offers vary by eligibility and availability.
+              Software, tech, food, travel, and local deals curated for verified students nationwide.
             </motion.p>
           </motion.div>
-          <div className="relative overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-24 bg-gradient-to-r from-background to-transparent z-10 pointer-events-none" />
-            <div className="absolute right-0 top-0 bottom-0 w-24 bg-gradient-to-l from-background to-transparent z-10 pointer-events-none" />
-            <div className="flex gap-5 animate-marquee w-max hover:[animation-play-state:paused]">
-              {[...BRAND_LOGOS, ...BRAND_LOGOS].map((brand, i) => (
-                <div key={`${brand.name}-${i}`} className="flex flex-col items-center flex-shrink-0 transition-all duration-300 hover:scale-105 group/brand">
-                  <div className="flex items-center justify-center rounded-2xl w-[200px] h-[120px] transition-all duration-300 group-hover/brand:shadow-[0_8px_32px_-8px_rgba(0,0,0,0.5)] overflow-hidden px-5" style={{ backgroundColor: brand.bg }}>
-                    <img src={brand.logo} alt={brand.name} className="h-12 w-auto max-w-[150px] object-contain" />
+          <div className="brand-carousel-fade">
+            <div className="flex gap-5 animate-marquee w-max px-4 hover:[animation-play-state:paused]">
+              {[...realMerchantDeals, ...realMerchantDeals].map((deal, i) => (
+                <div key={`${deal.id}-${i}`} className="flex flex-col items-center flex-shrink-0 transition-all duration-300 hover:scale-105 group/brand">
+                  <div className="logo-banner flex items-center justify-center rounded-2xl w-[220px] h-[132px] transition-all duration-300 group-hover/brand:shadow-[0_16px_40px_rgba(0,0,0,.45)] overflow-hidden p-0">
+                    {deal.stores?.logo_url ? (
+                      <img src={deal.stores.logo_url} alt={deal.stores.name} className="merchant-logo-panel--cover" />
+                    ) : (
+                      <Store className="h-10 w-10 text-muted-foreground" />
+                    )}
                   </div>
-                  <span className="mt-2 text-sm font-bold text-foreground">{brand.name}</span>
-                  <span className="text-xs font-semibold text-accent">{brand.discount}</span>
+                  <span className="mt-2 text-sm font-bold text-foreground">{deal.stores?.name}</span>
+                  <span className="text-xs font-semibold text-accent">{deal.discount_value || deal.category || "Active deal"}</span>
                 </div>
               ))}
             </div>
@@ -374,22 +557,49 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {featuredMerchants.length > 0 && (
+        <>
+          <div className="gradient-divider" />
+          <section className="py-12 md:py-16">
+            <div className="container mx-auto px-4">
+              <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center mb-10">
+                <motion.h2 variants={fadeUp} custom={0} className="font-display text-2xl md:text-3xl font-bold text-foreground">
+                  Featured student-friendly merchants
+                </motion.h2>
+              </motion.div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {featuredMerchants.map((merchant) => (
+                  <div key={merchant.id} className="rounded-xl glass inner-glow border border-border/50 p-4 text-center">
+                    <div className="logo-banner mb-3 flex h-24 items-center justify-center rounded-2xl overflow-hidden p-0">
+                      {merchant.logo_url ? (
+                        <img src={merchant.logo_url} alt={merchant.partner_name} className="merchant-logo-panel--cover" />
+                      ) : (
+                        <Store className="h-8 w-8 text-muted-foreground" />
+                      )}
+                    </div>
+                    <p className="text-sm font-semibold text-foreground truncate">{merchant.partner_name}</p>
+                    <p className="text-xs text-muted-foreground truncate">{merchant.affiliate_network || "CampusPerk merchant"}</p>
+                    <p className="text-xs text-accent font-medium mt-1">{merchant.active_deals || 0} active deals</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        </>
+      )}
+
       {/* ─── SOCIAL PROOF METRICS ─── */}
       <div className="gradient-divider" />
-      <section className="py-12 md:py-16 relative">
+      <section className={liveStats.length > 0 ? "py-12 md:py-16 relative" : "hidden"}>
         <div className="absolute inset-0 bg-gradient-to-b from-card/30 via-card/50 to-card/30 pointer-events-none" />
         <div className="container mx-auto px-4 relative z-10">
-          <motion.div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer}>
-            {[
-              { icon: Users, label: "Students nationwide", desc: "Growing community of verified students across the country", color: "text-primary" },
-              { icon: School, label: "Hundreds of campuses supported", desc: "From state universities to community colleges", color: "text-accent" },
-              { icon: Wallet, label: "Students save hundreds each year", desc: "On software, food, entertainment, and more", color: "text-gold" },
-            ].map((stat) => (
+          <motion.div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer}>
+            {liveStats.map((stat) => (
               <motion.div key={stat.label} variants={staggerItem}
-                className="rounded-2xl glass inner-glow gradient-border p-6 text-center transition-all duration-300 hover:shadow-[var(--shadow-glow)]">
+                className="rounded-2xl glass inner-glow gradient-border p-6 text-center transition-all duration-300 premium-hover">
                 <stat.icon className={`mx-auto h-8 w-8 ${stat.color} mb-3`} />
-                <h3 className="font-display text-lg font-bold text-foreground">{stat.label}</h3>
-                <p className="mt-1 text-sm text-muted-foreground">{stat.desc}</p>
+                <h3 className="font-display text-4xl font-black text-foreground">{stat.value.toLocaleString()}</h3>
+                <p className="mt-1 text-sm font-semibold text-muted-foreground">{stat.label}</p>
               </motion.div>
             ))}
           </motion.div>
@@ -409,7 +619,7 @@ const LandingPage = () => {
             {[
               { step: "1", icon: GraduationCap, title: "Verify Your .edu Email", desc: "One-time verification unlocks access to every student deal on the platform." },
               { step: "2", icon: Search, title: "Browse Curated Deals", desc: "Discover verified discounts from national brands and local businesses near your campus." },
-              { step: "3", icon: DollarSign, title: "Save Hundreds Per Year", desc: "Click, redeem, and track your savings. Average students save $300+ annually." },
+              { step: "3", icon: DollarSign, title: "Claim Verified Savings", desc: "Click, redeem, and track real savings as verified deal and claim data becomes available." },
             ].map((item) => (
               <motion.div key={item.step} variants={staggerItem}
                 className="relative group rounded-2xl glass inner-glow gradient-border p-8 text-center transition-all duration-300 hover:shadow-[var(--shadow-glow)]">
@@ -424,67 +634,82 @@ const LandingPage = () => {
 
       {/* ─── TRENDING DEALS ─── */}
       <div className="gradient-divider" />
-      <section id="deals" className="py-20 md:py-28">
-        <div className="container mx-auto px-4">
+      <section id="deals" className={dealSections.length > 0 ? "py-20 md:py-28" : "hidden"}>
+        <div className="container mx-auto px-4 space-y-14">
           <motion.div className="text-center mb-14" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}>
             <motion.p variants={fadeUp} custom={0} className="text-sm font-medium text-primary mb-2 uppercase tracking-wider">Trending on campuses right now</motion.p>
             <motion.h2 variants={fadeUp} custom={1} className="font-display text-3xl font-bold md:text-5xl">
               Trending Student <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Deals</span>
             </motion.h2>
           </motion.div>
-          <motion.div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4 max-w-5xl mx-auto" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-30px" }} variants={staggerContainer}>
-            {trendingDeals.map((deal) => (
-              <motion.div key={deal.title} variants={staggerItem}
-                className="group rounded-2xl glass inner-glow gradient-border p-6 transition-all duration-300 hover:shadow-[var(--shadow-glow)] hover:-translate-y-1">
-                <div className="mb-4 flex h-20 w-full items-center justify-center rounded-xl px-4 transition-transform duration-300 group-hover:scale-[1.03]" style={{ backgroundColor: deal.bgColor }}>
-                  <img src={deal.logo} alt={deal.title} className="h-10 w-auto max-w-[120px] object-contain" />
+          {dealSections.map((section) => (
+            <div key={section.title}>
+              <div className="mb-5 flex items-end justify-between gap-4">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary">{section.eyebrow}</p>
+                  <h3 className="font-display text-2xl font-bold text-foreground">{section.title}</h3>
                 </div>
-                <h3 className="font-display text-lg font-semibold text-foreground">{deal.title}</h3>
-                <div className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-sm font-semibold text-accent">{deal.savings}</div>
-                <div className="mt-4">
-                  <Button size="sm" onClick={openWaitlist} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground gap-1 shadow-[0_0_20px_-5px_hsl(var(--primary)/0.3)] hover:shadow-[0_0_30px_-5px_hsl(var(--primary)/0.5)] transition-all duration-300">
-                    Claim Deal <ArrowRight className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+                <span className="shrink-0 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-muted-foreground">
+                  {section.realCount}/{HOMEPAGE_SECTION_SIZE} live
+                </span>
+              </div>
+              <motion.div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-4" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-30px" }} variants={staggerContainer}>
+                {section.deals.map((deal) => (
+                  <motion.div key={`${section.title}-${deal.id}`} variants={staggerItem}
+                    className={`group deal-card-premium rounded-2xl p-6 ${isPlaceholderDeal(deal) ? "border-dashed border-white/15 bg-white/[0.035]" : ""}`}>
+                    <div className="logo-banner mb-4 flex h-20 w-full items-center justify-center rounded-xl overflow-hidden p-0 transition-transform duration-300 group-hover:scale-[1.03]">
+                      {isPlaceholderDeal(deal) ? (
+                        <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/15 via-white/[0.04] to-emerald-400/10">
+                          <Sparkles className="h-7 w-7 text-primary" />
+                        </div>
+                      ) : deal.stores?.logo_url ? (
+                        <img src={deal.stores.logo_url} alt={deal.stores.name || deal.title} className="merchant-logo-panel--cover" />
+                      ) : (
+                        <Store className="h-10 w-10 text-primary" />
+                      )}
+                    </div>
+                    <h3 className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{deal.title}</h3>
+                    <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-bold ${isPlaceholderDeal(deal) ? "border-primary/25 bg-primary/10 text-primary" : "border-emerald-400/25 bg-emerald-400/10 text-emerald-300 glow-verified"}`}>{deal.discount_value || "Active offer"}</div>
+                    <div className="mt-4">
+                      <Button size="sm" onClick={openWaitlist} className="h-9 w-full bg-primary hover:bg-primary/90 text-primary-foreground gap-1 shadow-[0_0_24px_-4px_hsl(var(--primary)/0.45)] hover:shadow-[0_0_34px_-4px_hsl(var(--primary)/0.65)] transition-all duration-300">
+                        {isPlaceholderDeal(deal) ? "Notify Me" : "Claim Deal"} <ArrowRight className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </motion.div>
+                ))}
               </motion.div>
-            ))}
-          </motion.div>
+            </div>
+          ))}
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeUp} custom={4} className="mt-10 text-center">
             <Button size="lg" onClick={openWaitlist} className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2">
               Unlock All Deals <ArrowRight className="h-4 w-4" />
             </Button>
           </motion.div>
         </div>
-      </section>
-
-      {/* ─── CAMPUS LEADERBOARD PREVIEW ─── */}
+      </section>      {/* Campus leaderboard beta preview */}
       <div className="gradient-divider" />
       <section className="py-20 md:py-28">
         <div className="container mx-auto px-4">
           <motion.div className="mx-auto max-w-2xl text-center mb-12" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}>
             <motion.h2 variants={fadeUp} custom={0} className="font-display text-3xl font-bold md:text-5xl">
-              Top Campuses Saving <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">This Week</span>
+              Campus Competition <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Beta Preview</span>
             </motion.h2>
-            <motion.p variants={fadeUp} custom={1} className="mt-4 text-muted-foreground">CampusPerk shows which schools are saving the most each week.</motion.p>
+            <motion.p variants={fadeUp} custom={1} className="mt-4 text-muted-foreground">Campus rankings will appear once real campus savings and claim activity are available.</motion.p>
           </motion.div>
           <motion.div className="mx-auto max-w-lg" initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer}>
-            <div className="rounded-2xl glass inner-glow gradient-border overflow-hidden">
-              {leaderboardData.map((entry, i) => (
-                <motion.div key={entry.rank} variants={staggerItem}
-                  className={`flex items-center gap-4 px-6 py-4 transition-colors hover:bg-secondary/30 ${i < leaderboardData.length - 1 ? "border-b border-border/30" : ""}`}>
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-display font-bold text-lg shrink-0 ${
-                    entry.rank === 1 ? "bg-gold/20 text-gold" : entry.rank <= 3 ? "bg-primary/10 text-primary" : "bg-secondary text-muted-foreground"
-                  }`}>{entry.rank === 1 ? <Crown className="h-5 w-5" /> : `#${entry.rank}`}</div>
-                  <span className="font-display text-base font-semibold text-foreground flex-1">{entry.school}</span>
-                  {entry.rank <= 3 && <Trophy className={`h-4 w-4 ${entry.rank === 1 ? "text-gold" : "text-primary/60"}`} />}
-                </motion.div>
-              ))}
+            <div className="rounded-2xl glass inner-glow gradient-border p-8 text-center">
+              <School className="mx-auto mb-4 h-10 w-10 text-gold" />
+              <h3 className="font-display text-xl font-bold text-foreground">No leaderboard activity yet</h3>
+              <p className="mt-2 text-sm text-muted-foreground">Become a founding member or ambassador to help your campus be one of the first ranked hubs.</p>
+              <div className="mt-5 flex flex-col justify-center gap-3 sm:flex-row">
+                <Button onClick={openWaitlist} className="gap-2">Join Beta <ArrowRight className="h-4 w-4" /></Button>
+                <Button variant="outline" asChild><Link to="/ambassador">Become an Ambassador</Link></Button>
+              </div>
             </div>
           </motion.div>
         </div>
       </section>
-
-      {/* ─── CAMPUS SEARCH ─── */}
+      {/* Campus search */}
       <div className="gradient-divider" />
       <section className="py-20 md:py-28">
         <div className="container mx-auto px-4">
@@ -548,16 +773,16 @@ const LandingPage = () => {
 
       {/* ─── CATEGORIES ─── */}
       <div className="gradient-divider" />
-      <section id="categories" className="py-20 md:py-28">
+      <section id="categories" className={categoryTiles.length > 0 ? "py-20 md:py-28" : "hidden"}>
         <div className="container mx-auto px-4">
           <motion.div className="text-center mb-16" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}>
-            <motion.h2 variants={fadeUp} custom={0} className="font-display text-3xl font-bold md:text-5xl">10 Categories. Hundreds of Student Deals.</motion.h2>
-            <motion.p variants={fadeUp} custom={1} className="mx-auto mt-4 max-w-xl text-muted-foreground">From software subscriptions to late-night pizza — we've got you covered.</motion.p>
+            <motion.h2 variants={fadeUp} custom={0} className="font-display text-3xl font-bold md:text-5xl">Live Deal Categories</motion.h2>
+            <motion.p variants={fadeUp} custom={1} className="mx-auto mt-4 max-w-xl text-muted-foreground">Categories appear as real imported deals become active.</motion.p>
           </motion.div>
           <motion.div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-5" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-30px" }} variants={staggerContainer}>
-            {categories.map((cat) => (
+            {categoryTiles.map((cat) => (
               <motion.div key={cat.name} variants={staggerItem}
-                className="group cursor-pointer rounded-xl glass inner-glow p-5 text-center transition-all duration-300 hover:border-primary/40 hover:bg-secondary/30 hover:-translate-y-1">
+                className="group cursor-pointer rounded-xl glass inner-glow p-5 text-center transition-all duration-300 premium-hover hover:border-primary/40 hover:bg-secondary/30">
                 <cat.icon className="mx-auto h-7 w-7 text-muted-foreground transition-colors group-hover:text-primary" />
                 <div className="mt-3 font-medium text-sm text-foreground">{cat.name}</div>
                 <div className="mt-1 text-xs text-muted-foreground">{cat.deals} deals</div>
@@ -565,43 +790,32 @@ const LandingPage = () => {
             ))}
           </motion.div>
         </div>
-      </section>
-
-      {/* ─── TESTIMONIALS ─── */}
+      </section>      {/* Beta proof */}
       <div className="gradient-divider" />
-      <section id="testimonials" className="py-20 md:py-28 relative">
+      <section id="beta" className="py-20 md:py-28 relative">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-primary/[0.02] to-transparent pointer-events-none" />
         <div className="container mx-auto px-4 relative z-10">
           <motion.div className="text-center mb-16" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }}>
-            <motion.h2 variants={fadeUp} custom={0} className="font-display text-3xl font-bold md:text-5xl">Loved by Students</motion.h2>
-            <motion.p variants={fadeUp} custom={1} className="mx-auto mt-4 max-w-xl text-muted-foreground">Hear from students who save every day with CampusPerk.</motion.p>
+            <motion.h2 variants={fadeUp} custom={0} className="font-display text-3xl font-bold md:text-5xl">Private Beta Focus</motion.h2>
+            <motion.p variants={fadeUp} custom={1} className="mx-auto mt-4 max-w-xl text-muted-foreground">We are collecting real student feedback, verified inventory, and campus partners before publishing testimonials.</motion.p>
           </motion.div>
           <motion.div className="grid gap-6 md:grid-cols-3" initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={staggerContainer}>
-            {testimonials.map((t) => (
-              <motion.div key={t.name} variants={staggerItem}
+            {[
+              { icon: GraduationCap, title: "Founding Students", text: "Reserve early access and help choose the first campus inventory priorities." },
+              { icon: Award, title: "Ambassadors", text: "Bring classmates, merchant leads, and campus feedback into the beta loop." },
+              { icon: Store, title: "Merchant Partners", text: "Submit real student offers so CampusPerk launches with useful local and national inventory." },
+            ].map((item) => (
+              <motion.div key={item.title} variants={staggerItem}
                 className="relative rounded-2xl glass inner-glow gradient-border p-8 transition-all duration-300 hover:shadow-[var(--shadow-glow)] hover:-translate-y-1">
-                {/* Decorative quote */}
-                <Quote className="absolute top-4 right-4 h-8 w-8 text-primary/10" />
-                <div className="flex gap-1 mb-5">
-                  {Array.from({ length: t.rating }).map((_, j) => <Star key={j} className="h-4 w-4 fill-gold text-gold" />)}
-                </div>
-                <p className="text-foreground leading-relaxed text-[15px]">&ldquo;{t.text}&rdquo;</p>
-                <div className="mt-6 flex items-center gap-3">
-                  <div className={`h-11 w-11 rounded-full bg-gradient-to-br ${t.color} flex items-center justify-center text-primary-foreground font-bold text-sm shadow-lg`}>
-                    {t.initials}
-                  </div>
-                  <div>
-                    <div className="font-semibold text-sm text-foreground">{t.name}</div>
-                    <div className="text-xs text-muted-foreground">{t.school}</div>
-                  </div>
-                </div>
+                <item.icon className="mb-5 h-8 w-8 text-primary" />
+                <h3 className="font-display text-lg font-bold text-foreground">{item.title}</h3>
+                <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{item.text}</p>
               </motion.div>
             ))}
           </motion.div>
         </div>
       </section>
-
-      {/* ─── FINAL CTA ─── */}
+      {/* Final CTA */}
       <div className="gradient-divider" />
       <section className="py-20 md:py-28">
         <div className="container mx-auto px-4">
@@ -638,3 +852,6 @@ const LandingPage = () => {
 };
 
 export default LandingPage;
+
+
+

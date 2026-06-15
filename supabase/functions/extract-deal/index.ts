@@ -36,6 +36,28 @@ Deno.serve(async (req) => {
       });
     }
 
+    const userId = claimsData.claims.sub as string | undefined;
+    if (!userId) {
+      return new Response(JSON.stringify({ error: "Invalid session" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: adminRole } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userId)
+      .eq("role", "admin")
+      .maybeSingle();
+
+    if (!adminRole) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     const { url } = await req.json();
     if (!url) {
       return new Response(JSON.stringify({ error: "URL is required" }), {
@@ -109,7 +131,7 @@ Deno.serve(async (req) => {
 
     // Step 1: Validate URL is live & check redirects (manual redirect to prevent SSRF)
     console.log("Validating URL:", formattedUrl);
-    let urlValidation = { isLive: false, finalUrl: formattedUrl, redirectChain: [] as string[], statusCode: 0 };
+    const urlValidation = { isLive: false, finalUrl: formattedUrl, redirectChain: [] as string[], statusCode: 0 };
 
     try {
       let currentUrl = formattedUrl;

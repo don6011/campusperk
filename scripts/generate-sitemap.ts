@@ -4,6 +4,7 @@ import { writeFileSync } from "fs";
 import { resolve } from "path";
 
 const BASE_URL = "https://campusperk.com";
+const GENERATE_DYNAMIC_SITEMAP = process.env.GENERATE_DYNAMIC_SITEMAP === "true";
 
 const SUPABASE_URL = "https://jttcpewdibbczdnutmme.supabase.co";
 const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp0dGNwZXdkaWJiY3pkbnV0bW1lIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNTI3MTgsImV4cCI6MjA4NjkyODcxOH0.AEMRbIWP4pR86Ov24R1k_Bx3JYa7WCrwX0OUBrU40xw";
@@ -112,11 +113,15 @@ function generateSitemap(entries: SitemapEntry[]) {
 }
 
 async function main() {
-  const dynamicEntries = await fetchDynamicEntries();
+  const dynamicEntries = GENERATE_DYNAMIC_SITEMAP ? await fetchDynamicEntries() : [];
   const allEntries = [...staticEntries, ...dynamicEntries];
   const xml = generateSitemap(allEntries);
   writeFileSync(resolve("public/sitemap.xml"), xml);
-  console.log(`sitemap.xml written with ${allEntries.length} entries (${staticEntries.length} static, ${dynamicEntries.length} dynamic)`);
+  console.log(
+    `sitemap.xml written with ${allEntries.length} entries (${staticEntries.length} static, ${dynamicEntries.length} dynamic${
+      GENERATE_DYNAMIC_SITEMAP ? "" : "; set GENERATE_DYNAMIC_SITEMAP=true to fetch live entries"
+    })`,
+  );
 }
 
 main().catch((err) => {

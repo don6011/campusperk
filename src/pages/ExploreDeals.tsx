@@ -35,8 +35,7 @@ interface DealWithStore {
   discount_value: string | null; requires_edu_email: boolean; status: string;
   sponsored: boolean; featured: boolean; category: string | null;
   expires_at: string | null; created_at: string; updated_at: string;
-  last_checked_at: string | null; affiliate_link_url: string | null;
-  direct_link_url: string | null; visibility: string | null;
+  last_checked_at: string | null; visibility: string | null; is_affiliate?: boolean | null;
   sponsor_tier: number | null; sponsor_start_at: string | null; sponsor_end_at: string | null;
   stores: { id: string; name: string; logo_url: string | null; website_url: string | null; };
 }
@@ -66,10 +65,10 @@ function discountNum(deal: DealWithStore) {
   return m ? parseInt(m[1]) : 0;
 }
 
-function engagementScore(deal: DealWithStore) {
-  const base = deal.id.charCodeAt(1) * 47 + 123;
-  const clicks = (base % 500) + 200;
-  const favs = (base * 3 % 300) + 50;
+function engagementScore(deal: DealWithStore, claimCountsMap?: Map<string, { total: number; today: number; campusTrending: boolean }>) {
+  const claimCounts = claimCountsMap?.get(deal.id);
+  const clicks = claimCounts?.total ?? 0;
+  const favs = claimCounts?.today ?? 0;
   const refDate = deal.last_checked_at || deal.updated_at;
   const recency = (Date.now() - new Date(refDate).getTime()) / (1000 * 60 * 60 * 24);
   return clicks * 2 + favs * 3 - recency * 10;
@@ -77,10 +76,10 @@ function engagementScore(deal: DealWithStore) {
 
 function trendingBadge(deal: DealWithStore, rank: number) {
   if (deal.expires_at && daysUntil(deal.expires_at) <= 3) return { label: "Ending Soon", icon: <Timer className="h-3 w-3" />, className: "bg-destructive/15 text-destructive border-destructive/30" };
-  if (rank === 0) return { label: "Trending 🔥", icon: <Flame className="h-3 w-3" />, className: "bg-destructive/15 text-destructive border-destructive/30" };
-  if (deal.featured) return { label: "Hot Deal ⚡", icon: <Zap className="h-3 w-3" />, className: "bg-gold/15 text-gold border-gold/30" };
+  if (rank === 0) return { label: "Featured", icon: <Flame className="h-3 w-3" />, className: "bg-destructive/15 text-destructive border-destructive/30" };
+  if (deal.featured) return { label: "Featured", icon: <Zap className="h-3 w-3" />, className: "bg-gold/15 text-gold border-gold/30" };
   if (deal.sponsored) return { label: "Sponsored", icon: <Sparkles className="h-3 w-3" />, className: "bg-primary/15 text-primary border-primary/30" };
-  return { label: "Popular ⭐", icon: <TrendingUp className="h-3 w-3" />, className: "bg-primary/15 text-primary border-primary/30" };
+  return { label: "Active Deal", icon: <TrendingUp className="h-3 w-3" />, className: "bg-primary/15 text-primary border-primary/30" };
 }
 
 const fadeUp = {
@@ -117,7 +116,7 @@ export default function ExploreDeals() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("*, stores(id, name, logo_url, website_url)")
+        .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data as unknown as DealWithStore[];
@@ -161,8 +160,11 @@ export default function ExploreDeals() {
   const hasFilters = search || selectedCategories.length || selectedStatuses.length || selectedScope !== "all" || eduOnly || premiumOnly || freshnessDays || verifiedRecently;
 
   const trendingDeals = useMemo(() => {
-    return [...deals].filter((d) => d.status === "active").sort((a, b) => engagementScore(b) - engagementScore(a)).slice(0, 8);
-  }, [deals]);
+    return [...deals]
+      .filter((d) => d.status === "active" && (d.featured || d.sponsored || (claimCountsMap?.get(d.id)?.total ?? 0) > 0))
+      .sort((a, b) => engagementScore(b, claimCountsMap) - engagementScore(a, claimCountsMap))
+      .slice(0, 8);
+  }, [deals, claimCountsMap]);
 
   const sponsoredDeals = useMemo(() => {
     return deals.filter((d) => {
@@ -219,7 +221,7 @@ export default function ExploreDeals() {
         list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
       case "popular":
-        list.sort((a, b) => engagementScore(b) - engagementScore(a));
+        list.sort((a, b) => engagementScore(b, claimCountsMap) - engagementScore(a, claimCountsMap));
         break;
       case "expiring":
         list.sort((a, b) => {
@@ -236,7 +238,7 @@ export default function ExploreDeals() {
         break;
     }
     return list;
-  }, [deals, search, selectedCategories, selectedStatuses, selectedScope, eduOnly, premiumOnly, freshnessDays, verifiedRecently, sortBy]);
+  }, [deals, search, selectedCategories, selectedStatuses, selectedScope, eduOnly, premiumOnly, freshnessDays, verifiedRecently, sortBy, claimCountsMap]);
 
   const visible = filtered.slice(0, visibleCount);
   const hasMore = visibleCount < filtered.length;
@@ -279,46 +281,39 @@ export default function ExploreDeals() {
                 <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => scrollCarousel("right")}><ChevronRight className="h-4 w-4" /></Button>
               </div>
             </div>
-            <div ref={carouselRef} className="flex gap-[18px] overflow-x-auto scrollbar-hide pb-3 -mx-1 px-1 snap-x snap-mandatory" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-              {trendingDeals.map((deal, idx) => {
-                const badge = trendingBadge(deal, idx);
-                return (
-                  <Link key={deal.id} to={`/deals/${deal.id}`} className="snap-start shrink-0 w-[240px]">
-                    <motion.div whileHover={{ y: -3, transition: { duration: 0.12 } }}>
-                      <Card className="border-border/50 bg-card hover:border-primary/40 transition-all duration-150 hover:shadow-[0_6px_30px_-8px_hsl(var(--primary)/0.3)] hover:ring-1 hover:ring-primary/20 h-full">
-                        <CardContent className="p-4 space-y-2.5">
-                          {/* Savings dominant */}
-                          <div>
-                            <span className="text-[9px] font-bold uppercase tracking-widest text-accent/70">SAVE</span>
-                            <div className="font-display text-xl font-black text-accent leading-tight">
-                              {deal.discount_value ?? "Special"}
+            <div className="brand-carousel-fade -mx-1">
+              <div ref={carouselRef} className="flex gap-[18px] overflow-x-auto scrollbar-hide pb-3 px-3 snap-x snap-mandatory" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                {trendingDeals.map((deal, idx) => {
+                  const badge = trendingBadge(deal, idx);
+                  return (
+                    <Link key={deal.id} to={`/deals/${deal.id}`} className="snap-start shrink-0 w-[240px]">
+                      <motion.div whileHover={{ y: -3, transition: { duration: 0.12 } }}>
+                        <Card className="deal-card-premium h-full">
+                          <CardContent className="p-6 space-y-3">
+                            <div className="logo-banner flex h-20 items-center justify-center rounded-xl overflow-hidden p-0">
+                              {deal.stores.logo_url ? (
+                                <img src={deal.stores.logo_url} alt={deal.stores.name} className="merchant-logo-panel--cover" />
+                              ) : (
+                                <ShoppingBag className="h-7 w-7 text-muted-foreground" />
+                              )}
                             </div>
-                          </div>
-                          <div className="flex items-center gap-2.5 min-w-0">
-                            {deal.stores.logo_url ? (
-                              <img src={deal.stores.logo_url} alt={deal.stores.name} className="h-9 w-9 rounded-lg object-contain bg-secondary p-1" />
-                            ) : (
-                              <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-                              </div>
-                            )}
                             <div className="min-w-0">
-                              <div className="font-display font-bold text-xs text-foreground truncate">{deal.stores.name}</div>
-                              <div className="text-[11px] text-muted-foreground truncate">{deal.title}</div>
+                              <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{deal.title}</div>
+                              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value ?? "Special"}</div>
                             </div>
-                          </div>
-                          <div className="flex items-center justify-between">
-                            <Badge className={`text-[9px] font-bold gap-1 ${badge.className}`}>{badge.icon} {badge.label}</Badge>
-                          </div>
-                          <Button size="sm" className="w-full gap-1.5 h-7 font-bold text-[11px] opacity-85 group-hover:opacity-100">
-                            Get Deal <ExternalLink className="h-2.5 w-2.5" />
-                          </Button>
-                        </CardContent>
-                      </Card>
-                    </motion.div>
-                  </Link>
-                );
-              })}
+                            <div className="flex items-center justify-between">
+                              <Badge className={`text-[9px] font-bold gap-1 ${badge.className}`}>{badge.icon} {badge.label}</Badge>
+                            </div>
+                            <Button size="sm" className="w-full gap-1.5 h-9 font-bold text-[12px] opacity-90 group-hover:opacity-100">
+                              Get Deal <ExternalLink className="h-2.5 w-2.5" />
+                            </Button>
+                          </CardContent>
+                        </Card>
+                      </motion.div>
+                    </Link>
+                  );
+                })}
+              </div>
             </div>
           </div>
         )}
@@ -357,7 +352,7 @@ export default function ExploreDeals() {
 
         {/* Filters panel */}
         {filtersOpen && (
-          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="rounded-xl border border-border bg-card p-5 space-y-5">
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="rounded-xl premium-glass-card p-5 space-y-5">
             <div>
               <h3 className="text-xs font-semibold text-foreground mb-2.5 uppercase tracking-wider">Category</h3>
               <div className="flex flex-wrap gap-2">
@@ -429,7 +424,7 @@ export default function ExploreDeals() {
 
                 return (
                   <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i} whileHover={{ y: -4, transition: { duration: 0.15 } }}>
-                    <Card className={`group relative border-border/50 bg-card overflow-hidden transition-all duration-150 hover:shadow-[0_6px_30px_-8px_hsl(var(--primary)/0.3)] hover:border-primary/40 hover:ring-1 hover:ring-primary/20`}>
+                    <Card className={`group relative overflow-hidden deal-card-premium ${deal.featured ? "glow-featured" : ""} ${deal.sponsored ? "glow-sponsored" : ""} ${isPremiumDeal ? "glow-premium" : ""}`}>
                       {/* Premium lock overlay */}
                       {isPremiumDeal && (
                         <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => { setUpgradeOpen(true); logPaywallView(deal.id, "explore", user?.id); }}>
@@ -473,35 +468,29 @@ export default function ExploreDeals() {
                         </div>
 
                         {/* Savings — DOMINANT */}
-                        <div className="mb-2">
-                          <span className="text-[10px] font-bold uppercase tracking-widest text-accent/70">SAVE</span>
-                          <div className="font-display text-2xl font-black text-accent leading-tight">
-                            {deal.discount_value ?? "Special"}
-                          </div>
+                        <div className="logo-banner mb-4 flex h-20 w-full items-center justify-center rounded-xl overflow-hidden p-0">
+                          {deal.stores.logo_url ? (
+                            <img src={deal.stores.logo_url} alt={deal.stores.name} className="merchant-logo-panel--cover" />
+                          ) : (
+                            <ShoppingBag className="h-10 w-10 text-muted-foreground" />
+                          )}
                         </div>
 
-                        {/* Store + title */}
-                        <div className="flex items-center gap-3 mb-2">
-                          {deal.stores.logo_url ? (
-                            <img src={deal.stores.logo_url} alt={deal.stores.name} className="h-10 w-10 rounded-lg object-contain bg-secondary p-1.5 shrink-0" />
-                          ) : (
-                            <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0"><ShoppingBag className="h-4 w-4 text-muted-foreground" /></div>
-                          )}
-                          <div className="min-w-0">
-                            <div className="font-display font-bold text-sm text-foreground truncate">{deal.stores.name}</div>
-                            <div className="text-xs text-muted-foreground truncate">{deal.title}</div>
-                          </div>
+                        <div className="mb-3">
+                          <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{deal.title}</div>
                         </div>
+
+                        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value ?? "Special"}</div>
 
                         {/* Claim counter */}
                         <div className="mb-2 flex items-center gap-2">
                           {(() => {
                             const counts = claimCountsMap?.get(deal.id);
-                            const total = counts?.total || ((deal.id.charCodeAt(1) * 47 + 123) % 900 + 100);
+                            if (!counts?.total) return null;
                             return (
                               <span className="text-[11px] text-muted-foreground flex items-center gap-1">
                                 <Flame className="h-3 w-3 text-destructive" />
-                                {total.toLocaleString()} claimed
+                                {counts.total.toLocaleString()} claimed
                               </span>
                             );
                           })()}
@@ -556,7 +545,7 @@ export default function ExploreDeals() {
                         <div className="pt-2.5 border-t border-border/50">
                           <Button
                             size="sm"
-                            className="w-full gap-1.5 h-8 font-bold text-xs opacity-85 group-hover:opacity-100 group-hover:shadow-md group-hover:shadow-primary/25 transition-all"
+                            className="w-full gap-1.5 h-10 font-bold text-sm opacity-90 group-hover:opacity-100 group-hover:shadow-md group-hover:shadow-primary/25 transition-all"
                             onClick={(e) => {
                               e.preventDefault();
                               claimDeal.mutate(deal.id);
@@ -584,9 +573,18 @@ export default function ExploreDeals() {
           <Card className="border-border bg-card">
             <CardContent className="py-16 text-center">
               <Tag className="h-10 w-10 text-muted-foreground mx-auto mb-4" />
-              <h3 className="font-display text-lg font-semibold text-foreground mb-2">No deals match your filters</h3>
-              <p className="text-sm text-muted-foreground mb-6">Try adjusting your search or filter criteria.</p>
-              <Button variant="outline" className="gap-2" onClick={resetFilters}><RotateCcw className="h-4 w-4" /> Reset Filters</Button>
+              <h3 className="font-display text-lg font-semibold text-foreground mb-2">
+                {hasFilters ? "No deals match your filters" : "Beta Preview: deals are being loaded"}
+              </h3>
+              <p className="text-sm text-muted-foreground mb-6">
+                {hasFilters
+                  ? "Try widening your filters, then request the deal or merchant you expected to see."
+                  : "CampusPerk is ready for real inventory. Join the beta or submit a merchant to help populate this category."}
+              </p>
+              <div className="flex flex-col justify-center gap-2 sm:flex-row">
+                {hasFilters && <Button variant="outline" className="gap-2" onClick={resetFilters}><RotateCcw className="h-4 w-4" /> Reset Filters</Button>}
+                <Button asChild className="gap-2"><Link to="/partners/request">Request a Deal</Link></Button>
+              </div>
             </CardContent>
           </Card>
         )}
@@ -601,3 +599,4 @@ export default function ExploreDeals() {
     </DashboardLayout>
   );
 }
+

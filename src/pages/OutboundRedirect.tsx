@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 
 interface DealRedirectData {
@@ -25,11 +24,9 @@ interface DealRedirectData {
 
 const OutboundRedirect = () => {
   const { dealId } = useParams<{ dealId: string }>();
-  const { user, profile } = useAuth();
   const [deal, setDeal] = useState<DealRedirectData | null>(null);
   const [loading, setLoading] = useState(true);
   const [countdown, setCountdown] = useState(3);
-  const [clickLogged, setClickLogged] = useState(false);
   const [showUpgrade, setShowUpgrade] = useState(false);
 
   // Fetch deal via server-side RPC (masks URLs for non-premium users)
@@ -38,7 +35,14 @@ const OutboundRedirect = () => {
     (async () => {
       const { data, error } = await supabase.rpc("get_deal_redirect", {
         p_deal_id: dealId,
-      });
+        p_device_type: /Mobile|Android|iPhone/i.test(navigator.userAgent)
+          ? "mobile"
+          : /Tablet|iPad/i.test(navigator.userAgent)
+          ? "tablet"
+          : "desktop",
+        p_referrer: document.referrer || null,
+        p_referral_code: localStorage.getItem("campusperk_ref") || null,
+      } as any);
       if (error || !data || (data as any).error === "not_found") {
         setLoading(false);
         return;
@@ -50,54 +54,9 @@ const OutboundRedirect = () => {
 
   const blocked = deal?.blocked_reason || null;
 
-  // Log blocked attempt
+  // Countdown for non-blocked deals. The server logs the click during validation.
   useEffect(() => {
-    if (!blocked || !deal || clickLogged) return;
-    const ua = navigator.userAgent;
-    let deviceType = "desktop";
-    if (/Mobile|Android|iPhone/i.test(ua)) deviceType = "mobile";
-    else if (/Tablet|iPad/i.test(ua)) deviceType = "tablet";
-
-    (async () => {
-      await supabase.from("affiliate_clicks").insert({
-        deal_id: deal.id,
-        user_id: user?.id || null,
-        device_type: deviceType,
-        referrer: document.referrer || null,
-        is_verified_student: profile?.student_verified || false,
-        is_premium_user: profile?.premium_status || false,
-        blocked_reason: blocked,
-      } as any);
-      setClickLogged(true);
-    })();
-  }, [blocked, deal, clickLogged, user, profile]);
-
-  // Log click + countdown (only for non-blocked deals)
-  useEffect(() => {
-    if (!deal || clickLogged || blocked) return;
-
-    const ua = navigator.userAgent;
-    let deviceType = "desktop";
-    if (/Mobile|Android|iPhone/i.test(ua)) deviceType = "mobile";
-    else if (/Tablet|iPad/i.test(ua)) deviceType = "tablet";
-
-    const refCode = localStorage.getItem("campusperk_ref") || null;
-
-    (async () => {
-      await supabase.from("affiliate_clicks").insert({
-        deal_id: deal.id,
-        user_id: user?.id || null,
-        device_type: deviceType,
-        referrer: document.referrer || null,
-        is_verified_student: profile?.student_verified || false,
-        is_premium_user: profile?.premium_status || false,
-        campus_id: profile?.campus_id || null,
-        scope: deal.deal_scope || "national",
-        referral_code: refCode,
-        is_sponsored: deal.sponsored || false,
-      } as any);
-      setClickLogged(true);
-    })();
+    if (!deal || blocked) return;
 
     const timer = setInterval(() => {
       setCountdown((c) => {
@@ -109,7 +68,7 @@ const OutboundRedirect = () => {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [deal, clickLogged, user, profile, blocked]);
+  }, [deal, blocked]);
 
   // Auto-redirect when countdown reaches 0 (only non-blocked)
   useEffect(() => {

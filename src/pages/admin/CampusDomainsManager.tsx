@@ -88,8 +88,12 @@ const CampusDomainsManager = () => {
       const target = domains.find(d => d.id === mergeTargetId);
       if (!target) throw new Error("Target domain not found");
       
-      await supabase.from("profiles").update({ campus_domain: target.domain_root } as any).eq("campus_domain", mergeSource.domain_root);
-      await supabase.from("campus_domains").delete().eq("id", mergeSource.id);
+      const { error } = await supabase.rpc("admin_merge_campus_domain" as any, {
+        p_source_domain: mergeSource.domain_root,
+        p_target_domain: target.domain_root,
+        p_source_id: mergeSource.id,
+      });
+      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-campus-domains"] });

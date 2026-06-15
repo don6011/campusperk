@@ -101,55 +101,12 @@ export default function VerificationQueue() {
       const { data: { user: admin } } = await supabase.auth.getUser();
       if (!admin) throw new Error("Not authenticated");
 
-      const isApprove = decision === "approve";
-      const newStatus = isApprove ? "verified" : "rejected";
-
-      // Update verification_requests
-      const { error: reqErr } = await supabase
-        .from("verification_requests")
-        .update({
-          status: newStatus as any,
-          admin_id: admin.id,
-          admin_decision_reason: decisionReason,
-          reviewed_at: new Date().toISOString(),
-        })
-        .eq("id", req.id);
-      if (reqErr) throw reqErr;
-
-      // Update user profile
-      const profileUpdate: Record<string, any> = {
-        campus_role: req.campus_role_requested,
-        campus_role_status: newStatus,
-        campus_domain: req.email_domain,
-      };
-      if (isApprove) {
-        profileUpdate.campus_verified = true;
-        profileUpdate.campus_verification_method = "manual_admin";
-        if (req.campus_role_requested === "student") {
-          profileUpdate.student_verified = true;
-        }
-      } else {
-        profileUpdate.campus_verified = false;
-      }
-      const { error: profileErr } = await supabase
-        .from("profiles")
-        .update(profileUpdate)
-        .eq("id", req.user_id);
-      if (profileErr) throw profileErr;
-
-      // Audit log
-      await supabase.from("verification_audit_log").insert({
-        user_id: req.user_id,
-        admin_id: admin.id,
-        previous_status: false,
-        new_status: isApprove,
-        verification_method: "manual" as any,
-        reason: decisionReason,
-        action_type: isApprove ? "verification_approved" : "verification_rejected" as any,
-        new_role: req.campus_role_requested as any,
-        new_campus_status: newStatus as any,
-        campus_verification_method: "manual_admin" as any,
-      } as any);
+      const { error } = await supabase.rpc("admin_decide_verification_request" as any, {
+        p_request_id: req.id,
+        p_approve: decision === "approve",
+        p_reason: decisionReason,
+      });
+      if (error) throw error;
     },
     onSuccess: (_, { decision }) => {
       toast.success(`Request ${decision === "approve" ? "approved" : "rejected"}`);

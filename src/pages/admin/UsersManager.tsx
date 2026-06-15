@@ -91,22 +91,12 @@ const UsersManager = () => {
 
       const newStatus = !toggleUser.student_verified;
 
-      // Insert audit log
-      const { error: logError } = await supabase.from("verification_audit_log").insert({
-        user_id: toggleUser.id,
-        admin_id: admin.id,
-        previous_status: toggleUser.student_verified,
-        new_status: newStatus,
-        verification_method: method as any,
-        reason: reason.trim(),
-      } as any);
-      if (logError) throw logError;
-
-      // Update profile
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ student_verified: newStatus })
-        .eq("id", toggleUser.id);
+      const { error: updateError } = await supabase.rpc("admin_set_student_verification" as any, {
+        p_user_id: toggleUser.id,
+        p_verified: newStatus,
+        p_reason: reason.trim(),
+        p_method: method,
+      });
       if (updateError) throw updateError;
 
       return newStatus;
@@ -130,36 +120,12 @@ const UsersManager = () => {
 
       const newPremium = !premiumUser.premium_status;
 
-      // Update profile premium_status
-      const { error: updateError } = await supabase
-        .from("profiles")
-        .update({ premium_status: newPremium })
-        .eq("id", premiumUser.id);
+      const { error: updateError } = await supabase.rpc("admin_set_premium_status" as any, {
+        p_user_id: premiumUser.id,
+        p_premium: newPremium,
+        p_reason: premiumReason.trim(),
+      });
       if (updateError) throw updateError;
-
-      // Update user_roles table
-      if (newPremium) {
-        // Add premium_user role (ignore if exists)
-        await supabase.from("user_roles").upsert(
-          { user_id: premiumUser.id, role: "premium_user" as any },
-          { onConflict: "user_id,role" }
-        );
-      } else {
-        // Remove premium_user role
-        await supabase.from("user_roles").delete()
-          .eq("user_id", premiumUser.id)
-          .eq("role", "premium_user" as any);
-      }
-
-      // Log to audit
-      await supabase.from("verification_audit_log").insert({
-        user_id: premiumUser.id,
-        admin_id: admin.id,
-        previous_status: premiumUser.premium_status,
-        new_status: newPremium,
-        verification_method: "manual" as any,
-        reason: `[Premium ${newPremium ? "Grant" : "Revoke"}] ${premiumReason.trim()}`,
-      } as any);
 
       return newPremium;
     },

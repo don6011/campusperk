@@ -1,11 +1,11 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight, Heart, Clock, Shield, Crown, TrendingUp, Bell, Tag, ChevronRight,
   ExternalLink, Sparkles, AlertTriangle, ShoppingBag, Monitor, Cpu, CreditCard,
   Utensils, Plane, Lock, BellRing, MapPin, Megaphone, Flame, Zap, Timer, Star,
-  Copy, ChevronLeft, DollarSign, Send, Award, Users, Trophy, Target, Gift,
+  Copy, ChevronLeft, DollarSign, Send, Award, Users, Trophy, Target, Gift, CheckCircle2, Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -33,7 +33,6 @@ import { NextDropWidget } from "@/components/dashboard/NextDropWidget";
 import { SurpriseDropCard } from "@/components/dashboard/SurpriseDropCard";
 import { isDealDropVisible } from "@/lib/deal-drops";
 import { useCampusTheme } from "@/contexts/CampusThemeContext";
-import { SavingsCounter } from "@/components/SavingsCounter";
 import { MissedDealFeedCard } from "@/components/MissedDealFeedCard";
 import { FoundingPremiumBanner } from "@/components/FoundingPremiumBanner";
 import { PremiumNudgeModal } from "@/components/PremiumNudgeModal";
@@ -62,9 +61,8 @@ type DealRow = {
   status: string; featured: boolean; sponsored: boolean; sponsor_tier: number | null;
   sponsor_start_at: string | null; sponsor_end_at: string | null; sponsor_priority: number | null;
   deal_scope: string | null; eligible_cities: string[] | null; eligible_regions: string[] | null;
-  requires_edu_email: boolean; expires_at: string | null; affiliate_link_url: string | null;
-  direct_link_url: string | null; updated_at: string; created_at: string; category: string | null;
-  visibility: string | null; stores: { name: string; logo_url: string | null } | null;
+  requires_edu_email: boolean; expires_at: string | null; updated_at: string; created_at: string; category: string | null;
+  visibility: string | null; is_affiliate?: boolean | null; stores: { name: string; logo_url: string | null } | null;
   is_surprise_drop?: boolean; drop_window?: string | null; drop_time?: string | null;
 };
 
@@ -138,13 +136,13 @@ function ScrollRow({ children, className = "" }: { children: React.ReactNode; cl
   };
 
   return (
-    <div className="relative group/scroll">
+    <div className="brand-carousel-fade group/scroll">
       {canScrollLeft && (
         <button onClick={() => scroll(-1)} className="absolute left-0 top-1/2 -translate-y-1/2 z-10 h-9 w-9 rounded-full bg-card/90 border border-border shadow-lg flex items-center justify-center text-foreground hover:bg-secondary transition-colors opacity-0 group-hover/scroll:opacity-100 -translate-x-3">
           <ChevronLeft className="h-4 w-4" />
         </button>
       )}
-      <div ref={ref} className={`flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x scroll-smooth scrollbar-hide ${className}`}>
+      <div ref={ref} className={`flex gap-4 overflow-x-auto pb-2 px-3 snap-x scroll-smooth scrollbar-hide ${className}`}>
         {children}
       </div>
       {canScrollRight && (
@@ -158,13 +156,11 @@ function ScrollRow({ children, className = "" }: { children: React.ReactNode; cl
 
 /* ── Social proof generator ── */
 function socialProof(deal: DealRow, campusName?: string | null): { text: string; icon: typeof Flame } {
-  const hash = deal.id.charCodeAt(1) * 7 + deal.id.charCodeAt(3) * 13;
-  const count = (hash % 120) + 18;
   const campus = campusName || "campus";
-  if (deal.expires_at && daysUntil(deal.expires_at) <= 3) return { text: `⏳ Ends Soon`, icon: Timer };
-  if (deal.featured) return { text: `🔥 ${count} students at ${campus} grabbed this`, icon: Flame };
-  if (deal.sponsored) return { text: `⚡ Trending at ${campus}`, icon: Zap };
-  return { text: `🔥 ${count} students grabbed this today`, icon: Flame };
+  if (deal.expires_at && daysUntil(deal.expires_at) <= 3) return { text: "Ends soon", icon: Timer };
+  if (deal.featured) return { text: `Featured for ${campus} students`, icon: Flame };
+  if (deal.sponsored) return { text: "Sponsored student offer", icon: Zap };
+  return { text: "Verified student deal", icon: Flame };
 }
 
 /* ── Format discount value with % ── */
@@ -173,6 +169,48 @@ function formatDiscount(val: string | null): string {
   // If it's just a number, add %
   if (/^\d+$/.test(val.trim())) return `${val}%`;
   return val;
+}
+
+function dealSpotlightScore(deal: DealRow): number {
+  const expiresIn = deal.expires_at ? daysUntil(deal.expires_at) : 30;
+  const urgencyScore = deal.expires_at && expiresIn >= 0 ? Math.max(0, 18 - Math.min(expiresIn, 18)) : 4;
+  const sponsorScore = deal.sponsored ? 12 + (deal.sponsor_priority ?? 0) : 0;
+  const freshnessScore = Math.max(0, 10 - Math.floor((Date.now() - new Date(deal.updated_at || deal.created_at).getTime()) / 86_400_000));
+  const savingsText = `${deal.discount_value || ""} ${deal.title || ""}`.toLowerCase();
+  const savingsScore = savingsText.includes("free") ? 18 : Number(savingsText.match(/\d+/)?.[0] || 0) / 5;
+  return 100 + sponsorScore + urgencyScore + freshnessScore + Math.min(savingsScore, 20);
+}
+
+function formatExpiryCountdown(expiresAt: string | null): string {
+  if (!expiresAt) return "No expiration listed";
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff <= 0) return "Expires today";
+  const days = Math.ceil(diff / 86_400_000);
+  if (days <= 1) {
+    const hours = Math.max(1, Math.ceil(diff / 3_600_000));
+    return `Expires in ${hours} Hour${hours === 1 ? "" : "s"}`;
+  }
+  return `Expires in ${days} Day${days === 1 ? "" : "s"}`;
+}
+
+function formatSavingsAmount(deal: DealRow): string {
+  const discount = formatDiscount(deal.discount_value);
+  const combined = `${deal.discount_value || ""} ${deal.title || ""}`;
+  const dollars = combined.match(/\$\s?(\d[\d,]*(?:\.\d+)?)/);
+  if (dollars) return `Save ${dollars[0].replace(/\s+/g, "")}`;
+  if (discount.toLowerCase().includes("free")) return "Save the full price";
+  return discount === "Deal" ? "Student-only savings" : `Save ${discount}`;
+}
+
+function whyStudentsLoveDeal(deal: DealRow, storeName: string): string[] {
+  const reasons = [
+    `${storeName} is a strong fit for student budgets.`,
+    deal.category ? `Useful for ${deal.category.toLowerCase()} needs.` : "Useful for everyday student life.",
+    deal.expires_at ? "Limited window creates a real reason to claim now." : "Easy to save without watching a deadline.",
+  ];
+  if (deal.discount_value) reasons[0] = `${formatDiscount(deal.discount_value)} makes this one of today's strongest savings.`;
+  if (deal.requires_edu_email) reasons[2] = "Verified student eligibility keeps the offer student-focused.";
+  return reasons;
 }
 
 /* ═══════════════════════════════════════════
@@ -220,7 +258,13 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId, onGetDeal }: {
           <div className="flex flex-col lg:flex-row lg:items-center gap-6">
             {/* LEFT — Brand + Headline */}
             <div className="flex items-center gap-4 flex-1 min-w-0">
-              <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="xl" />
+              <div className="logo-banner flex h-24 w-36 shrink-0 items-center justify-center rounded-3xl overflow-hidden p-0">
+                {deal.stores?.logo_url ? (
+                  <img src={deal.stores.logo_url} alt={storeName} className="merchant-logo-panel--cover" />
+                ) : (
+                  <Store className="h-10 w-10 text-primary" />
+                )}
+              </div>
               <div className="min-w-0">
                 <div className="text-xs text-muted-foreground font-medium uppercase tracking-widest">{storeName}</div>
                 <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground mt-1 leading-tight">{deal.title}</h3>
@@ -267,66 +311,155 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId, onGetDeal }: {
 /* ═══════════════════════════════════════════
    2. LIVE ACTIVITY TICKER
    ═══════════════════════════════════════════ */
-function ActivityTicker({ deals, campusName }: { deals: DealRow[]; campusName?: string | null }) {
-  const campus = campusName || "campus";
-  const messages = useMemo(() => {
-    const msgs: string[] = [];
-    deals.slice(0, 12).forEach((d) => {
-      const store = d.stores?.name || "a brand";
-      const hash = d.id.charCodeAt(1) * 7 + d.id.charCodeAt(3) * 13;
-      const count = (hash % 35) + 5;
-      msgs.push(`🔥 ${count} students at ${campus} claimed the ${store} deal`);
-    });
-    if (msgs.length < 4) {
-      msgs.push(`🔥 GitHub Student Pack claimed 41 times at ${campus}`);
-      msgs.push(`🔥 Spotify Student trending at ${campus}`);
-    }
-    return msgs;
-  }, [deals, campus]);
+function TodayBestDealSpotlight({ deal, onUpgrade, isPremium, userId, onGetDeal, profileName }: {
+  deal: DealRow | null;
+  onUpgrade: () => void;
+  isPremium: boolean;
+  userId?: string;
+  onGetDeal: (dealId: string) => void;
+  profileName?: string | null;
+}) {
+  const { isFoundingMember } = useAuth();
 
-  const [idx, setIdx] = useState(0);
+  if (!deal) {
+    return (
+      <motion.section initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }}>
+        <Card className="relative overflow-hidden border-emerald-400/20 bg-zinc-950/90 text-white shadow-2xl shadow-emerald-950/30 premium-glass-card">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,hsl(151_80%_45%/.22),transparent_38%),radial-gradient(circle_at_bottom_right,hsl(190_90%_45%/.12),transparent_35%)]" />
+          <CardContent className="relative z-10 p-6 sm:p-8">
+            <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
+              <div>
+                <Badge className="mb-4 border-emerald-300/30 bg-emerald-400/15 text-emerald-200">
+                  <Flame className="mr-1 h-3.5 w-3.5" /> Today's Top Deal
+                </Badge>
+                <h1 className="font-display text-3xl font-black tracking-tight md:text-5xl">
+                  Welcome back{profileName ? `, ${profileName}` : ""}
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm text-zinc-300">
+                  No featured deal is active right now. Once an admin marks a live deal as featured, Campus Perk will spotlight the highest scoring offer here.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <VerifiedStudentBadge />
+                <FoundingMemberBadge />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </motion.section>
+    );
+  }
 
-  useEffect(() => {
-    const interval = setInterval(() => setIdx(i => (i + 1) % messages.length), 3500);
-    return () => clearInterval(interval);
-  }, [messages.length]);
+  const storeName = deal.stores?.name || "Featured Brand";
+  const isGated = isDealPremium(deal) && !isPremium && !isFoundingMember;
+  const loveReasons = whyStudentsLoveDeal(deal, storeName);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="relative overflow-hidden rounded-xl border border-border/50 bg-card/50 backdrop-blur-sm">
-      <div className="flex items-center px-4 py-2 gap-3">
-        <div className="h-5 w-5 rounded-md bg-destructive/15 flex items-center justify-center shrink-0">
-          <Zap className="h-3 w-3 text-destructive" />
-        </div>
-        <div className="flex-1 overflow-hidden">
-          <AnimatePresence mode="wait">
-            <motion.p
-              key={idx}
-              initial={{ y: 16, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: -16, opacity: 0 }}
-              transition={{ duration: 0.3 }}
-              className="text-xs font-medium text-foreground whitespace-nowrap"
-            >
-              {messages[idx]}
-            </motion.p>
-          </AnimatePresence>
-        </div>
-        <Badge variant="outline" className="text-[8px] text-muted-foreground border-border shrink-0">LIVE</Badge>
-      </div>
-    </motion.div>
+    <motion.section initial={{ opacity: 0, y: 30, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}>
+      <Card className="relative overflow-hidden border-emerald-400/20 bg-zinc-950/90 text-white shadow-2xl shadow-emerald-950/30 premium-glass-card">
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,hsl(151_80%_45%/.28),transparent_34%),radial-gradient(circle_at_80%_20%,hsl(43_96%_56%/.14),transparent_30%),linear-gradient(135deg,rgba(255,255,255,.08),transparent_42%)]" />
+        <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-emerald-300/70 to-transparent" />
+
+        {isGated && (
+          <div className="absolute inset-0 z-20 flex cursor-pointer flex-col items-center justify-center gap-4 bg-zinc-950/75 backdrop-blur-md" onClick={() => { onUpgrade(); logPaywallView(deal.id, "dashboard", userId); }}>
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gold/15 ring-2 ring-gold/20">
+              <Lock className="h-8 w-8 text-gold" />
+            </div>
+            <span className="text-lg font-bold text-white">Premium Exclusive Deal</span>
+            <span className="text-sm text-zinc-300">Upgrade to unlock early access deals</span>
+            <Button className="mt-1 gap-2 border border-gold/30 bg-gold/20 text-gold hover:bg-gold/30">
+              <Crown className="h-4 w-4" /> Unlock Premium
+            </Button>
+          </div>
+        )}
+
+        <CardContent className="relative z-10 p-6 sm:p-8 lg:p-10">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <Badge className="border-emerald-300/30 bg-emerald-400/15 px-3 py-1 text-xs font-black uppercase tracking-[0.22em] text-emerald-200">
+              <Flame className="mr-1.5 h-3.5 w-3.5" /> Today's Top Deal
+            </Badge>
+            <div className="flex items-center gap-2">
+              <VerifiedStudentBadge />
+              <FoundingMemberBadge />
+            </div>
+          </div>
+
+          <div className="grid gap-8 lg:grid-cols-[1.1fr_.9fr] lg:items-stretch">
+            <div className="flex flex-col justify-between gap-7">
+              <div>
+                <div className="mb-5 flex items-center gap-4">
+                  <div className="logo-banner flex h-28 w-44 items-center justify-center rounded-3xl overflow-hidden p-0 shadow-xl shadow-black/30">
+                    {deal.stores?.logo_url ? (
+                      <img src={deal.stores.logo_url} alt={storeName} className="merchant-logo-panel--cover" />
+                    ) : (
+                      <Store className="h-10 w-10 text-emerald-300" />
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.25em] text-emerald-200">{storeName}</p>
+                    <p className="mt-1 text-xs text-zinc-400">Featured student savings</p>
+                  </div>
+                </div>
+
+                <h1 className="font-display text-4xl font-black leading-[0.95] tracking-tight md:text-6xl">
+                  {deal.title}
+                </h1>
+                {deal.description && (
+                  <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-300 md:text-base">{deal.description}</p>
+                )}
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-emerald-300/20 bg-emerald-400/10 p-4">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-emerald-200">Savings</p>
+                  <p className="mt-1 font-display text-3xl font-black text-emerald-300">{formatDiscount(deal.discount_value)}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Value</p>
+                  <p className="mt-1 text-lg font-bold text-white">{formatSavingsAmount(deal)}</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-400">Deadline</p>
+                  <p className="mt-1 flex items-center gap-1.5 text-lg font-bold text-white">
+                    <Clock className="h-4 w-4 text-emerald-300" /> {formatExpiryCountdown(deal.expires_at)}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-col justify-between rounded-3xl border border-white/10 bg-black/20 p-5 shadow-inner shadow-black/20">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.22em] text-emerald-200">Why Students Love This Deal</p>
+                <div className="mt-4 space-y-3">
+                  {loveReasons.map((reason) => (
+                    <div key={reason} className="flex gap-3 rounded-2xl border border-white/10 bg-white/[0.06] p-3">
+                      <Shield className="mt-0.5 h-4 w-4 shrink-0 text-emerald-300" />
+                      <p className="text-sm leading-5 text-zinc-200">{reason}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="mt-6 space-y-3">
+                <Button size="lg" className="h-14 w-full gap-2 bg-emerald-400 text-zinc-950 shadow-lg shadow-emerald-500/25 hover:bg-emerald-300 hover:shadow-emerald-500/40" onClick={() => onGetDeal(deal.id)}>
+                  Claim Deal <ExternalLink className="h-4 w-4" />
+                </Button>
+                <p className="text-center text-xs text-zinc-400">Campus Perk checks eligibility before sending you to the offer.</p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.section>
   );
 }
 
-/* ═══════════════════════════════════════════
-   3. DEAL STREAK
-   ═══════════════════════════════════════════ */
 function DealStreakWidget() {
-  const streak = (new Date().getDay() % 5) + 1;
   const maxStreak = 7;
 
   return (
     <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
-      <Card className="border-gold/20 bg-card relative overflow-hidden">
+      <Card className="border-gold/20 bg-card relative overflow-hidden glow-premium">
         <div className="absolute top-0 right-0 w-24 h-24 bg-gold/8 rounded-full blur-[50px] pointer-events-none -translate-y-1/2 translate-x-1/2" />
         <CardContent className="relative z-10 p-4 flex items-center gap-4">
           <div className="h-12 w-12 rounded-xl bg-gold/15 flex items-center justify-center shrink-0 ring-2 ring-gold/20" style={{ filter: "drop-shadow(0 0 8px hsl(45 93% 56% / 0.4))" }}>
@@ -334,21 +467,17 @@ function DealStreakWidget() {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-0.5">
-              <span className="font-display text-lg font-black text-gold">{streak}-Day Streak</span>
+              <span className="font-display text-lg font-black text-gold">Beta Preview Streak</span>
               <Flame className="h-4 w-4 text-gold" style={{ filter: "drop-shadow(0 0 6px hsl(45 93% 56% / 0.5))" }} />
             </div>
-            <p className="text-[11px] text-muted-foreground">Check CampusPerk daily to unlock exclusive drops.</p>
+            <p className="text-[11px] text-muted-foreground">Daily streaks will activate once real claim and login events are flowing.</p>
             <div className="flex gap-1.5 mt-2">
               {Array.from({ length: maxStreak }).map((_, i) => (
-                <div key={i} className={`h-1.5 flex-1 rounded-full transition-all ${i < streak ? "bg-gold shadow-[0_0_6px_hsl(45_93%_56%/0.4)]" : "bg-secondary"}`} />
+                <div key={i} className="h-1.5 flex-1 rounded-full bg-secondary transition-all" />
               ))}
             </div>
           </div>
-          {streak >= 5 && (
-            <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] font-bold shrink-0">
-              🎉 On Fire!
-            </Badge>
-          )}
+          <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] font-bold shrink-0">Preview</Badge>
         </CardContent>
       </Card>
     </motion.div>
@@ -358,52 +487,179 @@ function DealStreakWidget() {
 /* ═══════════════════════════════════════════
    TRENDING STUDENT BRANDS
    ═══════════════════════════════════════════ */
-const popularBrands = [
-  { name: "Nike", slug: "nike", logo: "/logos/nike-wordmark.svg", bg: "#000000", discount: "15% Off" },
-  { name: "Apple", slug: "apple", logo: "/logos/apple-wordmark.svg", bg: "#000000", discount: "Up to 20% Off" },
-  { name: "Spotify", slug: "spotify", logo: "/logos/spotify-wordmark.svg", bg: "#1DB954", discount: "50% Off" },
-  { name: "Amazon", slug: "amazon", logo: "/logos/amazon-wordmark.svg", bg: "#232F3E", discount: "Free Trial" },
-  { name: "Samsung", slug: "samsung", logo: "/logos/samsung-wordmark.svg", bg: "#1428A0", discount: "30% Off" },
-  { name: "Best Buy", slug: "best-buy", logo: "/logos/bestbuy-wordmark.svg", bg: "#0046BE", discount: "Student Deals" },
-  { name: "Adidas", slug: "adidas", logo: "/logos/adidas-wordmark.svg", bg: "#000000", discount: "30% Off" },
-  { name: "DoorDash", slug: "doordash", logo: "/logos/doordash-wordmark.svg", bg: "#FF3008", discount: "50% Off" },
-  { name: "Uber Eats", slug: "uber-eats", logo: "/logos/ubereats-wordmark.svg", bg: "#06C167", discount: "$0 Delivery Fee" },
-  { name: "Chegg", slug: "chegg", logo: "/logos/chegg-wordmark.svg", bg: "#F27C38", discount: "Free Trial" },
-  { name: "ASOS", slug: "asos", logo: "/logos/asos-wordmark.svg", bg: "#2D2D2D", discount: "20% Off" },
-  { name: "Amtrak", slug: "amtrak", logo: "/logos/amtrak-wordmark.svg", bg: "#1A4B8C", discount: "15% Off" },
-];
+type CampusActivityItem = {
+  id: string;
+  firstName: string;
+  campus: string;
+  action: "claimed" | "saved";
+  detail: string;
+  amount?: string;
+  createdAt: string;
+  source: "live" | "seed";
+};
+
+function campusLabel(value?: string | null): string {
+  const campus = (value || "Campus").trim();
+  const normalized = campus.toLowerCase();
+  if (normalized.includes("uagc") || normalized.includes("global campus")) return "UAGC";
+  if (normalized.includes("arizona state") || normalized === "asu") return "ASU";
+  if (normalized.includes("university of arizona")) return "Arizona";
+  if (normalized.includes("tennessee")) return "Tennessee";
+  return campus.length > 18 ? campus.split(/\s+/).map((part) => part[0]).join("").slice(0, 6).toUpperCase() : campus;
+}
+
+function firstNameOnly(name?: string | null, fallback = "Student"): string {
+  const clean = (name || "").trim().split(/\s+/)[0];
+  return clean || fallback;
+}
+
+function savingsAmount(value?: string | null): string | undefined {
+  if (!value) return undefined;
+  const dollars = value.match(/\$\s?(\d[\d,]*(?:\.\d+)?)/);
+  if (dollars) return dollars[0].replace(/\s+/g, "");
+  const percent = value.match(/(\d{1,3})\s*%/);
+  if (percent) return `$${Math.max(25, Number(percent[1]) * 3)}`;
+  return undefined;
+}
+
+function activityText(item: CampusActivityItem): string {
+  if (item.action === "saved" && item.amount) return `${item.firstName} (${item.campus}) saved ${item.amount}`;
+  if (item.action === "saved") return `${item.firstName} (${item.campus}) saved on ${item.detail}`;
+  return `${item.firstName} (${item.campus}) claimed ${item.detail}`;
+}
+
+function CampusActivityFeed() {
+  const { data: activities = [], isLoading } = useQuery({
+    queryKey: ["dashboard-campus-activity-feed"],
+    refetchInterval: 60_000,
+    queryFn: async () => {
+      const { data: claims } = await supabase
+        .from("deal_claims")
+        .select("id, user_id, claimed_at, campus_domains(campus_name), deals(title, discount_value, stores(name))")
+        .order("claimed_at", { ascending: false })
+        .limit(8);
+
+      const rows = (claims || []) as any[];
+      const userIds = Array.from(new Set(rows.map((row) => row.user_id).filter(Boolean)));
+      let profileMap = new Map<string, { name: string | null; campus_name: string | null }>();
+
+      if (userIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, name, campus_name")
+          .in("id", userIds);
+        profileMap = new Map((profiles || []).map((profile) => [profile.id, { name: profile.name, campus_name: profile.campus_name }]));
+      }
+
+      const liveItems: CampusActivityItem[] = rows.map((row) => {
+        const profile = profileMap.get(row.user_id);
+        const dealTitle = row.deals?.title || row.deals?.stores?.name || "a student deal";
+        const amount = savingsAmount(row.deals?.discount_value);
+        return {
+          id: row.id,
+          firstName: firstNameOnly(profile?.name),
+          campus: campusLabel(row.campus_domains?.campus_name || profile?.campus_name),
+          action: amount ? "saved" : "claimed",
+          detail: row.deals?.stores?.name || dealTitle,
+          amount,
+          createdAt: row.claimed_at,
+          source: "live",
+        };
+      });
+
+      return liveItems.slice(0, 6);
+    },
+  });
+
+  return (
+    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={2}>
+      <Card className="relative overflow-hidden border-primary/15 bg-card glow-featured">
+        <div className="absolute right-0 top-0 h-28 w-28 translate-x-1/3 -translate-y-1/3 rounded-full bg-primary/10 blur-[55px]" />
+        <CardHeader className="relative z-10 flex flex-row items-center justify-between space-y-0 pb-3">
+          <div>
+            <CardTitle className="flex items-center gap-2 text-base font-bold">
+              <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-primary/15">
+                <Users className="h-4 w-4 text-primary" />
+              </span>
+              Campus Activity
+            </CardTitle>
+            <p className="mt-1 text-xs text-muted-foreground">Recent student savings across active campuses.</p>
+          </div>
+          <Badge className="border-emerald-400/30 bg-emerald-400/10 text-[10px] font-bold text-emerald-500">LIVE</Badge>
+        </CardHeader>
+        <CardContent className="relative z-10 pt-0">
+          {isLoading ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-12 rounded-xl" />)}
+            </div>
+          ) : activities.length > 0 ? (
+            <div className="grid gap-2 sm:grid-cols-2">
+              {activities.map((item) => (
+                <div key={item.id} className="flex items-center gap-3 rounded-xl border border-border/50 bg-background/55 p-3">
+                  <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-foreground">{activityText(item)}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {timeAgo(item.createdAt)} {item.source === "seed" ? "from launch activity" : "from recent claims"}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-border bg-background/50 p-5 text-center">
+              <CheckCircle2 className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" />
+              <p className="text-sm font-semibold text-foreground">Beta Preview: no campus activity yet</p>
+              <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
+                Real claims will appear here as students start using CampusPerk. Claim a deal or invite classmates to start the feed.
+              </p>
+              <Button asChild size="sm" className="mt-4">
+                <Link to="/explore">Explore Deals</Link>
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </motion.section>
+  );
+}
 
 function PopularBrandsSection({ stores }: { stores: Map<string, { name: string; logo_url: string | null; dealCount: number }> }) {
+  const realStores = Array.from(stores.values()).filter((store) => store.dealCount > 0).slice(0, 12);
+
   return (
     <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={3}>
-      <SectionHeader icon={TrendingUp} title="Trending Student Brands" linkTo="/explore" subtitle="Shop discounts from brands students love" />
-      <ScrollRow>
-        {popularBrands.map((brand) => {
-          const storeData = stores.get(brand.name.toLowerCase());
-          return (
-            <motion.div
-              key={brand.name}
-              whileHover={{ y: -4, transition: { duration: 0.12 } }}
-              className="snap-start shrink-0"
-            >
-              <Link to={`/explore?brand=${brand.slug}`}>
+      <SectionHeader icon={TrendingUp} title="Active Student Brands" linkTo="/explore" subtitle="Real merchants with active CampusPerk inventory" />
+      {realStores.length > 0 ? (
+        <ScrollRow>
+          {realStores.map((store) => (
+            <motion.div key={store.name} whileHover={{ y: -4, transition: { duration: 0.12 } }} className="snap-start shrink-0">
+              <Link to={`/explore?brand=${encodeURIComponent(store.name)}`}>
                 <div className="flex flex-col items-center gap-1.5 cursor-pointer">
-                  <div
-                    className="w-[170px] sm:w-[190px] h-[105px] rounded-2xl flex items-center justify-center p-3 transition-all duration-150 hover:shadow-xl hover:shadow-[0_8px_30px_-6px_rgba(0,0,0,0.5)]"
-                    style={{ backgroundColor: brand.bg }}
-                  >
-                    <img src={brand.logo} alt={brand.name} className="h-11 w-auto max-w-[140px] object-contain" />
+                  <div className="logo-banner w-[190px] sm:w-[210px] h-[124px] rounded-2xl flex items-center justify-center overflow-hidden p-0 transition-all duration-150 hover:shadow-xl">
+                    {store.logo_url ? (
+                      <img src={store.logo_url} alt={store.name} className="merchant-logo-panel--cover" />
+                    ) : (
+                      <Store className="h-8 w-8 text-muted-foreground" />
+                    )}
                   </div>
-                  <span className="text-xs font-semibold text-accent">{brand.discount}</span>
-                  {storeData && storeData.dealCount > 0 && (
-                    <span className="text-[10px] text-muted-foreground -mt-0.5">{storeData.dealCount} deal{storeData.dealCount > 1 ? "s" : ""}</span>
-                  )}
+                  <span className="max-w-[180px] truncate text-xs font-semibold text-foreground">{store.name}</span>
+                  <span className="text-[10px] text-muted-foreground -mt-0.5">{store.dealCount} active deal{store.dealCount > 1 ? "s" : ""}</span>
                 </div>
               </Link>
             </motion.div>
-          );
-        })}
-      </ScrollRow>
+          ))}
+        </ScrollRow>
+      ) : (
+        <Card className="border-border/50 bg-card premium-hover">
+          <CardContent className="p-6 text-center">
+            <Store className="mx-auto mb-3 h-9 w-9 text-muted-foreground/50" />
+            <p className="font-display text-base font-bold text-foreground">Beta Preview: no active brand inventory yet</p>
+            <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">Imported deals and approved merchants will populate this shelf automatically.</p>
+            <Button asChild size="sm" className="mt-4"><Link to="/partners/request">Request a Brand</Link></Button>
+          </CardContent>
+        </Card>
+      )}
     </motion.section>
   );
 }
@@ -438,7 +694,7 @@ function DealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onU
       whileHover={{ y: -4, transition: { duration: 0.12 } }}
       className="min-w-[240px] max-w-[260px] snap-start shrink-0 h-full"
     >
-      <Card className="group relative overflow-hidden border-border/50 bg-card hover:border-primary/40 transition-all duration-150 h-full hover:shadow-[0_8px_30px_-8px_hsl(var(--primary)/0.25)] hover:ring-1 hover:ring-primary/20">
+      <Card className={`group relative overflow-hidden h-full deal-card-premium ${deal.featured ? "glow-featured" : ""} ${deal.sponsored ? "glow-sponsored" : ""}`}>
         {isGated && (
           <div className="absolute inset-0 z-20 backdrop-blur-md bg-background/65 flex flex-col items-center justify-center gap-2 cursor-pointer" onClick={() => { onUpgrade(); logPaywallView(deal.id, "dashboard", userId); }}>
             <div className="h-10 w-10 rounded-xl bg-gold/15 flex items-center justify-center"><Lock className="h-5 w-5 text-gold" /></div>
@@ -447,7 +703,7 @@ function DealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onU
           </div>
         )}
 
-        <CardContent className="relative z-10 p-3.5 flex flex-col h-full">
+        <CardContent className="relative z-10 p-4 flex flex-col h-full">
           <div className="flex items-center justify-between mb-2">
             <Badge className={`${badge.color} text-[9px] font-bold gap-1 px-2 py-0.5`}>
               <badge.icon className="h-2.5 w-2.5" /> {badge.label}
@@ -457,22 +713,19 @@ function DealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onU
             </motion.button>
           </div>
 
-          {/* Savings */}
-          <div className="mb-1.5">
-            <span className="text-[9px] font-bold uppercase tracking-widest text-accent/70">SAVE</span>
-            <div className="font-display text-xl font-black text-accent leading-tight">
-              {formatDiscount(deal.discount_value)}
-            </div>
+          <div className="logo-banner mb-4 flex h-20 w-full items-center justify-center rounded-xl overflow-hidden p-0">
+            {deal.stores?.logo_url ? (
+              <img src={deal.stores.logo_url} alt={storeName} className="merchant-logo-panel--cover" />
+            ) : (
+              <Store className="h-9 w-9 text-primary" />
+            )}
           </div>
 
-          {/* Store info */}
-          <div className="flex items-center gap-2.5 mb-1.5">
-            <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="sm" />
-            <div className="min-w-0">
-              <div className="font-display font-bold text-sm text-foreground truncate">{storeName}</div>
-              <div className="text-[11px] text-muted-foreground truncate">{deal.title}</div>
-            </div>
+          <div className="mb-3 min-w-0">
+            <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{deal.title}</div>
           </div>
+
+          <div className="mb-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{formatDiscount(deal.discount_value)}</div>
 
           {/* Social proof */}
           {showProof && (
@@ -502,46 +755,30 @@ function DealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onU
 /* ═══════════════════════════════════════════
    STUDENT ESSENTIALS
    ═══════════════════════════════════════════ */
-const studentEssentials = [
-  { name: "Spotify Student", brand: "Spotify", logo: "/logos/spotify-wordmark.svg", bg: "#1DB954", desc: "Premium for $5.99/mo", value: "$5.99/mo", badge: "Most Popular" },
-  { name: "Amazon Prime Student", brand: "Amazon", logo: "/logos/amazon-wordmark.svg", bg: "#232F3E", desc: "6-month free trial + 50% off", value: "50% Off", badge: "Student Favorite" },
-  { name: "Adobe Creative Cloud", brand: "Adobe", logo: "/logos/adobe-wordmark.svg", bg: "#FF0000", desc: "All apps at 60% off", value: "60% Off", badge: "Most Popular" },
-  { name: "Apple Education", brand: "Apple", logo: "/logos/apple-wordmark.svg", bg: "#000000", desc: "Save up to $300 on Mac", value: "Save $300", badge: "Student Favorite" },
-  { name: "GitHub Student Pack", brand: "GitHub", logo: "/logos/github-wordmark.svg", bg: "#24292E", desc: "Free Pro + $200 in tools", value: "FREE", badge: "Most Popular" },
-  { name: "Notion Student", brand: "Notion", logo: "/logos/notion-wordmark.svg", bg: "#000000", desc: "Free Plus plan for students", value: "FREE", badge: "Student Favorite" },
-];
-
 function StudentEssentialsSection({ deals }: { deals: DealRow[] }) {
+  const essentials = deals
+    .filter((deal) => ["student essentials", "education", "software", "productivity", "technology"].includes((deal.category || "").toLowerCase()))
+    .slice(0, 8);
+
   return (
     <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={5}>
-      <SectionHeader icon={Star} title="Student Essentials" iconColor="text-gold" subtitle="The must-have deals every student needs" linkTo="/explore" />
-      <ScrollRow>
-        {studentEssentials.map((item) => {
-          const matchedDeal = deals.find(d => d.stores?.name?.toLowerCase().includes(item.brand.toLowerCase()));
-          return (
-            <motion.div key={item.name} whileHover={{ y: -4, transition: { duration: 0.12 } }} className="snap-start shrink-0">
-              <Link to={matchedDeal ? `/deals/${matchedDeal.id}` : "/explore"}>
-                <Card className="w-[200px] border-border/50 bg-card hover:border-gold/30 transition-all duration-150 cursor-pointer hover:shadow-[0_6px_24px_-8px_hsl(var(--gold)/0.2)] h-full">
-                  <CardContent className="p-4 flex flex-col items-center text-center gap-2.5">
-                    <div
-                      className="h-14 w-full rounded-xl flex items-center justify-center p-3"
-                      style={{ backgroundColor: item.bg }}
-                    >
-                      <img src={item.logo} alt={item.brand} className="h-7 w-auto max-w-[90px] object-contain" />
-                    </div>
-                    <Badge variant="outline" className="text-[8px] text-muted-foreground border-border/60">{item.badge}</Badge>
-                    <div>
-                      <div className="font-display text-xs font-bold text-foreground">{item.name}</div>
-                      <div className="text-[10px] text-muted-foreground mt-0.5">{item.desc}</div>
-                    </div>
-                    <Badge className="bg-accent/15 text-accent border-accent/30 text-xs font-bold">{item.value}</Badge>
-                  </CardContent>
-                </Card>
-              </Link>
-            </motion.div>
-          );
-        })}
-      </ScrollRow>
+      <SectionHeader icon={Star} title="Student Essentials" iconColor="text-gold" subtitle="Real active deals tagged for student needs" linkTo="/explore" />
+      {essentials.length > 0 ? (
+        <ScrollRow>
+          {essentials.map((deal, index) => (
+            <DealCard key={deal.id} deal={deal} index={index} favIds={new Set()} onToggleFav={() => undefined} isPremiumUser={true} onUpgrade={() => undefined} onGetDeal={() => undefined} badgeLabel="Essential" badgeIcon={Star} showProof={false} />
+          ))}
+        </ScrollRow>
+      ) : (
+        <Card className="border-border/50 bg-card">
+          <CardContent className="p-6 text-center">
+            <Star className="mx-auto mb-3 h-9 w-9 text-muted-foreground/50" />
+            <p className="font-display text-base font-bold text-foreground">Beta Preview: essentials shelf is waiting on real deals</p>
+            <p className="mx-auto mt-1 max-w-md text-sm text-muted-foreground">Technology, education, productivity, and student essential imports will appear here once active.</p>
+            <Button asChild size="sm" className="mt-4"><Link to="/partners/request">Request an Essential Deal</Link></Button>
+          </CardContent>
+        </Card>
+      )}
     </motion.section>
   );
 }
@@ -588,7 +825,13 @@ function DailyDropSection({ deal, onGetDeal }: { deal: DealRow | null; onGetDeal
         <CardContent className="relative z-10 p-6 sm:p-8">
           <div className="flex flex-col sm:flex-row sm:items-center gap-5">
             <div className="flex items-center gap-4 flex-1">
-              <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="xl" />
+              <div className="logo-banner flex h-24 w-36 shrink-0 items-center justify-center rounded-3xl overflow-hidden p-0">
+                {deal.stores?.logo_url ? (
+                  <img src={deal.stores.logo_url} alt={storeName} className="merchant-logo-panel--cover" />
+                ) : (
+                  <Store className="h-10 w-10 text-accent" />
+                )}
+              </div>
               <div>
                 <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{storeName}</div>
                 <h3 className="font-display text-lg sm:text-xl font-bold text-foreground mt-1">{deal.title}</h3>
@@ -656,12 +899,16 @@ function EndingSoonCard({ deal, onGetDeal }: { deal: DealRow; onGetDeal: (id: st
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5 mb-2">
-            <BrandLogo url={deal.stores?.logo_url || null} name={storeName} size="sm" />
-            <div className="min-w-0">
-              <div className="font-display font-bold text-sm text-foreground truncate">{storeName}</div>
-              <div className="text-[10px] text-muted-foreground truncate">{deal.title}</div>
-            </div>
+          <div className="logo-banner mb-3 flex h-20 w-full items-center justify-center rounded-2xl overflow-hidden p-0">
+            {deal.stores?.logo_url ? (
+              <img src={deal.stores.logo_url} alt={storeName} className="merchant-logo-panel--cover" />
+            ) : (
+              <Store className="h-8 w-8 text-gold" />
+            )}
+          </div>
+          <div className="mb-2 min-w-0 text-center">
+            <div className="font-display font-bold text-sm text-foreground truncate">{storeName}</div>
+            <div className="text-[10px] text-muted-foreground truncate">{deal.title}</div>
           </div>
 
           <div className="mt-auto pt-2">
@@ -724,12 +971,27 @@ export default function Dashboard() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, requires_edu_email, expires_at, affiliate_link_url, direct_link_url, updated_at, created_at, category, visibility, is_surprise_drop, drop_window, drop_time, stores(name, logo_url)")
+        .select("id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, eligible_campuses, eligible_roles, requires_edu_email, requires_campus_verification, requires_role_verification, premium_only, expires_at, updated_at, created_at, category, visibility, is_affiliate, is_surprise_drop, drop_window, drop_time, stores(name, logo_url)")
         .eq("status", "active")
         .order("updated_at", { ascending: false })
         .limit(60);
       if (error) throw error;
       return data as DealRow[];
+    },
+  });
+
+  const { data: spotlightDeal = null, isLoading: spotlightLoading } = useQuery({
+    queryKey: ["dashboard-todays-best-featured-deal"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("deals")
+        .select("id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, eligible_campuses, eligible_roles, requires_edu_email, requires_campus_verification, requires_role_verification, premium_only, expires_at, updated_at, created_at, category, visibility, is_affiliate, is_surprise_drop, drop_window, drop_time, stores(name, logo_url)")
+        .eq("status", "active")
+        .eq("featured", true)
+        .limit(25);
+      if (error) throw error;
+      const featuredDeals = (data || []) as DealRow[];
+      return featuredDeals.sort((a, b) => dealSpotlightScore(b) - dealSpotlightScore(a))[0] || null;
     },
   });
 
@@ -779,7 +1041,7 @@ export default function Dashboard() {
   }, [deals]);
 
   const now = Date.now();
-  const heroDeal = deals.find(d => d.featured || d.sponsored) || deals[0] || null;
+  const heroDeal = spotlightDeal || deals.find(d => d.featured || d.sponsored) || deals[0] || null;
 
   const trendingDeals = useMemo(() => {
     const hero = heroDeal?.id;
@@ -826,15 +1088,6 @@ export default function Dashboard() {
       .slice(0, 5);
   }, [deals, isPremium]);
 
-  // Savings tracker — sum of discount values from claimed/favorited deals
-  const totalSaved = useMemo(() => {
-    const favDeals = deals.filter(d => favIds.has(d.id));
-    return favDeals.reduce((sum, d) => {
-      const val = d.discount_value?.replace(/[^0-9.]/g, '');
-      return sum + (val ? parseFloat(val) * 2.5 : 0); // rough savings estimate
-    }, 0);
-  }, [deals, favIds]);
-
   // Local deals
   const locationEnabled = profile?.location_opt_in ?? false;
   const useCampusLocation = profile?.use_campus_location ?? true;
@@ -875,27 +1128,21 @@ export default function Dashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Welcome — tighter */}
-        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0}>
-          <div className="flex items-center gap-3">
-            <div>
-              <h1 className="font-display text-2xl font-bold text-foreground">
-                Welcome back{profile?.name ? `, ${profile.name}` : ""} 👋
-              </h1>
-              <div className="flex items-center gap-2 mt-1">
-                <p className="text-sm text-muted-foreground">Discover today's best student deals.</p>
-                <VerifiedStudentBadge />
-                <FoundingMemberBadge />
-              </div>
-            </div>
-          </div>
-        </motion.div>
+        {spotlightLoading ? (
+          <Skeleton className="h-[420px] rounded-3xl" />
+        ) : (
+          <TodayBestDealSpotlight
+            deal={spotlightDeal}
+            onUpgrade={() => setUpgradeOpen(true)}
+            isPremium={isPremium}
+            userId={user?.id}
+            onGetDeal={handleGetDeal}
+            profileName={profile?.name}
+          />
+        )}
 
         {/* PUSH NOTIFICATION PROMPT */}
         <PushNotificationPrompt />
-
-        {/* SAVINGS COUNTER */}
-        <SavingsCounter totalSaved={totalSaved} isPremium={isPremium} />
 
         {/* FOUNDING PREMIUM BANNER — only for free users */}
         {!isPremium && !isFoundingMember && (
@@ -904,6 +1151,9 @@ export default function Dashboard() {
 
         {/* DEAL STREAK */}
         <DealStreakWidget />
+
+        {/* CAMPUS ACTIVITY FEED */}
+        <CampusActivityFeed />
 
         {/* NEXT DROP WINDOW WIDGET */}
         <NextDropWidget />
@@ -934,16 +1184,6 @@ export default function Dashboard() {
             </ScrollRow>
           </motion.section>
         )}
-
-        {/* HERO DEAL */}
-        {dealsLoading ? (
-          <Skeleton className="h-56 rounded-xl" />
-        ) : heroDeal ? (
-          <HeroDealSection deal={heroDeal} onUpgrade={() => setUpgradeOpen(true)} isPremium={isPremium} userId={user?.id} onGetDeal={handleGetDeal} />
-        ) : null}
-
-        {/* LIVE ACTIVITY TICKER */}
-        {!dealsLoading && deals.length > 0 && <ActivityTicker deals={deals} campusName={campusName} />}
 
         {/* TRENDING STUDENT BRANDS */}
         <PopularBrandsSection stores={storeMap} />
@@ -1091,3 +1331,10 @@ export default function Dashboard() {
     </DashboardLayout>
   );
 }
+
+
+
+
+
+
+

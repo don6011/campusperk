@@ -197,7 +197,7 @@ export default function SubmitDeal() {
     queryFn: async () => {
       const { data } = await supabase
         .from("deals")
-        .select("id, title, store_id, direct_link_url, affiliate_link_url, stores(name)")
+        .select("id, title, store_id, stores(name)")
         .eq("status", "active")
         .limit(500);
       return data || [];
@@ -207,12 +207,10 @@ export default function SubmitDeal() {
   const duplicates = (() => {
     if (form.storeName.length < 3 && form.dealUrl.length < 5) return [];
     const lower = form.storeName.toLowerCase();
-    const urlLower = form.dealUrl.toLowerCase();
     return existingDeals.filter((d: any) => {
       const storeName = d.stores?.name?.toLowerCase() || "";
       const nameMatch = storeName === lower || storeName.includes(lower) || lower.includes(storeName);
-      const urlMatch = d.direct_link_url?.toLowerCase() === urlLower || d.affiliate_link_url?.toLowerCase() === urlLower;
-      return nameMatch || urlMatch;
+      return nameMatch;
     });
   })();
 

@@ -29,7 +29,7 @@ export function PremiumDealCard({ deal, isPremium, onUpgrade }: PremiumDealCardP
         whileHover={{ y: -3, transition: { duration: 0.12 } }}
         className="snap-start shrink-0 w-[260px]"
       >
-        <Card className="relative overflow-hidden border-gold/20 bg-card h-full">
+        <Card className="relative overflow-hidden border-gold/20 bg-card h-full deal-card-premium glow-premium">
           {/* Gold top bar */}
           <div className="h-1 bg-gradient-to-r from-gold via-gold/60 to-gold/20" />
 
@@ -78,9 +78,9 @@ export function PremiumDealCard({ deal, isPremium, onUpgrade }: PremiumDealCardP
       whileHover={{ y: -3, transition: { duration: 0.12 } }}
       className="snap-start shrink-0 w-[260px]"
     >
-      <Card className="relative overflow-hidden border-gold/30 bg-card hover:border-gold/50 transition-all h-full">
+      <Card className="relative overflow-hidden border-gold/30 bg-card h-full deal-card-premium glow-premium">
         <div className="h-1 bg-gradient-to-r from-gold via-gold/60 to-gold/20" />
-        <CardContent className="p-4 space-y-2.5">
+        <CardContent className="p-6 space-y-3">
           <div className="flex items-center gap-2">
             <Badge className="bg-gold/15 text-gold border-gold/30 text-[9px] font-bold gap-1">
               <Crown className="h-2.5 w-2.5" /> Premium Exclusive
@@ -92,30 +92,22 @@ export function PremiumDealCard({ deal, isPremium, onUpgrade }: PremiumDealCardP
             )}
           </div>
 
-          <div>
-            <span className="text-[9px] font-bold uppercase tracking-widest text-accent/70">SAVE</span>
-            <div className="font-display text-xl font-black text-accent leading-tight">
-              {deal.discount_value ?? "Special"}
-            </div>
+          <div className="logo-banner flex h-20 items-center justify-center rounded-xl overflow-hidden p-0">
+            {deal.stores?.logo_url ? (
+              <img src={deal.stores.logo_url} alt={storeName} className="merchant-logo-panel--cover" />
+            ) : (
+              <ShoppingBag className="h-9 w-9 text-muted-foreground" />
+            )}
           </div>
 
-          <div className="flex items-center gap-2.5">
-            {deal.stores?.logo_url ? (
-              <img src={deal.stores.logo_url} alt={storeName} className="h-9 w-9 rounded-lg object-contain bg-secondary p-1" />
-            ) : (
-              <div className="h-9 w-9 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                <ShoppingBag className="h-4 w-4 text-muted-foreground" />
-              </div>
-            )}
-            <div className="min-w-0">
-              <div className="font-display font-bold text-xs text-foreground truncate">{storeName}</div>
-              <div className="text-[11px] text-muted-foreground truncate">{deal.title}</div>
-            </div>
+          <div className="min-w-0">
+            <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{deal.title}</div>
+            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value ?? "Special"}</div>
           </div>
 
           <Button
             size="sm"
-            className="w-full gap-1.5 h-7 font-bold text-[11px]"
+            className="w-full gap-1.5 h-9 font-bold text-[12px]"
             onClick={() => navigate(`/deals/${deal.id}`)}
           >
             Get Deal <ExternalLink className="h-2.5 w-2.5" />

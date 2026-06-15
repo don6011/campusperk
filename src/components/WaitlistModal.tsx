@@ -122,17 +122,9 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
     const referralCode = generateReferralCode();
 
     try {
-      // Resolve campus_id: use selected or create pending
-      let campusId: string | null = selectedCampus?.id || null;
-      if (!campusId && campusQuery.trim()) {
-        // Create pending campus
-        const { data: newCampus } = await supabase
-          .from("campuses" as any)
-          .insert({ name: campusQuery.trim(), status: "pending" } as any)
-          .select("id")
-          .single();
-        if (newCampus) campusId = (newCampus as any).id;
-      }
+      // Resolve campus_id: use selected campus only. Manual entries stay as text
+      // to avoid public client-side campus table writes.
+      const campusId: string | null = selectedCampus?.id || null;
 
       // Check existing signup
       const { data: existing } = await supabase

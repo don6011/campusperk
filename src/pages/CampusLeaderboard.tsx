@@ -69,7 +69,7 @@ function WeeklyResetTimer() {
   }, []);
 
   return (
-    <Card className="border-border/50 bg-card">
+    <Card className="border-border/50 bg-card glow-featured">
       <CardContent className="p-6 flex items-center gap-5">
         <div className="h-12 w-12 rounded-xl bg-destructive/15 flex items-center justify-center shrink-0">
           <Timer className="h-6 w-6 text-destructive" />
@@ -141,9 +141,9 @@ export default function CampusLeaderboard() {
                 return (
                   <Card
                     key={entry.campus_id}
-                    className={`border-border/50 bg-card relative overflow-hidden ${
+                    className={`border-border/50 bg-card relative overflow-hidden premium-hover ${
                       isFirst ? "ring-2 ring-gold/30 -mt-4 order-2" : podiumIdx === 1 ? "order-1" : "order-3"
-                    } ${isUserCampus ? "border-primary/40" : ""}`}
+                    } ${isFirst ? "glow-premium" : ""} ${isUserCampus ? "border-primary/40 glow-featured" : ""}`}
                   >
                     {isFirst && (
                       <div className="absolute top-0 left-1/2 -translate-x-1/2 w-32 h-32 bg-gold/10 rounded-full blur-[60px] pointer-events-none -translate-y-1/2" />
@@ -230,7 +230,17 @@ export default function CampusLeaderboard() {
                   );
                 })
               ) : (
-                <div className="p-8 text-center text-muted-foreground">No data yet. Start claiming deals!</div>
+                <div className="p-8 text-center">
+                  <Trophy className="mx-auto mb-3 h-10 w-10 text-muted-foreground/40" />
+                  <h3 className="font-display text-lg font-bold text-foreground">Beta Preview: no leaderboard activity yet</h3>
+                  <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                    Campus rankings will appear once real claim and savings events are recorded. Invite students or claim an active deal to start your campus total.
+                  </p>
+                  <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
+                    <Link to="/explore"><Button className="gap-2"><Zap className="h-4 w-4" /> Explore Deals</Button></Link>
+                    <Link to="/ambassador"><Button variant="outline">Become an Ambassador</Button></Link>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -238,7 +248,7 @@ export default function CampusLeaderboard() {
 
         {/* CTA */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.5 }}>
-          <Card className="border-primary/20 bg-card relative overflow-hidden">
+          <Card className="border-primary/20 bg-card relative overflow-hidden glow-featured">
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-primary/5 rounded-full blur-[80px] pointer-events-none" />
             <CardContent className="relative z-10 p-8 text-center space-y-4">
               <TrendingUp className="h-10 w-10 text-primary mx-auto" />

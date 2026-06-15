@@ -18,6 +18,9 @@ import {
   Building2,
   Rss,
   Upload,
+  Network,
+  Store,
+  FileSpreadsheet,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -29,11 +32,15 @@ const navItems = [
   { label: "Verification", href: "/admin/verification", icon: ShieldCheck },
   { label: "Campus Domains", href: "/admin/domains", icon: Globe },
   { label: "Partners", href: "/admin/partners", icon: Building2 },
+  { label: "Merchant Queue", href: "/admin/merchant-submissions", icon: Inbox },
+  { label: "Affiliate Networks", href: "/admin/affiliate-networks", icon: Network },
+  { label: "Merchants", href: "/admin/merchants", icon: Store },
   { label: "Scans", href: "/admin/scans", icon: ScanSearch },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3 },
   { label: "Ambassadors", href: "/admin/ambassadors", icon: Users },
   { label: "Deal Pipeline", href: "/admin/affiliate-sources", icon: Rss },
   { label: "Deal Import", href: "/admin/deal-import", icon: Upload },
+  { label: "Affiliate CSV", href: "/admin/affiliate-csv-import", icon: FileSpreadsheet },
 ];
 
 export const AdminLayout = ({ children }: { children: ReactNode }) => {

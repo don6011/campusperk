@@ -72,7 +72,7 @@ export function CampusThemeProvider({ children }: { children: ReactNode }) {
     };
 
     fetchColors();
-  }, [profile?.campus_id]);
+  }, [profile?.campus_id, profile?.campus_name]);
 
   return (
     <CampusThemeContext.Provider value={theme}>

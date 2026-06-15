@@ -1,19 +1,18 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import {
   Users, Trophy, Send, Store, DollarSign, Copy, Check, ExternalLink,
-  Flame, Medal, TrendingUp, Sparkles, ArrowRight, Loader2,
+  Flame, Medal, Sparkles, ArrowRight, Loader2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
 
@@ -24,6 +23,7 @@ const fadeUp = {
 
 export default function AmbassadorDashboard() {
   const { user, profile } = useAuth();
+  const queryClient = useQueryClient();
   const [copied, setCopied] = useState(false);
   const [dealForm, setDealForm] = useState({ storeName: "", dealInfo: "", contactEmail: "" });
   const [submittingDeal, setSubmittingDeal] = useState(false);
@@ -64,6 +64,45 @@ export default function AmbassadorDashboard() {
         .from("submissions")
         .select("id")
         .eq("submitted_by", user!.id);
+      return data || [];
+    },
+  });
+
+  const { data: merchantLeads = [] } = useQuery({
+    queryKey: ["my-merchant-leads", ambassador?.referral_code],
+    enabled: !!ambassador?.referral_code,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("merchant_submissions" as any)
+        .select("id, business_name, offer_title, status, created_at")
+        .eq("referral_code", ambassador!.referral_code)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const { data: foundingReservations = [] } = useQuery({
+    queryKey: ["my-founding-reservations", ambassador?.referral_code],
+    enabled: !!ambassador?.referral_code,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("founding_member_reservations" as any)
+        .select("id, status, created_at")
+        .eq("referral_code", ambassador!.referral_code)
+        .order("created_at", { ascending: false });
+      return data || [];
+    },
+  });
+
+  const { data: rewardUnlocks = [] } = useQuery({
+    queryKey: ["my-reward-unlocks", ambassador?.id],
+    enabled: !!ambassador?.id,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("ambassador_reward_unlocks" as any)
+        .select("*")
+        .eq("ambassador_id", ambassador!.id)
+        .order("unlocked_at", { ascending: false });
       return data || [];
     },
   });
@@ -115,9 +154,21 @@ export default function AmbassadorDashboard() {
     ? `${window.location.origin}/join?ref=${ambassador.referral_code}`
     : null;
 
+  useEffect(() => {
+    if (!ambassador?.id) return;
+    supabase
+      .rpc("refresh_ambassador_rewards" as any, { p_ambassador_id: ambassador.id })
+      .then(() => {
+        queryClient.invalidateQueries({ queryKey: ["my-reward-unlocks", ambassador.id] });
+      });
+  }, [ambassador?.id, queryClient]);
+
   const verifiedReferrals = referrals.filter((r: any) => r.verified).length;
   const totalReferrals = referrals.length;
-  const estimatedEarnings = verifiedReferrals * 2; // $2 per verified referral estimate
+  const merchantLeadCount = merchantLeads.length;
+  const foundingReservationCount = foundingReservations.length;
+  const rewardBalance = ((ambassador as any)?.reward_balance_cents ?? 0) / 100;
+  const estimatedEarnings = rewardBalance + verifiedReferrals * 2 + merchantLeadCount * 5;
 
   const myRank = leaderboard.findIndex((l) => l.userId === user?.id) + 1;
 
@@ -136,12 +187,25 @@ export default function AmbassadorDashboard() {
       return;
     }
     setSubmittingDeal(true);
-    const { error } = await supabase.from("submissions").insert({
-      store_name: dealForm.storeName.trim(),
-      deal_info: dealForm.dealInfo.trim() || null,
-      deal_title: `Ambassador Lead: ${dealForm.storeName.trim()}`,
-      submitted_by: user.id,
-      category: "local",
+    const { error } = await supabase.rpc("submit_merchant_deal" as any, {
+      p_business_name: dealForm.storeName.trim(),
+      p_contact_email: dealForm.contactEmail.trim() || user.email || "partners@campusperk.com",
+      p_offer_title: `Ambassador Lead: ${dealForm.storeName.trim()}`,
+      p_contact_name: profile?.name || null,
+      p_contact_phone: null,
+      p_website_url: null,
+      p_city: null,
+      p_state: null,
+      p_category: "local",
+      p_offer_description: dealForm.dealInfo.trim() || null,
+      p_discount_value: null,
+      p_redemption_instructions: null,
+      p_expires_at: null,
+      p_sponsored_interest: false,
+      p_monthly_budget_cents: null,
+      p_campus_target: ambassador.university || profile?.school || null,
+      p_proof_url: null,
+      p_referral_code: ambassador.referral_code,
     });
     setSubmittingDeal(false);
     if (error) {
@@ -209,7 +273,7 @@ export default function AmbassadorDashboard() {
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1} className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
             { label: "Users Referred", value: verifiedReferrals, icon: Users, color: "text-primary" },
-            { label: "Deals Submitted", value: submissions.length, icon: Send, color: "text-accent" },
+            { label: "Merchant Leads", value: merchantLeadCount + submissions.length, icon: Send, color: "text-accent" },
             { label: "Leaderboard Rank", value: myRank > 0 ? `#${myRank}` : "—", icon: Trophy, color: "text-gold" },
             { label: "Est. Earnings", value: `$${estimatedEarnings}`, icon: DollarSign, color: "text-accent" },
           ].map((stat) => (
@@ -252,14 +316,52 @@ export default function AmbassadorDashboard() {
                 <Badge variant="outline" className="text-xs text-accent border-accent/30">
                   {verifiedReferrals} verified signups
                 </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {foundingReservationCount} founding reservations
+                </Badge>
+                <Badge variant="outline" className="text-xs">
+                  {merchantLeadCount} merchant leads
+                </Badge>
               </div>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3}>
+          <Card className="border-border bg-card">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <Sparkles className="h-4 w-4 text-primary" />
+                Reward Unlocks
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {rewardUnlocks.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No rewards unlocked yet. Verified signups, founding reservations, and merchant leads count toward your next unlock.
+                </p>
+              ) : (
+                rewardUnlocks.map((reward: any) => (
+                  <div key={reward.id} className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium text-foreground truncate">{reward.reward_label}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {reward.current_value}/{reward.threshold_value} {reward.threshold_type.replaceAll("_", " ")}
+                      </p>
+                    </div>
+                    <Badge className="bg-accent/15 text-accent border-accent/30 text-xs">
+                      {reward.status}
+                    </Badge>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Campus Leaderboard */}
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={3}>
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={4}>
             <Card className="border-border bg-card h-full">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -303,7 +405,7 @@ export default function AmbassadorDashboard() {
           </motion.div>
 
           {/* Deal Scout */}
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={4}>
+          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={5}>
             <Card className="border-border bg-card h-full">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">

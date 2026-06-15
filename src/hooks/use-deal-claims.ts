@@ -64,17 +64,15 @@ export function useDealClaimCounts(dealIds: string[]) {
 }
 
 export function useClaimDeal() {
-  const { user, profile } = useAuth();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (dealId: string) => {
       if (!user) return;
 
-      const { error } = await supabase.from("deal_claims").insert({
-        user_id: user.id,
-        deal_id: dealId,
-        campus_id: profile?.campus_id || null,
+      const { error } = await supabase.rpc("record_deal_claim" as any, {
+        p_deal_id: dealId,
       });
 
       if (error) {
