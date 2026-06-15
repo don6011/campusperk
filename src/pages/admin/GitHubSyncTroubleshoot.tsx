@@ -143,6 +143,7 @@ export default function GitHubSyncTroubleshoot() {
       <SEO
         title="GitHub Sync Troubleshoot | Admin"
         description="Diagnose Lovable ↔ GitHub sync issues: branch, connection, and GitHub App installation."
+        path="/admin/github-sync"
       />
       <div className="max-w-3xl mx-auto space-y-6 p-6">
         <header>
