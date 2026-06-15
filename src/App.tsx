@@ -39,6 +39,7 @@ import AmbassadorApply from "./pages/AmbassadorApply";
 import AmbassadorsManager from "./pages/admin/AmbassadorsManager";
 import AffiliateSourcesManager from "./pages/admin/AffiliateSourcesManager";
 import DealImport from "./pages/admin/DealImport";
+import GitHubSyncTroubleshoot from "./pages/admin/GitHubSyncTroubleshoot";
 import Alerts from "./pages/Alerts";
 import NotificationSettings from "./pages/NotificationSettings";
 import AmbassadorDashboard from "./pages/AmbassadorDashboard";
@@ -123,6 +124,7 @@ const App = () => (
             <Route path="/admin/ambassadors" element={<AdminRoute><AmbassadorsManager /></AdminRoute>} />
             <Route path="/admin/affiliate-sources" element={<AdminRoute><AffiliateSourcesManager /></AdminRoute>} />
             <Route path="/admin/deal-import" element={<AdminRoute><DealImport /></AdminRoute>} />
+            <Route path="/admin/github-sync" element={<AdminRoute><GitHubSyncTroubleshoot /></AdminRoute>} />
 
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
