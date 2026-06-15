@@ -1,5 +1,5 @@
 import { useState } from "react";
-import AdminLayout from "@/components/admin/AdminLayout";
+import { AdminLayout } from "@/components/admin/AdminLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -143,7 +143,6 @@ export default function GitHubSyncTroubleshoot() {
       <SEO
         title="GitHub Sync Troubleshoot | Admin"
         description="Diagnose Lovable ↔ GitHub sync issues: branch, connection, and GitHub App installation."
-        noindex
       />
       <div className="max-w-3xl mx-auto space-y-6 p-6">
         <header>
