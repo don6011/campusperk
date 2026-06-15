@@ -136,6 +136,42 @@ export type Database = {
           },
         ]
       }
+      affiliate_networks: {
+        Row: {
+          api_connected: boolean
+          created_at: string
+          id: string
+          last_sync_at: string | null
+          network_key: string
+          network_name: string
+          notes: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          api_connected?: boolean
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          network_key: string
+          network_name: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          api_connected?: boolean
+          created_at?: string
+          id?: string
+          last_sync_at?: string | null
+          network_key?: string
+          network_name?: string
+          notes?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       affiliate_raw_deals: {
         Row: {
           advertiser_id: string | null
@@ -198,6 +234,73 @@ export type Database = {
           },
         ]
       }
+      affiliate_revenue: {
+        Row: {
+          campus_id: string | null
+          commission_amount: number
+          conversion_date: string
+          conversion_id: string | null
+          created_at: string
+          deal_id: string | null
+          id: string
+          merchant_id: string | null
+          metadata: Json
+          network: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          campus_id?: string | null
+          commission_amount?: number
+          conversion_date?: string
+          conversion_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          merchant_id?: string | null
+          metadata?: Json
+          network: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          campus_id?: string | null
+          commission_amount?: number
+          conversion_date?: string
+          conversion_id?: string | null
+          created_at?: string
+          deal_id?: string | null
+          id?: string
+          merchant_id?: string | null
+          metadata?: Json
+          network?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_revenue_conversion_id_fkey"
+            columns: ["conversion_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_conversions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_revenue_deal_id_fkey"
+            columns: ["deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_revenue_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_sources: {
         Row: {
           api_endpoint: string | null
@@ -242,6 +345,72 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      affiliate_sync_logs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          duplicate_deals: number
+          failed_imports: number
+          id: string
+          message: string | null
+          network: string | null
+          network_id: string | null
+          new_deals_imported: number
+          raw_result: Json | null
+          source_id: string | null
+          started_at: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          duplicate_deals?: number
+          failed_imports?: number
+          id?: string
+          message?: string | null
+          network?: string | null
+          network_id?: string | null
+          new_deals_imported?: number
+          raw_result?: Json | null
+          source_id?: string | null
+          started_at?: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          created_by?: string | null
+          duplicate_deals?: number
+          failed_imports?: number
+          id?: string
+          message?: string | null
+          network?: string | null
+          network_id?: string | null
+          new_deals_imported?: number
+          raw_result?: Json | null
+          source_id?: string | null
+          started_at?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_sync_logs_network_id_fkey"
+            columns: ["network_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_networks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_sync_logs_source_id_fkey"
+            columns: ["source_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_sources"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       alert_subscriptions: {
         Row: {
@@ -1671,39 +1840,77 @@ export type Database = {
       }
       partners: {
         Row: {
+          active_deals: number
+          advertiser_id: string | null
+          affiliate_network: string | null
+          affiliate_network_id: string | null
+          approval_status: string
+          commission_percent: number | null
           contact_email: string | null
+          cookie_duration_days: number | null
           created_at: string
+          featured_merchant: boolean
           id: string
+          last_sync_at: string | null
           logo_url: string | null
           partner_name: string
           partner_type: Database["public"]["Enums"]["partner_type"]
           status: Database["public"]["Enums"]["partner_status"]
+          total_deals: number
           updated_at: string
           website_url: string | null
         }
         Insert: {
+          active_deals?: number
+          advertiser_id?: string | null
+          affiliate_network?: string | null
+          affiliate_network_id?: string | null
+          approval_status?: string
+          commission_percent?: number | null
           contact_email?: string | null
+          cookie_duration_days?: number | null
           created_at?: string
+          featured_merchant?: boolean
           id?: string
+          last_sync_at?: string | null
           logo_url?: string | null
           partner_name: string
           partner_type?: Database["public"]["Enums"]["partner_type"]
           status?: Database["public"]["Enums"]["partner_status"]
+          total_deals?: number
           updated_at?: string
           website_url?: string | null
         }
         Update: {
+          active_deals?: number
+          advertiser_id?: string | null
+          affiliate_network?: string | null
+          affiliate_network_id?: string | null
+          approval_status?: string
+          commission_percent?: number | null
           contact_email?: string | null
+          cookie_duration_days?: number | null
           created_at?: string
+          featured_merchant?: boolean
           id?: string
+          last_sync_at?: string | null
           logo_url?: string | null
           partner_name?: string
           partner_type?: Database["public"]["Enums"]["partner_type"]
           status?: Database["public"]["Enums"]["partner_status"]
+          total_deals?: number
           updated_at?: string
           website_url?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "partners_affiliate_network_id_fkey"
+            columns: ["affiliate_network_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_networks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       paywall_views: {
         Row: {
