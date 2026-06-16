@@ -21,8 +21,8 @@ import {
   Sparkles,
   Medal,
   Trophy,
-  Handshake,
   Award,
+  GraduationCap,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -49,7 +49,7 @@ const navItems = [
   { title: "Alerts", url: "/alerts", icon: Bell },
   { title: "Badges", url: "/badges", icon: Sparkles },
   { title: "Campus Leaderboard", url: "/campus-leaderboard", icon: Trophy },
-  { title: "UAGC Hub", url: "/uagc", icon: Handshake },
+  { title: "Campus Hub", url: "/campus", icon: GraduationCap },
   { title: "Ambassador", url: "/ambassador/dashboard", icon: Medal },
   { title: "Ambassador Board", url: "/ambassador/leaderboard", icon: Trophy },
   { title: "Founders", url: "/founding-showcase", icon: Award },
@@ -105,7 +105,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             const isPremiumItem = item.title === "Premium";
             const isPremiumUser = !!profile?.premium_status;
             const resolvedUrl = (item as any).premiumUrl && isPremiumUser ? (item as any).premiumUrl : item.url;
-            const active = location.pathname === resolvedUrl;
+            const active = item.url === "/campus" ? location.pathname.startsWith("/campus") : location.pathname === resolvedUrl;
             const showGold = isPremiumItem && isPremiumUser;
             return (
               <Link

@@ -21,6 +21,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { BadgeEngine } from "@/components/BadgeEngine";
 import { supabase } from "@/integrations/supabase/client";
 import campusperkLogo from "@/assets/campusperk-logo.png";
 
@@ -293,6 +294,19 @@ export default function CampusHub() {
   const campus = data?.campus || virtualCampus(slug);
   const isUagc = slug === "uagc";
   const announcements = isUagc ? uagcAnnouncements : [];
+  const { data: merchantTargets = [] } = useQuery({
+    queryKey: ["campus-hub-merchant-targets", slug],
+    enabled: isUagc,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("partners" as any)
+        .select("id, partner_name, logo_url, status, active_deals, featured_merchant")
+        .eq("status", "active")
+        .order("featured_merchant", { ascending: false })
+        .limit(6);
+      return (data || []) as any[];
+    },
+  });
   const hasCampusContent = !!(data && (data.deals.length || data.ambassadors.length || data.foundingMembers.length || announcements.length || data.stats.students));
   const shouldShowEmptyLaunchState = !isUagc && !hasCampusContent && (!isLoading || campus.isVirtual);
   const leaderboardRows = useMemo(() => {
@@ -376,6 +390,45 @@ export default function CampusHub() {
 
         <div className="container mx-auto space-y-6 px-4 py-8">
           {shouldShowEmptyLaunchState && <CampusEmptyState campus={campus} />}
+
+          {isUagc && (
+            <section className="grid gap-5 lg:grid-cols-[0.85fr_1.15fr]">
+              <Card className="border-border bg-card glow-verified">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Sparkles className="h-4 w-4 text-primary" /> Your Campus Status
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <BadgeEngine />
+                </CardContent>
+              </Card>
+
+              <Card className="border-border bg-card glow-ambassador">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Handshake className="h-4 w-4 text-accent" /> Growth Actions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    { title: "Invite students", desc: "Share your ambassador or waitlist link.", href: "/ambassador/dashboard", icon: Send },
+                    { title: "Scout merchants", desc: "Submit local businesses with student offers.", href: "/ambassador/dashboard", icon: Store },
+                    { title: "Claim founding status", desc: "Reserve a founding member spot.", href: "/founding-members", icon: Sparkles },
+                    { title: "Browse playbook", desc: "Use campus roles and badges to unlock more perks.", href: "/badges", icon: GraduationCap },
+                  ].map((action) => (
+                    <Link key={action.title} to={action.href} className="flex items-center gap-3 rounded-xl border border-border p-3 transition-colors hover:bg-secondary/40">
+                      <action.icon className="h-4 w-4 text-primary" />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-foreground">{action.title}</p>
+                        <p className="text-xs text-muted-foreground">{action.desc}</p>
+                      </div>
+                    </Link>
+                  ))}
+                </CardContent>
+              </Card>
+            </section>
+          )}
 
           <section className="grid gap-5 lg:grid-cols-[1.1fr_0.9fr]">
             <Card className="border-border bg-card premium-hover">
@@ -516,6 +569,45 @@ export default function CampusHub() {
               </CardContent>
             </Card>
           </section>
+
+          {isUagc && (
+            <Card className="border-border bg-card premium-hover">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Store className="h-4 w-4 text-gold" /> Active Merchant Targets
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {merchantTargets.length ? (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {merchantTargets.map((merchant) => (
+                      <div key={merchant.id} className="rounded-xl border border-border p-4">
+                        <div className="mb-3 flex items-center gap-3">
+                          <div className="logo-banner flex h-12 w-16 items-center justify-center rounded-xl px-2">
+                            {merchant.logo_url ? <img src={merchant.logo_url} alt="" className="h-8 w-auto max-w-[48px] object-contain" /> : <Store className="h-4 w-4 text-muted-foreground" />}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-foreground">{merchant.partner_name}</p>
+                            <p className="text-xs text-muted-foreground">{merchant.active_deals || 0} active deals</p>
+                          </div>
+                        </div>
+                        {merchant.featured_merchant && <Badge className="border-gold/30 bg-gold/15 text-gold text-xs">Featured</Badge>}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-8 text-center">
+                    <Store className="mx-auto mb-3 h-9 w-9 text-muted-foreground/40" />
+                    <p className="text-sm font-medium text-foreground">No active merchant targets yet</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Submit local businesses students already use to help grow this campus hub.</p>
+                    <Button asChild variant="outline" size="sm" className="mt-4">
+                      <Link to="/merchant/submit">Submit a Merchant</Link>
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
           <Card className="overflow-hidden border-primary/20 bg-card glow-featured">
             <CardContent className="flex flex-col gap-5 p-6 md:flex-row md:items-center md:justify-between">

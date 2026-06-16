@@ -44,11 +44,12 @@ const Account = lazy(() => import("./pages/Account"));
 const Alerts = lazy(() => import("./pages/Alerts"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
 const Badges = lazy(() => import("./pages/Badges"));
+const CampusRedirect = lazy(() => import("./pages/CampusRedirect"));
+const CampusSelection = lazy(() => import("./pages/CampusSelection"));
 const CampusHub = lazy(() => import("./pages/CampusHub"));
 const AmbassadorDashboard = lazy(() => import("./pages/AmbassadorDashboard"));
 const CampusLeaderboard = lazy(() => import("./pages/CampusLeaderboard"));
 const AmbassadorLeaderboard = lazy(() => import("./pages/AmbassadorLeaderboard"));
-const UAGCHub = lazy(() => import("./pages/UAGCHub"));
 const FoundingMemberShowcase = lazy(() => import("./pages/FoundingMemberShowcase"));
 const Splash = lazy(() => import("./pages/Splash"));
 const DealsManager = lazy(() => import("./pages/admin/DealsManager"));
@@ -129,6 +130,8 @@ const App = () => (
             <Route path="/alerts" element={<ProtectedRoute><LazyPage><Alerts /></LazyPage></ProtectedRoute>} />
             <Route path="/notification-settings" element={<ProtectedRoute><LazyPage><NotificationSettings /></LazyPage></ProtectedRoute>} />
             <Route path="/badges" element={<ProtectedRoute><LazyPage><Badges /></LazyPage></ProtectedRoute>} />
+            <Route path="/campus" element={<ProtectedRoute><LazyPage><CampusRedirect /></LazyPage></ProtectedRoute>} />
+            <Route path="/campus/select" element={<ProtectedRoute><LazyPage><CampusSelection /></LazyPage></ProtectedRoute>} />
             <Route path="/categories" element={<ProtectedRoute><LazyPage><Categories /></LazyPage></ProtectedRoute>} />
             <Route path="/categories/:slug" element={<ProtectedRoute><LazyPage><CategoryDetail /></LazyPage></ProtectedRoute>} />
             <Route path="/collections" element={<ProtectedRoute><LazyPage><Collections /></LazyPage></ProtectedRoute>} />
@@ -139,7 +142,7 @@ const App = () => (
             <Route path="/ambassador/dashboard" element={<ProtectedRoute><LazyPage><AmbassadorDashboard /></LazyPage></ProtectedRoute>} />
             <Route path="/ambassador/leaderboard" element={<ProtectedRoute><LazyPage><AmbassadorLeaderboard /></LazyPage></ProtectedRoute>} />
             <Route path="/campus-leaderboard" element={<ProtectedRoute><LazyPage><CampusLeaderboard /></LazyPage></ProtectedRoute>} />
-            <Route path="/uagc" element={<ProtectedRoute><LazyPage><UAGCHub /></LazyPage></ProtectedRoute>} />
+            <Route path="/uagc" element={<ProtectedRoute><Navigate to="/campus/uagc" replace /></ProtectedRoute>} />
             <Route path="/founding-showcase" element={<ProtectedRoute><LazyPage><FoundingMemberShowcase /></LazyPage></ProtectedRoute>} />
 
             {/* Admin routes (role-gated) */}
