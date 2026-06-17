@@ -16,7 +16,7 @@ const rankIcons = [
 export function CampusLeaderboardWidget() {
   const { data: leaderboard, isLoading } = useCampusLeaderboard(5);
   const { profile } = useAuth();
-  const userCampusName = profile?.campus_name;
+  const userCampusId = profile?.campus_id;
 
   if (isLoading || !leaderboard) return null;
 
@@ -45,7 +45,7 @@ export function CampusLeaderboardWidget() {
         <div className="absolute top-0 right-0 w-48 h-48 bg-gold/5 rounded-full blur-[80px] pointer-events-none -translate-y-1/2 translate-x-1/3" />
         <CardContent className="relative z-10 p-0">
           {leaderboard.length > 0 ? leaderboard.map((entry, i) => {
-            const isUserCampus = userCampusName && entry.campus_name.toLowerCase().includes(userCampusName.toLowerCase());
+            const isUserCampus = !!userCampusId && entry.campus_id === userCampusId;
             const RankIcon = rankIcons[i]?.icon;
             const rankColor = rankIcons[i]?.color;
 

@@ -87,7 +87,8 @@ type HomepageSection = {
 
 const HOMEPAGE_SECTION_SIZE = 4;
 
-const techCategories = ["technology", "tech", "software", "productivity"];
+const techCategories = ["technology", "tech"];
+const softwareCategories = ["software", "subscriptions", "productivity"];
 const educationCategories = ["education", "learning", "books", "career"];
 const essentialsCategories = [
   "food",
@@ -269,6 +270,12 @@ const LandingPage = () => {
       .filter((deal) => categoryMatches(deal, techCategories))
       .sort((a, b) => dealQualityScore(b, dealEngagement.get(b.id) || 0) - dealQualityScore(a, dealEngagement.get(a.id) || 0))
   );
+  const softwareDeals = reserveDeals(
+    "Software Deals",
+    homepageDeals
+      .filter((deal) => categoryMatches(deal, softwareCategories))
+      .sort((a, b) => dealQualityScore(b, dealEngagement.get(b.id) || 0) - dealQualityScore(a, dealEngagement.get(a.id) || 0))
+  );
   const educationDeals = reserveDeals(
     "Education Deals",
     homepageDeals
@@ -296,6 +303,7 @@ const LandingPage = () => {
     { title: "Trending Deals", eyebrow: "Clicks, saves, claims, and engagement", deals: trendingDeals, realCount: trendingDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
     { title: "Newest Deals", eyebrow: "Recently imported", deals: newestDeals, realCount: newestDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
     { title: "Technology Deals", eyebrow: "Software, tech, and productivity", deals: technologyDeals, realCount: technologyDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
+    { title: "Software Deals", eyebrow: "Apps, subscriptions, and student tools", deals: softwareDeals, realCount: softwareDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
     { title: "Education Deals", eyebrow: "Courses, books, and career prep", deals: educationDeals, realCount: educationDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
     { title: "Student Essentials", eyebrow: "Food, apparel, supplies, and dorm life", deals: studentEssentialsDeals, realCount: studentEssentialsDeals.filter((deal) => !isPlaceholderDeal(deal)).length },
     { title: "Travel Deals", eyebrow: "Transportation and student travel", deals: travelDeals, realCount: travelDeals.filter((deal) => !isPlaceholderDeal(deal)).length },

@@ -58,6 +58,10 @@ type DealWithStore = {
   commission_rate: number | null;
   commission_type: string | null;
   affiliate_network: string | null;
+  partner_id: string | null;
+  advertiser_id?: string | null;
+  commission_text?: string | null;
+  deep_link_enabled?: boolean | null;
   is_affiliate: boolean;
   requires_edu_email: boolean;
   stores: { name: string } | null;
@@ -80,13 +84,26 @@ const DealsManager = () => {
       if (error) throw error;
       const deals = (data || []) as any[];
       const storeIds = Array.from(new Set(deals.map((deal) => deal.store_id).filter(Boolean)));
+      const partnerIds = Array.from(new Set(deals.map((deal) => deal.partner_id).filter(Boolean)));
+      const dealIds = deals.map((deal) => deal.id).filter(Boolean);
       const { data: stores } = storeIds.length
         ? await supabase.from("stores").select("id, name").in("id", storeIds)
         : { data: [] };
+      const { data: partners } = partnerIds.length
+        ? await supabase.from("partners" as any).select("id, advertiser_id").in("id", partnerIds)
+        : { data: [] };
+      const { data: affiliateImports } = dealIds.length
+        ? await supabase.from("affiliate_deals" as any).select("promoted_deal_id, raw_data").in("promoted_deal_id", dealIds)
+        : { data: [] };
       const storeMap = new Map((stores || []).map((store: any) => [store.id, { name: store.name }]));
+      const partnerMap = new Map((partners || []).map((partner: any) => [partner.id, partner]));
+      const affiliateImportMap = new Map((affiliateImports || []).map((row: any) => [row.promoted_deal_id, row.raw_data || {}]));
       return deals.map((deal) => ({
         ...deal,
         stores: storeMap.get(deal.store_id) ?? null,
+        advertiser_id: partnerMap.get(deal.partner_id)?.advertiser_id ?? affiliateImportMap.get(deal.id)?.advertiser_id ?? null,
+        commission_text: affiliateImportMap.get(deal.id)?.commission_text ?? null,
+        deep_link_enabled: affiliateImportMap.get(deal.id)?.deep_link_enabled ?? null,
       })) as DealWithStore[];
     },
   });
@@ -601,6 +618,24 @@ function AffiliateConfigModal({
                     ))}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="grid grid-cols-2 gap-3 rounded-lg border border-border bg-secondary/20 p-3 text-xs">
+                <div>
+                  <div className="text-muted-foreground">Advertiser ID</div>
+                  <div className="mt-1 font-mono text-foreground">{deal?.advertiser_id || "Not imported"}</div>
+                </div>
+                <div>
+                  <div className="text-muted-foreground">Deep linking</div>
+                  <div className="mt-1 text-foreground">
+                    {deal?.deep_link_enabled == null ? "Unknown" : deal.deep_link_enabled ? "Enabled" : "Disabled"}
+                  </div>
+                </div>
+                {deal?.commission_text && (
+                  <div className="col-span-2">
+                    <div className="text-muted-foreground">Imported payout</div>
+                    <div className="mt-1 text-foreground">{deal.commission_text}</div>
+                  </div>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>

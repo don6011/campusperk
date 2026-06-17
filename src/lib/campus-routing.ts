@@ -1,4 +1,6 @@
 type CampusProfileLike = {
+  campus_id?: string | null;
+  campus_slug?: string | null;
   campus_name?: string | null;
   campus_domain?: string | null;
   campus_city?: string | null;
@@ -45,9 +47,10 @@ export function getCampusSlugFromParts(parts: Array<string | null | undefined>) 
 
 export function getProfileCampusSlug(profile?: CampusProfileLike | null) {
   if (!profile) return null;
+  if (profile.campus_slug) return slugifyCampus(profile.campus_slug);
   return getCampusSlugFromParts([
-    profile.campus_name,
     profile.campus_domain,
+    profile.campus_name,
     profile.campus_city && profile.campus_state ? `${profile.campus_city} ${profile.campus_state}` : null,
   ]);
 }

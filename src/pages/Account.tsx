@@ -1,5 +1,5 @@
 import { useState, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { BadgeEngine } from "@/components/BadgeEngine";
 import { motion } from "framer-motion";
@@ -44,6 +44,7 @@ export default function Account() {
   const { user, profile, refreshProfile, campusRole, campusRoleStatus, isCampusVerified } = useAuth();
   const { toast } = useToast();
   const qc = useQueryClient();
+  const navigate = useNavigate();
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [selectedRole, setSelectedRole] = useState<CampusRole | null>(campusRole);
@@ -153,8 +154,19 @@ export default function Account() {
       });
 
       if (error) throw error;
+
+      const { data: assignment, error: assignmentError } = await supabase.rpc("assign_user_campus" as any, {
+        p_role: role,
+      });
+      if (assignmentError) throw assignmentError;
+      const assignmentStatus = (assignment as any)?.status;
+      if (assignmentStatus && assignmentStatus !== "assigned") {
+        throw new Error(`campus_assignment_failed:${assignmentStatus}`);
+      }
+
       await refreshProfile();
       toast({ title: "✓ Campus Verified!", description: `Your ${role} status has been auto-verified (score: ${score}).` });
+      navigate("/campus");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {

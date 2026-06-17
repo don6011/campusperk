@@ -24,6 +24,7 @@ import { Badge } from "@/components/ui/badge";
 import { BadgeEngine } from "@/components/BadgeEngine";
 import { supabase } from "@/integrations/supabase/client";
 import campusperkLogo from "@/assets/campusperk-logo.png";
+import { useAuth } from "@/contexts/AuthContext";
 
 type CampusProfile = {
   id: string | null;
@@ -32,6 +33,7 @@ type CampusProfile = {
   domain: string | null;
   city: string | null;
   state: string | null;
+  campusSlug?: string | null;
   primaryColor: string | null;
   secondaryColor: string | null;
   isVirtual?: boolean;
@@ -110,6 +112,7 @@ function slugify(value: string) {
 
 function campusMatchesSlug(campus: any, slug: string) {
   const alias = campusAliases[slug];
+  if (campus.campus_slug && campus.campus_slug === slug) return true;
   const values = [campus.campus_name, campus.domain_root, campus.city, campus.state].filter(Boolean).map((value: string) => value.toLowerCase());
   if (alias && values.some((value) => alias.keywords.some((keyword) => value.includes(keyword)))) return true;
   return values.some((value) => slugify(value) === slug);
@@ -125,6 +128,7 @@ function virtualCampus(slug: string): CampusProfile {
     domain: alias?.domain || null,
     city: alias?.city || null,
     state: alias?.state || null,
+    campusSlug: slug,
     primaryColor: null,
     secondaryColor: null,
     isVirtual: true,
@@ -170,13 +174,14 @@ function CampusEmptyState({ campus }: { campus: CampusProfile }) {
 
 export default function CampusHub() {
   const { slug = "uagc" } = useParams();
+  const { profile } = useAuth();
 
   const { data, isLoading } = useQuery({
     queryKey: ["campus-hub", slug],
     queryFn: async () => {
       const { data: domains } = await supabase
         .from("campus_domains")
-        .select("id, campus_name, domain_root, city, state, state_code, primary_color, secondary_color, is_approved")
+        .select("id, campus_name, campus_slug, domain_root, city, state, state_code, primary_color, secondary_color, is_approved")
         .eq("is_blocked", false)
         .limit(250);
 
@@ -189,6 +194,7 @@ export default function CampusHub() {
             domain: domain.domain_root,
             city: domain.city,
             state: domain.state || domain.state_code,
+            campusSlug: domain.campus_slug,
             primaryColor: domain.primary_color,
             secondaryColor: domain.secondary_color,
           }
@@ -292,6 +298,11 @@ export default function CampusHub() {
   });
 
   const campus = data?.campus || virtualCampus(slug);
+  const viewingAnotherCampus = !!(
+    profile?.campus_id &&
+    campus.id &&
+    profile.campus_id !== campus.id
+  );
   const isUagc = slug === "uagc";
   const announcements = isUagc ? uagcAnnouncements : [];
   const { data: merchantTargets = [] } = useQuery({
@@ -389,6 +400,20 @@ export default function CampusHub() {
         </section>
 
         <div className="container mx-auto space-y-6 px-4 py-8">
+          {viewingAnotherCampus && (
+            <Card className="border-primary/25 bg-primary/10">
+              <CardContent className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Viewing another campus</p>
+                  <p className="text-xs text-muted-foreground">You can browse this hub, but your verified campus activity remains tied to your assigned campus.</p>
+                </div>
+                <Button asChild size="sm">
+                  <Link to="/campus">Go to My Campus</Link>
+                </Button>
+              </CardContent>
+            </Card>
+          )}
+
           {shouldShowEmptyLaunchState && <CampusEmptyState campus={campus} />}
 
           {isUagc && (

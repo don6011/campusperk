@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { GraduationCap, MapPin, Search, Sparkles } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
@@ -10,6 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { supabase } from "@/integrations/supabase/client";
 import { slugifyCampus } from "@/lib/campus-routing";
+import { useAuth } from "@/contexts/AuthContext";
+import { useToast } from "@/hooks/use-toast";
 
 type CampusOption = {
   id: string;
@@ -28,6 +30,10 @@ const featuredCampuses = [
 
 export default function CampusSelection() {
   const [query, setQuery] = useState("");
+  const [assigningCampusId, setAssigningCampusId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { refreshProfile } = useAuth();
+  const { toast } = useToast();
 
   const { data: campuses = [], isLoading } = useQuery({
     queryKey: ["campus-selection"],
@@ -64,6 +70,45 @@ export default function CampusSelection() {
   }, [campuses, query]);
 
   const visibleCampuses = query.trim() ? filteredCampuses : featuredCampuses;
+
+  const handleAssignCampus = async (campus: { id?: string; name: string; slug: string }) => {
+    if (!campus.id) {
+      toast({
+        title: "Browse only",
+        description: "Featured campus shortcuts can be browsed, but assignment requires a verified campus record match.",
+      });
+      navigate(`/campus/${campus.slug}`);
+      return;
+    }
+
+    setAssigningCampusId(campus.id);
+    try {
+      const { data, error } = await supabase.rpc("assign_user_campus" as any, {
+        p_campus_id: campus.id,
+      });
+      if (error) throw error;
+
+      const result = data as { status?: string; campus_slug?: string; browse_only?: boolean } | null;
+      if (result?.status === "assigned") {
+        await refreshProfile();
+        navigate("/campus");
+        return;
+      }
+
+      toast({
+        title: result?.browse_only ? "Browse only" : "Campus not assigned",
+        description:
+          result?.status === "campus_domain_mismatch"
+            ? "Your verified email domain does not match this campus, so we opened it for browsing only."
+            : `Assignment returned: ${result?.status || "unknown"}`,
+      });
+      navigate(`/campus/${campus.slug}`);
+    } catch (error: any) {
+      toast({ title: "Campus assignment failed", description: error.message, variant: "destructive" });
+    } finally {
+      setAssigningCampusId(null);
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -108,8 +153,11 @@ export default function CampusSelection() {
                       </span>
                     )}
                   </div>
-                  <Button asChild className="mt-5 w-full">
-                    <Link to={`/campus/${campus.slug}`}>Open Campus Hub</Link>
+                  <Button className="mt-5 w-full" onClick={() => handleAssignCampus(campus as any)} disabled={assigningCampusId === (campus as any).id}>
+                    {assigningCampusId === (campus as any).id ? "Assigning..." : "Set as My Campus"}
+                  </Button>
+                  <Button asChild variant="ghost" className="mt-2 w-full">
+                    <Link to={`/campus/${campus.slug}`}>Browse only</Link>
                   </Button>
                 </CardContent>
               </Card>

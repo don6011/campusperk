@@ -606,6 +606,7 @@ export type Database = {
       campus_domains: {
         Row: {
           campus_name: string | null
+          campus_slug: string | null
           city: string | null
           country: string | null
           created_at: string
@@ -624,6 +625,7 @@ export type Database = {
         }
         Insert: {
           campus_name?: string | null
+          campus_slug?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -642,6 +644,7 @@ export type Database = {
         }
         Update: {
           campus_name?: string | null
+          campus_slug?: string | null
           city?: string | null
           country?: string | null
           created_at?: string
@@ -1938,12 +1941,18 @@ export type Database = {
       }
       profiles: {
         Row: {
+          beta_access: boolean
+          beta_access_granted_at: string | null
+          beta_access_granted_by: string | null
+          beta_access_notes: string | null
+          beta_access_source: string | null
           campus_city: string | null
           campus_domain: string | null
           campus_id: string | null
           campus_name: string | null
           campus_role: Database["public"]["Enums"]["campus_role"] | null
           campus_role_status: Database["public"]["Enums"]["campus_role_status"]
+          campus_slug: string | null
           campus_state: string | null
           campus_verification_method:
             | Database["public"]["Enums"]["campus_verification_method"]
@@ -1967,15 +1976,23 @@ export type Database = {
           user_state: string | null
           user_state_code: string | null
           verification_notes: string | null
+          verification_status: string
           verification_strength_score: number
+          verified_at: string | null
         }
         Insert: {
+          beta_access?: boolean
+          beta_access_granted_at?: string | null
+          beta_access_granted_by?: string | null
+          beta_access_notes?: string | null
+          beta_access_source?: string | null
           campus_city?: string | null
           campus_domain?: string | null
           campus_id?: string | null
           campus_name?: string | null
           campus_role?: Database["public"]["Enums"]["campus_role"] | null
           campus_role_status?: Database["public"]["Enums"]["campus_role_status"]
+          campus_slug?: string | null
           campus_state?: string | null
           campus_verification_method?:
             | Database["public"]["Enums"]["campus_verification_method"]
@@ -1999,15 +2016,23 @@ export type Database = {
           user_state?: string | null
           user_state_code?: string | null
           verification_notes?: string | null
+          verification_status?: string
           verification_strength_score?: number
+          verified_at?: string | null
         }
         Update: {
+          beta_access?: boolean
+          beta_access_granted_at?: string | null
+          beta_access_granted_by?: string | null
+          beta_access_notes?: string | null
+          beta_access_source?: string | null
           campus_city?: string | null
           campus_domain?: string | null
           campus_id?: string | null
           campus_name?: string | null
           campus_role?: Database["public"]["Enums"]["campus_role"] | null
           campus_role_status?: Database["public"]["Enums"]["campus_role_status"]
+          campus_slug?: string | null
           campus_state?: string | null
           campus_verification_method?:
             | Database["public"]["Enums"]["campus_verification_method"]
@@ -2031,7 +2056,9 @@ export type Database = {
           user_state?: string | null
           user_state_code?: string | null
           verification_notes?: string | null
+          verification_status?: string
           verification_strength_score?: number
+          verified_at?: string | null
         }
         Relationships: [
           {

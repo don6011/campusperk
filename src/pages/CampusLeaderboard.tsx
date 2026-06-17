@@ -103,7 +103,7 @@ function WeeklyResetTimer() {
 export default function CampusLeaderboard() {
   const { data: leaderboard, isLoading } = useCampusLeaderboard(50);
   const { profile } = useAuth();
-  const userCampusName = profile?.campus_name;
+  const userCampusId = profile?.campus_id;
 
   return (
     <DashboardLayout>
@@ -135,7 +135,7 @@ export default function CampusLeaderboard() {
                 const entry = leaderboard[podiumIdx];
                 if (!entry) return null;
                 const isFirst = podiumIdx === 0;
-                const isUserCampus = userCampusName && entry.campus_name.toLowerCase().includes(userCampusName.toLowerCase());
+                const isUserCampus = !!userCampusId && entry.campus_id === userCampusId;
                 const ri = rankIcons[podiumIdx];
 
                 return (
@@ -184,7 +184,7 @@ export default function CampusLeaderboard() {
                 <div className="p-8 text-center text-muted-foreground">Loading leaderboard...</div>
               ) : leaderboard && leaderboard.length > 0 ? (
                 leaderboard.map((entry) => {
-                  const isUserCampus = userCampusName && entry.campus_name.toLowerCase().includes(userCampusName.toLowerCase());
+                  const isUserCampus = !!userCampusId && entry.campus_id === userCampusId;
                   const isTop3 = entry.rank <= 3;
 
                   return (

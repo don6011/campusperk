@@ -8,6 +8,9 @@ export type CampusVerificationMethod = "edu_email" | "manual_admin" | "partner_p
 
 interface Profile {
   id: string;
+  beta_access: boolean;
+  beta_access_granted_at: string | null;
+  beta_access_source: string | null;
   name: string | null;
   email: string | null;
   student_verified: boolean;
@@ -16,9 +19,12 @@ interface Profile {
   campus_role_status: CampusRoleStatus;
   campus_verification_method: CampusVerificationMethod | null;
   campus_domain: string | null;
+  campus_slug: string | null;
   campus_name: string | null;
   verification_notes: string | null;
+  verification_status: string | null;
   campus_verified: boolean;
+  verified_at: string | null;
   verification_strength_score: number;
   campus_id: string | null;
   campus_city: string | null;
@@ -42,6 +48,7 @@ interface AuthContextType {
   campusRoleStatus: CampusRoleStatus;
   isPremium: boolean;
   isFoundingMember: boolean;
+  hasPrivateBetaAccess: boolean;
   isLoading: boolean;
   signUp: (email: string, password: string, name: string) => Promise<{ error: string | null }>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
@@ -80,7 +87,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase
       .from("profiles")
-      .select("id, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verification_method, campus_domain, campus_name, verification_notes, campus_verified, verification_strength_score, campus_id, campus_city, campus_state, user_city, user_state, location_opt_in, use_campus_location, has_seen_splash, is_founding_member")
+      .select("id, beta_access, beta_access_granted_at, beta_access_source, name, email, student_verified, premium_status, campus_role, campus_role_status, campus_verification_method, campus_domain, campus_slug, campus_name, verification_notes, verification_status, campus_verified, verified_at, verification_strength_score, campus_id, campus_city, campus_state, user_city, user_state, location_opt_in, use_campus_location, has_seen_splash, is_founding_member")
       .eq("id", userId)
       .single();
     setProfile(data as Profile | null);
@@ -182,6 +189,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         campusRoleStatus: (profile?.campus_role_status as CampusRoleStatus) ?? "unselected",
         isPremium: profile?.premium_status ?? false,
         isFoundingMember: profile?.is_founding_member ?? false,
+        hasPrivateBetaAccess: !!(profile?.beta_access || profile?.is_founding_member),
         isLoading,
         signUp,
         signIn,
