@@ -9,10 +9,12 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
-import { Edit, Loader2, Pause, Plus, RefreshCw, Search, Star, Store, Trash2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Edit, Link2, Loader2, Pause, Plus, RefreshCw, Search, Star, Store, Trash2 } from "lucide-react";
+import { parseTrackingParameters, stringifyTrackingParameters, validateAffiliateUrl } from "@/lib/affiliate-links";
 
 type Network = {
   id: string;
@@ -36,6 +38,20 @@ type Merchant = {
   total_deals: number;
   active_deals: number;
   featured_merchant: boolean;
+  default_affiliate_link_url?: string | null;
+  default_destination_url?: string | null;
+  default_deep_link_url?: string | null;
+  tracking_parameters?: Record<string, unknown> | null;
+  commission_notes?: string | null;
+  link_validation_status?: string | null;
+  link_validation_message?: string | null;
+  link_last_validated_at?: string | null;
+  updated_at?: string | null;
+};
+
+type MerchantClickStat = {
+  clickCount: number;
+  lastClickAt: string | null;
 };
 
 type AffiliateDealLogoRow = {
@@ -78,6 +94,11 @@ const emptyForm = {
   approval_status: "pending",
   status: "lead",
   featured_merchant: false,
+  default_affiliate_link_url: "",
+  default_destination_url: "",
+  default_deep_link_url: "",
+  tracking_parameters: "",
+  commission_notes: "",
 };
 
 const RAW_LOGO_KEYS = ["Logo URL", "Logo", "Image URL", "Image", "Creative URL", "Thumbnail URL", "merchant_logo", "logo_url", "image_url", "creative_url"];
@@ -181,6 +202,47 @@ export default function MerchantsPage() {
     },
   });
 
+  const { data: merchantClickStats = new Map<string, MerchantClickStat>() } = useQuery({
+    queryKey: ["affiliate-merchant-click-stats", merchants.map((merchant) => merchant.id).join(",")],
+    enabled: merchants.length > 0,
+    queryFn: async () => {
+      const merchantIds = merchants.map((merchant) => merchant.id);
+      const { data: dealRows, error: dealsError } = await supabase
+        .from("deals")
+        .select("id, partner_id")
+        .in("partner_id", merchantIds);
+      if (dealsError) throw dealsError;
+
+      const dealToMerchant = new Map((dealRows || []).map((deal: any) => [deal.id, deal.partner_id]));
+      const dealIds = Array.from(dealToMerchant.keys());
+      const stats = new Map<string, MerchantClickStat>();
+      merchantIds.forEach((id) => stats.set(id, { clickCount: 0, lastClickAt: null }));
+
+      if (!dealIds.length) return stats;
+
+      const { data: clicks, error: clicksError } = await supabase
+        .from("affiliate_clicks")
+        .select("deal_id, clicked_at")
+        .in("deal_id", dealIds)
+        .is("blocked_reason", null)
+        .order("clicked_at", { ascending: false })
+        .limit(5000);
+      if (clicksError) throw clicksError;
+
+      (clicks || []).forEach((click: any) => {
+        const merchantId = dealToMerchant.get(click.deal_id);
+        if (!merchantId) return;
+        const current = stats.get(merchantId) || { clickCount: 0, lastClickAt: null };
+        stats.set(merchantId, {
+          clickCount: current.clickCount + 1,
+          lastClickAt: current.lastClickAt || click.clicked_at,
+        });
+      });
+
+      return stats;
+    },
+  });
+
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
     return merchants.filter((merchant) => {
@@ -218,6 +280,11 @@ export default function MerchantsPage() {
       approval_status: merchant.approval_status || "pending",
       status: merchant.status || "lead",
       featured_merchant: !!merchant.featured_merchant,
+      default_affiliate_link_url: merchant.default_affiliate_link_url || "",
+      default_destination_url: merchant.default_destination_url || "",
+      default_deep_link_url: merchant.default_deep_link_url || "",
+      tracking_parameters: stringifyTrackingParameters(merchant.tracking_parameters),
+      commission_notes: merchant.commission_notes || "",
     });
     setDialogOpen(true);
   };
@@ -225,6 +292,13 @@ export default function MerchantsPage() {
   const saveMerchant = useMutation({
     mutationFn: async () => {
       const selectedNetwork = networks.find((network) => network.id === form.affiliate_network_id);
+      let trackingParameters: Record<string, unknown>;
+      try {
+        trackingParameters = parseTrackingParameters(form.tracking_parameters);
+      } catch (error) {
+        throw new Error(error instanceof Error ? error.message : "Tracking parameters must be valid JSON.");
+      }
+      const linkValidation = validateAffiliateUrl(form.default_affiliate_link_url);
       const payload = {
         partner_name: form.partner_name.trim(),
         partner_type: "affiliate_network",
@@ -239,6 +313,14 @@ export default function MerchantsPage() {
         approval_status: form.approval_status,
         status: form.status,
         featured_merchant: form.featured_merchant,
+        default_affiliate_link_url: form.default_affiliate_link_url.trim() || null,
+        default_destination_url: form.default_destination_url.trim() || null,
+        default_deep_link_url: form.default_deep_link_url.trim() || null,
+        tracking_parameters: trackingParameters,
+        commission_notes: form.commission_notes.trim() || null,
+        link_validation_status: linkValidation.status,
+        link_validation_message: linkValidation.message,
+        link_last_validated_at: new Date().toISOString(),
       };
 
       if (editing) {
@@ -564,7 +646,7 @@ export default function MerchantsPage() {
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit Merchant" : "Add Merchant"}</DialogTitle>
           </DialogHeader>
@@ -639,6 +721,102 @@ export default function MerchantsPage() {
             <div className="flex items-center gap-2 pt-6">
               <Switch checked={form.featured_merchant} onCheckedChange={(checked) => setForm((f) => ({ ...f, featured_merchant: checked }))} />
               <Label className="flex items-center gap-1"><Star className="h-3.5 w-3.5 text-gold" /> Featured Merchant</Label>
+            </div>
+          </div>
+
+          <div className="mt-5 rounded-xl border border-border bg-secondary/20 p-4">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+              <div>
+                <h3 className="flex items-center gap-2 text-sm font-semibold">
+                  <Link2 className="h-4 w-4 text-primary" />
+                  Affiliate Link Management
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Deal-level links override this merchant default. This default is used when a deal link is blank.
+                </p>
+              </div>
+              <Badge
+                variant="outline"
+                className={
+                  validateAffiliateUrl(form.default_affiliate_link_url).status === "valid"
+                    ? "border-accent/30 bg-accent/15 text-accent"
+                    : "border-gold/30 bg-gold/10 text-gold"
+                }
+              >
+                {validateAffiliateUrl(form.default_affiliate_link_url).status === "valid" ? (
+                  <CheckCircle2 className="mr-1 h-3 w-3" />
+                ) : (
+                  <AlertTriangle className="mr-1 h-3 w-3" />
+                )}
+                {validateAffiliateUrl(form.default_affiliate_link_url).status}
+              </Badge>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-1.5 md:col-span-2">
+                <Label>Default Affiliate Link</Label>
+                <Input
+                  placeholder="https://network.example/click?campusperk=..."
+                  value={form.default_affiliate_link_url}
+                  onChange={(event) => setForm((f) => ({ ...f, default_affiliate_link_url: event.target.value }))}
+                />
+                <p className="text-xs text-muted-foreground">{validateAffiliateUrl(form.default_affiliate_link_url).message}</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label>Destination URL</Label>
+                <Input
+                  placeholder="https://merchant.example/student"
+                  value={form.default_destination_url}
+                  onChange={(event) => setForm((f) => ({ ...f, default_destination_url: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Deep Link URL</Label>
+                <Input
+                  placeholder="https://network.example/deeplink?url=..."
+                  value={form.default_deep_link_url}
+                  onChange={(event) => setForm((f) => ({ ...f, default_deep_link_url: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Commission Notes</Label>
+                <Textarea
+                  rows={4}
+                  placeholder="Example: 10% CPA, student offers excluded, monthly reconciliation"
+                  value={form.commission_notes}
+                  onChange={(event) => setForm((f) => ({ ...f, commission_notes: event.target.value }))}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Tracking Parameters JSON</Label>
+                <Textarea
+                  rows={4}
+                  placeholder={'{\n  "utm_source": "campusperk"\n}'}
+                  value={form.tracking_parameters}
+                  onChange={(event) => setForm((f) => ({ ...f, tracking_parameters: event.target.value }))}
+                />
+              </div>
+            </div>
+
+            <div className="mt-4 grid grid-cols-1 gap-3 text-xs text-muted-foreground sm:grid-cols-3">
+              <div className="rounded-lg border border-border bg-background/40 p-3">
+                <div>Merchant clicks</div>
+                <div className="mt-1 text-lg font-semibold text-foreground">{editing ? merchantClickStats.get(editing.id)?.clickCount ?? 0 : 0}</div>
+              </div>
+              <div className="rounded-lg border border-border bg-background/40 p-3">
+                <div>Last click</div>
+                <div className="mt-1 font-medium text-foreground">
+                  {editing && merchantClickStats.get(editing.id)?.lastClickAt
+                    ? new Date(merchantClickStats.get(editing.id)!.lastClickAt!).toLocaleString()
+                    : "No clicks yet"}
+                </div>
+              </div>
+              <div className="rounded-lg border border-border bg-background/40 p-3">
+                <div>Last updated</div>
+                <div className="mt-1 font-medium text-foreground">
+                  {editing?.updated_at ? new Date(editing.updated_at).toLocaleString() : "Not saved yet"}
+                </div>
+              </div>
             </div>
           </div>
           <DialogFooter>
