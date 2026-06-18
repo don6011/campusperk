@@ -30,9 +30,10 @@ import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealR
 import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
 import { useDealClaimCounts, useClaimDeal } from "@/hooks/use-deal-claims";
 import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
+import { getDealDisplayTitle, getStoredOrComputedQualityScore } from "@/lib/deal-quality";
 
 interface DealWithStore {
-  id: string; title: string; description: string | null; discount_type: string;
+  id: string; title: string; display_title?: string | null; deal_quality_score?: number | null; description: string | null; discount_type: string;
   discount_value: string | null; requires_edu_email: boolean; status: string;
   sponsored: boolean; featured: boolean; category: string | null;
   expires_at: string | null; created_at: string; updated_at: string;
@@ -75,6 +76,10 @@ function engagementScore(deal: DealWithStore, claimCountsMap?: Map<string, { tot
   const recency = (Date.now() - new Date(refDate).getTime()) / (1000 * 60 * 60 * 24);
   return clicks * 2 + favs * 3 - recency * 10;
 }
+
+const displayDealTitle = (deal: DealWithStore) => getDealDisplayTitle(deal);
+const isQualityColumnMissing = (message = "") =>
+  message.includes("display_title") || message.includes("deal_quality_score");
 
 function trendingBadge(deal: DealWithStore, rank: number) {
   if (deal.expires_at && daysUntil(deal.expires_at) <= 3) return { label: "Ending Soon", icon: <Timer className="h-3 w-3" />, className: "bg-destructive/15 text-destructive border-destructive/30" };
@@ -132,10 +137,15 @@ export default function ExploreDeals() {
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ["deals-with-stores"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const selectWithQuality = "id, store_id, title, display_title, deal_quality_score, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)";
+      const selectLegacy = "id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)";
+      const first = await supabase
         .from("deals")
-        .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)")
+        .select(selectWithQuality)
         .order("created_at", { ascending: false });
+      const { data, error } = first.error && isQualityColumnMissing(first.error.message)
+        ? await supabase.from("deals").select(selectLegacy).order("created_at", { ascending: false })
+        : first;
       if (error) throw error;
       const dealRows = data as unknown as DealWithStore[];
       const dealIds = dealRows.map((deal) => deal.id);
@@ -188,7 +198,7 @@ export default function ExploreDeals() {
   const trendingDeals = useMemo(() => {
     return [...deals]
       .filter((d) => d.status === "active" && (d.featured || d.sponsored || (claimCountsMap?.get(d.id)?.total ?? 0) > 0))
-      .sort((a, b) => engagementScore(b, claimCountsMap) - engagementScore(a, claimCountsMap))
+      .sort((a, b) => engagementScore(b, claimCountsMap) - engagementScore(a, claimCountsMap) || getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a))
       .slice(0, 8);
   }, [deals, claimCountsMap]);
 
@@ -234,27 +244,27 @@ export default function ExploreDeals() {
       list = list.filter((d) => d.last_checked_at && new Date(d.last_checked_at).getTime() >= cutoff);
     }
 
-    if (search) return filterAndRankDeals(list, search);
+    if (search) return filterAndRankDeals(list, search).sort((a, b) => getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a));
 
     switch (sortBy) {
       case "newest":
-        list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        list.sort((a, b) => getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
       case "popular":
-        list.sort((a, b) => engagementScore(b, claimCountsMap) - engagementScore(a, claimCountsMap));
+        list.sort((a, b) => engagementScore(b, claimCountsMap) - engagementScore(a, claimCountsMap) || getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a));
         break;
       case "expiring":
         list.sort((a, b) => {
           const da = a.expires_at ? new Date(a.expires_at).getTime() : Infinity;
           const db = b.expires_at ? new Date(b.expires_at).getTime() : Infinity;
-          return da - db;
+          return da - db || getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a);
         });
         break;
       case "discount":
-        list.sort((a, b) => discountNum(b) - discountNum(a));
+        list.sort((a, b) => discountNum(b) - discountNum(a) || getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a));
         break;
       case "verified":
-        list.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        list.sort((a, b) => getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a) || new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
         break;
     }
     return list;
@@ -318,7 +328,7 @@ export default function ExploreDeals() {
                               )}
                             </div>
                             <div className="min-w-0">
-                              <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{deal.title}</div>
+                              <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{displayDealTitle(deal)}</div>
                               <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value ?? "Special"}</div>
                             </div>
                             <div className="flex items-center justify-between">
@@ -497,7 +507,7 @@ export default function ExploreDeals() {
                         </div>
 
                         <div className="mb-3">
-                          <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{deal.title}</div>
+                          <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{displayDealTitle(deal)}</div>
                         </div>
 
                         <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value ?? "Special"}</div>

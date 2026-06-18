@@ -10,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { computeDealQuality } from "@/lib/deal-quality";
 
 type NetworkName = "CJ" | "Impact" | "Awin" | "ShareASale" | "Rakuten" | "Local Merchant";
 type ImportMode = "merchants" | "deals";
@@ -1205,11 +1206,38 @@ export default function AffiliateCsvImporter() {
             partnerOfferId = offer.id;
           }
 
+          const quality = computeDealQuality(
+            {
+              title: row.deal_title,
+              description: buildDealDescription(row),
+              discount_value: row.coupon_code || row.deal_title,
+              category: row.category,
+              affiliate_link_url: row.affiliate_url || null,
+              direct_link_url: row.direct_url || null,
+              status: "active",
+              stores: { name: row.merchant_name, logo_url: row.image_url || null, website_url: row.direct_url || null },
+            },
+            {
+              merchant_name: row.merchant_name,
+              merchant_logo: row.image_url || null,
+              offer_title: row.deal_title,
+              affiliate_url: row.affiliate_url,
+              destination_url: row.direct_url || null,
+              discount_value: row.coupon_code || row.deal_title,
+              coupon_code: row.coupon_code || null,
+              category: row.category,
+            },
+          );
+
           const dealPayload = {
             store_id: storeId,
             partner_id: partnerId,
             partner_offer_id: partnerOfferId,
             title: row.deal_title,
+            display_title: quality.displayTitle,
+            deal_quality_score: quality.score,
+            quality_warnings: quality.warnings,
+            quality_reviewed_at: new Date().toISOString(),
             description: buildDealDescription(row),
             category: row.category,
             discount_value: row.coupon_code || row.deal_title,
@@ -1252,6 +1280,10 @@ export default function AffiliateCsvImporter() {
             merchant_logo: row.image_url || null,
             network: row.affiliate_network,
             offer_title: row.deal_title,
+            display_title: quality.displayTitle,
+            deal_quality_score: quality.score,
+            quality_warnings: quality.warnings,
+            quality_reviewed_at: new Date().toISOString(),
             offer_description: row.description || null,
             coupon_code: row.coupon_code || null,
             discount_value: row.coupon_code || row.deal_title,

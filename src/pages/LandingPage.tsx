@@ -15,6 +15,7 @@ import WaitlistModal from "@/components/WaitlistModal";
 import LegalFooter from "@/components/LegalFooter";
 import PartnerInquiryModal from "@/components/PartnerInquiryModal";
 import SEO from "@/components/SEO";
+import { getDealDisplayTitle, getStoredOrComputedQualityScore, isHomepageQualityEligible } from "@/lib/deal-quality";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -62,8 +63,11 @@ const features = [
 type HomepageDeal = {
   id: string;
   title: string;
+  display_title?: string | null;
+  deal_quality_score?: number | null;
   category: string | null;
   discount_value: string | null;
+  status?: string | null;
   featured: boolean;
   created_at: string;
   stores: { name: string; logo_url: string | null } | null;
@@ -120,12 +124,9 @@ const placeholderDeal = (sectionTitle: string, index: number): HomepageSectionIt
 });
 
 const dealQualityScore = (deal: HomepageDeal, engagementScore = 0) => {
-  const hasLogo = deal.stores?.logo_url ? 12 : 0;
-  const hasStore = deal.stores?.name ? 8 : 0;
-  const hasDiscount = deal.discount_value ? 10 : 0;
   const featured = deal.featured ? 18 : 0;
   const recency = Math.max(0, 14 - Math.floor((Date.now() - new Date(deal.created_at).getTime()) / 86_400_000));
-  return featured + hasLogo + hasStore + hasDiscount + recency + engagementScore;
+  return getStoredOrComputedQualityScore(deal) + featured + recency + engagementScore;
 };
 
 const LandingPage = () => {
@@ -166,13 +167,31 @@ const LandingPage = () => {
   }, []);
 
   useEffect(() => {
-    supabase
-      .from("deals")
-      .select("id, title, category, discount_value, featured, created_at, stores(name, logo_url)")
-      .eq("status", "active")
-      .order("created_at", { ascending: false })
-      .limit(60)
-      .then(({ data }) => setHomepageDeals((data || []) as any));
+    const loadHomepageDeals = async () => {
+      const selectWithQuality = "id, title, display_title, deal_quality_score, category, discount_value, status, featured, created_at, stores(name, logo_url)";
+      const selectLegacy = "id, title, category, discount_value, status, featured, created_at, stores(name, logo_url)";
+      const first = await supabase
+        .from("deals")
+        .select(selectWithQuality)
+        .eq("status", "active")
+        .order("created_at", { ascending: false })
+        .limit(120);
+
+      if (first.error && (first.error.message.includes("display_title") || first.error.message.includes("deal_quality_score"))) {
+        const fallback = await supabase
+          .from("deals")
+          .select(selectLegacy)
+          .eq("status", "active")
+          .order("created_at", { ascending: false })
+          .limit(120);
+        setHomepageDeals(((fallback.data || []) as any[]).filter(isHomepageQualityEligible));
+        return;
+      }
+
+      setHomepageDeals(((first.data || []) as any[]).filter(isHomepageQualityEligible));
+    };
+
+    loadHomepageDeals();
   }, []);
 
   useEffect(() => {
@@ -671,12 +690,12 @@ const LandingPage = () => {
                           <Sparkles className="h-7 w-7 text-primary" />
                         </div>
                       ) : deal.stores?.logo_url ? (
-                        <img src={deal.stores.logo_url} alt={deal.stores.name || deal.title} className="merchant-logo-panel--cover" />
+                        <img src={deal.stores.logo_url} alt={deal.stores.name || getDealDisplayTitle(deal)} className="merchant-logo-panel--cover" />
                       ) : (
                         <Store className="h-10 w-10 text-primary" />
                       )}
                     </div>
-                    <h3 className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{deal.title}</h3>
+                    <h3 className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{getDealDisplayTitle(deal)}</h3>
                     <div className={`mt-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-sm font-bold ${isPlaceholderDeal(deal) ? "border-primary/25 bg-primary/10 text-primary" : "border-emerald-400/25 bg-emerald-400/10 text-emerald-300 glow-verified"}`}>{deal.discount_value || "Active offer"}</div>
                     <div className="mt-4">
                       <Button size="sm" onClick={openWaitlist} className="h-9 w-full bg-primary hover:bg-primary/90 text-primary-foreground gap-1 shadow-[0_0_24px_-4px_hsl(var(--primary)/0.45)] hover:shadow-[0_0_34px_-4px_hsl(var(--primary)/0.65)] transition-all duration-300">

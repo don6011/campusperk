@@ -36,6 +36,7 @@ import { useCampusTheme } from "@/contexts/CampusThemeContext";
 import { MissedDealFeedCard } from "@/components/MissedDealFeedCard";
 import { FoundingPremiumBanner } from "@/components/FoundingPremiumBanner";
 import { PremiumNudgeModal } from "@/components/PremiumNudgeModal";
+import { getDealDisplayTitle, getStoredOrComputedQualityScore } from "@/lib/deal-quality";
 
 /* ── Animations ── */
 const fadeUp = {
@@ -57,7 +58,7 @@ const cardItem = {
 };
 
 type DealRow = {
-  id: string; title: string; description: string | null; discount_value: string | null;
+  id: string; title: string; display_title?: string | null; deal_quality_score?: number | null; description: string | null; discount_value: string | null;
   status: string; featured: boolean; sponsored: boolean; sponsor_tier: number | null;
   sponsor_start_at: string | null; sponsor_end_at: string | null; sponsor_priority: number | null;
   deal_scope: string | null; eligible_cities: string[] | null; eligible_regions: string[] | null;
@@ -65,6 +66,10 @@ type DealRow = {
   visibility: string | null; is_affiliate?: boolean | null; stores: { name: string; logo_url: string | null } | null;
   is_surprise_drop?: boolean; drop_window?: string | null; drop_time?: string | null;
 };
+
+const displayDealTitle = (deal: DealRow) => getDealDisplayTitle(deal);
+const isQualityColumnMissing = (message = "") =>
+  message.includes("display_title") || message.includes("deal_quality_score");
 
 /* ── Brand Logo ── */
 function BrandLogo({ url, name, size = "md" }: { url: string | null; name: string; size?: "sm" | "md" | "lg" | "xl" }) {
@@ -176,7 +181,7 @@ function dealSpotlightScore(deal: DealRow): number {
   const urgencyScore = deal.expires_at && expiresIn >= 0 ? Math.max(0, 18 - Math.min(expiresIn, 18)) : 4;
   const sponsorScore = deal.sponsored ? 12 + (deal.sponsor_priority ?? 0) : 0;
   const freshnessScore = Math.max(0, 10 - Math.floor((Date.now() - new Date(deal.updated_at || deal.created_at).getTime()) / 86_400_000));
-  const savingsText = `${deal.discount_value || ""} ${deal.title || ""}`.toLowerCase();
+  const savingsText = `${deal.discount_value || ""} ${displayDealTitle(deal) || ""}`.toLowerCase();
   const savingsScore = savingsText.includes("free") ? 18 : Number(savingsText.match(/\d+/)?.[0] || 0) / 5;
   return 100 + sponsorScore + urgencyScore + freshnessScore + Math.min(savingsScore, 20);
 }
@@ -195,7 +200,7 @@ function formatExpiryCountdown(expiresAt: string | null): string {
 
 function formatSavingsAmount(deal: DealRow): string {
   const discount = formatDiscount(deal.discount_value);
-  const combined = `${deal.discount_value || ""} ${deal.title || ""}`;
+  const combined = `${deal.discount_value || ""} ${displayDealTitle(deal) || ""}`;
   const dollars = combined.match(/\$\s?(\d[\d,]*(?:\.\d+)?)/);
   if (dollars) return `Save ${dollars[0].replace(/\s+/g, "")}`;
   if (discount.toLowerCase().includes("free")) return "Save the full price";
@@ -267,7 +272,7 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId, onGetDeal }: {
               </div>
               <div className="min-w-0">
                 <div className="text-xs text-muted-foreground font-medium uppercase tracking-widest">{storeName}</div>
-                <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground mt-1 leading-tight">{deal.title}</h3>
+                <h3 className="font-display text-xl sm:text-2xl font-bold text-foreground mt-1 leading-tight">{displayDealTitle(deal)}</h3>
                 {deal.description && (
                   <p className="text-sm text-muted-foreground line-clamp-2 mt-1.5 max-w-md">{deal.description}</p>
                 )}
@@ -402,7 +407,7 @@ function TodayBestDealSpotlight({ deal, onUpgrade, isPremium, userId, onGetDeal,
                 </div>
 
                 <h1 className="font-display text-4xl font-black leading-[0.95] tracking-tight md:text-6xl">
-                  {deal.title}
+                  {displayDealTitle(deal)}
                 </h1>
                 {deal.description && (
                   <p className="mt-4 max-w-2xl text-sm leading-6 text-zinc-300 md:text-base">{deal.description}</p>
@@ -722,7 +727,7 @@ function DealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onU
           </div>
 
           <div className="mb-3 min-w-0">
-            <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{deal.title}</div>
+            <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{displayDealTitle(deal)}</div>
           </div>
 
           <div className="mb-2 inline-flex w-fit items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{formatDiscount(deal.discount_value)}</div>
@@ -834,7 +839,7 @@ function DailyDropSection({ deal, onGetDeal }: { deal: DealRow | null; onGetDeal
               </div>
               <div>
                 <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{storeName}</div>
-                <h3 className="font-display text-lg sm:text-xl font-bold text-foreground mt-1">{deal.title}</h3>
+                <h3 className="font-display text-lg sm:text-xl font-bold text-foreground mt-1">{displayDealTitle(deal)}</h3>
                 <div className="mt-2">
                   <span className="font-display text-3xl sm:text-4xl font-black text-accent">
                     {formatDiscount(deal.discount_value)}
@@ -908,7 +913,7 @@ function EndingSoonCard({ deal, onGetDeal }: { deal: DealRow; onGetDeal: (id: st
           </div>
           <div className="mb-2 min-w-0 text-center">
             <div className="font-display font-bold text-sm text-foreground truncate">{storeName}</div>
-            <div className="text-[10px] text-muted-foreground truncate">{deal.title}</div>
+            <div className="text-[10px] text-muted-foreground truncate">{displayDealTitle(deal)}</div>
           </div>
 
           <div className="mt-auto pt-2">
@@ -969,29 +974,49 @@ export default function Dashboard() {
   const { data: deals = [], isLoading: dealsLoading } = useQuery({
     queryKey: ["dashboard-deals"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const selectWithQuality = "id, title, display_title, deal_quality_score, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, eligible_campuses, eligible_roles, requires_edu_email, requires_campus_verification, requires_role_verification, premium_only, expires_at, updated_at, created_at, category, visibility, is_affiliate, is_surprise_drop, drop_window, drop_time, stores(name, logo_url)";
+      const selectLegacy = "id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, eligible_campuses, eligible_roles, requires_edu_email, requires_campus_verification, requires_role_verification, premium_only, expires_at, updated_at, created_at, category, visibility, is_affiliate, is_surprise_drop, drop_window, drop_time, stores(name, logo_url)";
+      const first = await supabase
         .from("deals")
-        .select("id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, eligible_campuses, eligible_roles, requires_edu_email, requires_campus_verification, requires_role_verification, premium_only, expires_at, updated_at, created_at, category, visibility, is_affiliate, is_surprise_drop, drop_window, drop_time, stores(name, logo_url)")
+        .select(selectWithQuality)
         .eq("status", "active")
         .order("updated_at", { ascending: false })
         .limit(60);
+      const { data, error } = first.error && isQualityColumnMissing(first.error.message)
+        ? await supabase
+          .from("deals")
+          .select(selectLegacy)
+          .eq("status", "active")
+          .order("updated_at", { ascending: false })
+          .limit(60)
+        : first;
       if (error) throw error;
-      return data as DealRow[];
+      return (data as DealRow[]).sort((a, b) => getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a));
     },
   });
 
   const { data: spotlightDeal = null, isLoading: spotlightLoading } = useQuery({
     queryKey: ["dashboard-todays-best-featured-deal"],
     queryFn: async () => {
-      const { data, error } = await supabase
+      const selectWithQuality = "id, title, display_title, deal_quality_score, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, eligible_campuses, eligible_roles, requires_edu_email, requires_campus_verification, requires_role_verification, premium_only, expires_at, updated_at, created_at, category, visibility, is_affiliate, is_surprise_drop, drop_window, drop_time, stores(name, logo_url)";
+      const selectLegacy = "id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, eligible_campuses, eligible_roles, requires_edu_email, requires_campus_verification, requires_role_verification, premium_only, expires_at, updated_at, created_at, category, visibility, is_affiliate, is_surprise_drop, drop_window, drop_time, stores(name, logo_url)";
+      const first = await supabase
         .from("deals")
-        .select("id, title, description, discount_value, status, featured, sponsored, sponsor_tier, sponsor_start_at, sponsor_end_at, sponsor_priority, deal_scope, eligible_cities, eligible_regions, eligible_campuses, eligible_roles, requires_edu_email, requires_campus_verification, requires_role_verification, premium_only, expires_at, updated_at, created_at, category, visibility, is_affiliate, is_surprise_drop, drop_window, drop_time, stores(name, logo_url)")
+        .select(selectWithQuality)
         .eq("status", "active")
         .eq("featured", true)
         .limit(25);
+      const { data, error } = first.error && isQualityColumnMissing(first.error.message)
+        ? await supabase
+          .from("deals")
+          .select(selectLegacy)
+          .eq("status", "active")
+          .eq("featured", true)
+          .limit(25)
+        : first;
       if (error) throw error;
       const featuredDeals = (data || []) as DealRow[];
-      return featuredDeals.sort((a, b) => dealSpotlightScore(b) - dealSpotlightScore(a))[0] || null;
+      return featuredDeals.sort((a, b) => getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a) || dealSpotlightScore(b) - dealSpotlightScore(a))[0] || null;
     },
   });
 
@@ -1047,6 +1072,8 @@ export default function Dashboard() {
     const hero = heroDeal?.id;
     const featured = deals.filter(d => (d.featured || d.sponsored) && d.id !== hero);
     const rest = deals.filter(d => !d.featured && !d.sponsored && d.id !== hero);
+    featured.sort((a, b) => getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a));
+    rest.sort((a, b) => getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a));
     return [...featured, ...rest].slice(0, 10);
   }, [deals, heroDeal]);
 

@@ -34,7 +34,7 @@ import {
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { StatusBadge, SponsoredBadge } from "@/components/StatusBadge";
-import { Search, Sparkles, CalendarIcon, Link2 } from "lucide-react";
+import { AlertTriangle, Search, Sparkles, CalendarIcon, Link2, Wand2 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -42,10 +42,14 @@ import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
+import { computeDealQuality, getDealDisplayTitle, getStoredOrComputedQualityScore } from "@/lib/deal-quality";
 
 type DealWithStore = {
   id: string;
   title: string;
+  display_title?: string | null;
+  deal_quality_score?: number | null;
+  quality_warnings?: string[] | null;
   category: string | null;
   status: string;
   featured: boolean;
@@ -65,8 +69,8 @@ type DealWithStore = {
   deep_link_enabled?: boolean | null;
   is_affiliate: boolean;
   requires_edu_email: boolean;
-  stores: { name: string } | null;
-  affiliateSearch?: { merchant_name?: string | null; offer_title?: string | null; category?: string | null; raw_data?: Record<string, unknown> | null }[];
+  stores: { name: string; logo_url?: string | null } | null;
+  affiliateSearch?: { merchant_name?: string | null; merchant_logo?: string | null; offer_title?: string | null; affiliate_url?: string | null; destination_url?: string | null; discount_value?: string | null; coupon_code?: string | null; category?: string | null; raw_data?: Record<string, unknown> | null }[];
 };
 
 const DealsManager = () => {
@@ -89,15 +93,15 @@ const DealsManager = () => {
       const partnerIds = Array.from(new Set(deals.map((deal) => deal.partner_id).filter(Boolean)));
       const dealIds = deals.map((deal) => deal.id).filter(Boolean);
       const { data: stores } = storeIds.length
-        ? await supabase.from("stores").select("id, name").in("id", storeIds)
+        ? await supabase.from("stores").select("id, name, logo_url").in("id", storeIds)
         : { data: [] };
       const { data: partners } = partnerIds.length
         ? await supabase.from("partners" as any).select("id, advertiser_id").in("id", partnerIds)
         : { data: [] };
       const { data: affiliateImports } = dealIds.length
-        ? await supabase.from("affiliate_deals" as any).select("promoted_deal_id, merchant_name, offer_title, category, raw_data").in("promoted_deal_id", dealIds)
+        ? await supabase.from("affiliate_deals" as any).select("promoted_deal_id, merchant_name, merchant_logo, offer_title, affiliate_url, destination_url, discount_value, coupon_code, category, raw_data").in("promoted_deal_id", dealIds)
         : { data: [] };
-      const storeMap = new Map((stores || []).map((store: any) => [store.id, { name: store.name }]));
+      const storeMap = new Map((stores || []).map((store: any) => [store.id, { name: store.name, logo_url: store.logo_url }]));
       const partnerMap = new Map((partners || []).map((partner: any) => [partner.id, partner]));
       const affiliateImportMap = new Map((affiliateImports || []).map((row: any) => [row.promoted_deal_id, row.raw_data || {}]));
       const enrichedDeals = deals.map((deal) => ({
@@ -141,6 +145,42 @@ const DealsManager = () => {
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const improveTitleMutation = useMutation({
+    mutationFn: async (deal: DealWithStore) => {
+      const affiliate = deal.affiliateSearch?.[0] || null;
+      const quality = computeDealQuality(deal, affiliate);
+      const { error } = await supabase
+        .from("deals")
+        .update({
+          display_title: quality.displayTitle,
+          deal_quality_score: quality.score,
+          quality_warnings: quality.warnings,
+          quality_reviewed_at: new Date().toISOString(),
+        } as any)
+        .eq("id", deal.id);
+      if (error) throw error;
+
+      await supabase
+        .from("affiliate_deals" as any)
+        .update({
+          display_title: quality.displayTitle,
+          deal_quality_score: quality.score,
+          quality_warnings: quality.warnings,
+          quality_reviewed_at: new Date().toISOString(),
+        })
+        .eq("promoted_deal_id", deal.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-deals"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-deals"] });
+      queryClient.invalidateQueries({ queryKey: ["deals-with-stores"] });
+      toast({ title: "Display title improved" });
+    },
+    onError: (err: Error) => {
+      toast({ title: "Improve title failed", description: err.message, variant: "destructive" });
     },
   });
 
@@ -237,6 +277,8 @@ const DealsManager = () => {
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead>Deal</TableHead>
+                <TableHead>Display Title</TableHead>
+                <TableHead>Quality</TableHead>
                 <TableHead>Category</TableHead>
                 <TableHead>Discount</TableHead>
                 <TableHead>Status</TableHead>
@@ -251,14 +293,14 @@ const DealsManager = () => {
               {isLoading ? (
                 Array.from({ length: 4 }).map((_, i) => (
                   <TableRow key={i}>
-                    {Array.from({ length: 9 }).map((_, j) => (
+                    {Array.from({ length: 11 }).map((_, j) => (
                       <TableCell key={j}><div className="h-4 w-20 rounded bg-muted animate-pulse" /></TableCell>
                     ))}
                   </TableRow>
                 ))
               ) : filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={9} className="text-center py-8 text-muted-foreground">No deals found.</TableCell>
+                  <TableCell colSpan={11} className="text-center py-8 text-muted-foreground">No deals found.</TableCell>
                 </TableRow>
               ) : (
                 filtered.map((deal) => {
@@ -272,6 +314,35 @@ const DealsManager = () => {
                         <div>
                           <div className="font-medium text-sm">{deal.title}</div>
                           <div className="text-xs text-muted-foreground">{deal.stores?.name || "—"}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-[240px]">
+                          <div className="text-sm font-medium line-clamp-2">{getDealDisplayTitle(deal)}</div>
+                          {getDealDisplayTitle(deal) !== deal.title && (
+                            <div className="text-[10px] text-muted-foreground">Polished display title</div>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <Badge className={getStoredOrComputedQualityScore(deal) >= 70 ? "bg-accent/15 text-accent border-accent/30" : "bg-destructive/15 text-destructive border-destructive/30"}>
+                            {getStoredOrComputedQualityScore(deal)}
+                          </Badge>
+                          {getStoredOrComputedQualityScore(deal) < 70 && (
+                            <Badge variant="outline" className="border-destructive/30 text-destructive gap-1">
+                              <AlertTriangle className="h-3 w-3" /> Low quality
+                            </Badge>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs text-primary"
+                            onClick={() => improveTitleMutation.mutate(deal)}
+                            disabled={improveTitleMutation.isPending}
+                          >
+                            <Wand2 className="mr-1 h-3 w-3" /> Improve Title
+                          </Button>
                         </div>
                       </TableCell>
                       <TableCell>

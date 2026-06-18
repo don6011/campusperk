@@ -8,6 +8,7 @@ export type AffiliateSearchFields = {
 export type MarketplaceSearchableDeal = {
   id: string;
   title?: string | null;
+  display_title?: string | null;
   description?: string | null;
   category?: string | null;
   tags?: string[] | null;
@@ -82,6 +83,7 @@ function searchFields(deal: MarketplaceSearchableDeal) {
   ]);
 
   const title = compact([
+    deal.display_title,
     deal.title,
     affiliate.map((row) => row.offer_title),
     affiliateRaw.map((raw) => rawValue(raw, ["deal_title", "offer_title", "title", "Offer Title", "Promotion Name", "Deal Title", "Program Name", "Advertiser"])),
