@@ -93,6 +93,20 @@ type DealClickStat = {
   lastClickAt: string | null;
 };
 
+type AdminStoreOption = {
+  id: string;
+  name: string;
+};
+
+type AdminPartnerOption = {
+  id: string;
+  partner_name: string;
+  default_affiliate_link_url?: string | null;
+  default_destination_url?: string | null;
+  default_deep_link_url?: string | null;
+  affiliate_network?: string | null;
+};
+
 const DealsManager = () => {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState("");
@@ -102,6 +116,7 @@ const DealsManager = () => {
   const [aiText, setAiText] = useState("");
   const [sponsorEditId, setSponsorEditId] = useState<string | null>(null);
   const [affiliateEditId, setAffiliateEditId] = useState<string | null>(null);
+  const [createDealOpen, setCreateDealOpen] = useState(false);
 
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ["admin-deals"],
@@ -141,6 +156,29 @@ const DealsManager = () => {
 
   const categories = Array.from(new Set(deals.map((d) => d.category).filter(Boolean)));
 
+  const { data: adminStores = [] } = useQuery({
+    queryKey: ["admin-store-options"],
+    queryFn: async () => {
+      const { data, error } = await supabase.from("stores").select("id, name").order("name", { ascending: true }).limit(500);
+      if (error) throw error;
+      return (data || []) as AdminStoreOption[];
+    },
+  });
+
+  const { data: adminPartners = [] } = useQuery({
+    queryKey: ["admin-partner-options"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("partners" as any)
+        .select("id, partner_name, default_affiliate_link_url, default_destination_url, default_deep_link_url, affiliate_network")
+        .or("partner_type.eq.affiliate_network,affiliate_network.not.is.null,advertiser_id.not.is.null")
+        .order("partner_name", { ascending: true })
+        .limit(500);
+      if (error) throw error;
+      return (data || []) as AdminPartnerOption[];
+    },
+  });
+
   const filtered = filterAndRankDeals(deals, search).filter((d) => {
     const matchesCategory = filterCategory === "all" || d.category === filterCategory;
     return matchesCategory;
@@ -169,6 +207,23 @@ const DealsManager = () => {
     },
     onError: (err: Error) => {
       toast({ title: "Error", description: err.message, variant: "destructive" });
+    },
+  });
+
+  const createDealMutation = useMutation({
+    mutationFn: async (payload: Record<string, unknown>) => {
+      const { error } = await supabase.from("deals").insert(payload as any);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-deals"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-deals"] });
+      queryClient.invalidateQueries({ queryKey: ["deals-with-stores"] });
+      toast({ title: "Deal created" });
+      setCreateDealOpen(false);
+    },
+    onError: (err: Error) => {
+      toast({ title: "Create deal failed", description: err.message, variant: "destructive" });
     },
   });
 
@@ -307,6 +362,10 @@ const DealsManager = () => {
             <p className="text-sm text-muted-foreground">{deals.length} total deals</p>
           </div>
           <div className="flex gap-2">
+            <Button onClick={() => setCreateDealOpen(true)} className="gap-2">
+              <Link2 className="h-4 w-4" />
+              Create Deal
+            </Button>
             <Button onClick={() => setAiModalOpen(true)} variant="outline" className="gap-2 border-gold/30 text-gold hover:bg-gold/10">
               <Sparkles className="h-4 w-4" />
               Add Deal with AI
@@ -508,6 +567,15 @@ const DealsManager = () => {
           });
         }}
         isSaving={sponsorMutation.isPending}
+      />
+
+      <CreateDealModal
+        open={createDealOpen}
+        onOpenChange={setCreateDealOpen}
+        stores={adminStores}
+        partners={adminPartners}
+        isSaving={createDealMutation.isPending}
+        onSave={(payload) => createDealMutation.mutate(payload)}
       />
 
       {/* Affiliate Config Modal */}
@@ -813,6 +881,251 @@ function AffiliateConfigModal({
             }}
           >
             {isSaving ? "Saving…" : "Save Affiliate Settings"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function CreateDealModal({
+  open,
+  onOpenChange,
+  stores,
+  partners,
+  onSave,
+  isSaving,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  stores: AdminStoreOption[];
+  partners: AdminPartnerOption[];
+  onSave: (payload: Record<string, unknown>) => void;
+  isSaving: boolean;
+}) {
+  const [storeId, setStoreId] = useState("");
+  const [partnerId, setPartnerId] = useState("none");
+  const [title, setTitle] = useState("");
+  const [displayTitle, setDisplayTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [category, setCategory] = useState("");
+  const [discountValue, setDiscountValue] = useState("");
+  const [expiresAt, setExpiresAt] = useState("");
+  const [dealImageUrl, setDealImageUrl] = useState("");
+  const [affiliateUrl, setAffiliateUrl] = useState("");
+  const [destinationUrl, setDestinationUrl] = useState("");
+  const [deepLinkUrl, setDeepLinkUrl] = useState("");
+  const [network, setNetwork] = useState("");
+  const [commissionNotes, setCommissionNotes] = useState("");
+  const [trackingParameters, setTrackingParameters] = useState("");
+  const [featured, setFeatured] = useState(false);
+  const [sponsored, setSponsored] = useState(false);
+  const [active, setActive] = useState(true);
+
+  useEffect(() => {
+    if (!open) return;
+    setStoreId("");
+    setPartnerId("none");
+    setTitle("");
+    setDisplayTitle("");
+    setDescription("");
+    setCategory("");
+    setDiscountValue("");
+    setExpiresAt("");
+    setDealImageUrl("");
+    setAffiliateUrl("");
+    setDestinationUrl("");
+    setDeepLinkUrl("");
+    setNetwork("");
+    setCommissionNotes("");
+    setTrackingParameters("");
+    setFeatured(false);
+    setSponsored(false);
+    setActive(true);
+  }, [open]);
+
+  const selectedPartner = partners.find((partner) => partner.id === partnerId);
+  const resolvedAffiliateUrl = affiliateUrl.trim() || selectedPartner?.default_affiliate_link_url || "";
+  const validation = validateAffiliateUrl(resolvedAffiliateUrl);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-3xl max-h-[90vh] overflow-y-auto bg-card border-border">
+        <DialogHeader>
+          <DialogTitle className="font-display text-lg flex items-center gap-2">
+            <Link2 className="h-5 w-5 text-primary" />
+            Create Deal
+          </DialogTitle>
+          <DialogDescription>
+            Add a manually managed affiliate or direct deal without a CSV import.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Store *</Label>
+              <Select value={storeId} onValueChange={setStoreId}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select store" />
+                </SelectTrigger>
+                <SelectContent>
+                  {stores.map((store) => (
+                    <SelectItem key={store.id} value={store.id}>{store.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Affiliate Merchant</Label>
+              <Select value={partnerId} onValueChange={(value) => {
+                setPartnerId(value);
+                const partner = partners.find((item) => item.id === value);
+                if (partner?.affiliate_network) setNetwork(partner.affiliate_network);
+              }}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Optional merchant" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No affiliate merchant</SelectItem>
+                  {partners.map((partner) => (
+                    <SelectItem key={partner.id} value={partner.id}>{partner.partner_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Title *</Label>
+              <Input value={title} onChange={(event) => setTitle(event.target.value)} />
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Display Title</Label>
+              <Input value={displayTitle} onChange={(event) => setDisplayTitle(event.target.value)} />
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Category</Label>
+              <Input value={category} onChange={(event) => setCategory(event.target.value)} />
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Savings / Discount</Label>
+              <Input value={discountValue} onChange={(event) => setDiscountValue(event.target.value)} />
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Expiration Date</Label>
+              <Input type="date" value={expiresAt} onChange={(event) => setExpiresAt(event.target.value)} />
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-1.5 block">Deal Image</Label>
+              <Input value={dealImageUrl} onChange={(event) => setDealImageUrl(event.target.value)} />
+            </div>
+            <div className="md:col-span-2">
+              <Label className="text-sm font-medium mb-1.5 block">Description</Label>
+              <Textarea rows={3} value={description} onChange={(event) => setDescription(event.target.value)} />
+            </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-secondary/20 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-semibold">Affiliate Link Management</h3>
+                <p className="text-xs text-muted-foreground">Deal link overrides merchant default. Merchant default is used when blank.</p>
+              </div>
+              <Badge className={validation.status === "valid" ? "bg-accent/15 text-accent border-accent/30" : "bg-gold/15 text-gold border-gold/30"}>
+                {validation.status}
+              </Badge>
+            </div>
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div className="md:col-span-2">
+                <Label className="text-sm font-medium mb-1.5 block">Affiliate URL</Label>
+                <Input value={affiliateUrl} onChange={(event) => setAffiliateUrl(event.target.value)} />
+                <p className="mt-1 text-xs text-muted-foreground">{validation.message}</p>
+              </div>
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">Destination URL</Label>
+                <Input value={destinationUrl} onChange={(event) => setDestinationUrl(event.target.value)} />
+              </div>
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">Deep Link URL</Label>
+                <Input value={deepLinkUrl} onChange={(event) => setDeepLinkUrl(event.target.value)} />
+              </div>
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">Network</Label>
+                <Select value={network} onValueChange={setNetwork}>
+                  <SelectTrigger><SelectValue placeholder="Select network" /></SelectTrigger>
+                  <SelectContent>
+                    {AFFILIATE_NETWORKS.map((name) => <SelectItem key={name} value={name}>{name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-sm font-medium mb-1.5 block">Commission Notes</Label>
+                <Input value={commissionNotes} onChange={(event) => setCommissionNotes(event.target.value)} />
+              </div>
+              <div className="md:col-span-2">
+                <Label className="text-sm font-medium mb-1.5 block">Tracking Parameters JSON</Label>
+                <Textarea rows={3} value={trackingParameters} onChange={(event) => setTrackingParameters(event.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <label className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm">
+              <Switch checked={featured} onCheckedChange={setFeatured} />
+              Featured Deal
+            </label>
+            <label className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm">
+              <Switch checked={sponsored} onCheckedChange={setSponsored} />
+              Sponsored Deal
+            </label>
+            <label className="flex items-center gap-2 rounded-lg border border-border p-3 text-sm">
+              <Switch checked={active} onCheckedChange={setActive} />
+              Active
+            </label>
+          </div>
+
+          <Button
+            className="w-full"
+            disabled={isSaving || !storeId || !title.trim()}
+            onClick={() => {
+              let parsedTracking: Record<string, unknown>;
+              try {
+                parsedTracking = parseTrackingParameters(trackingParameters);
+              } catch (error) {
+                toast({
+                  title: "Tracking parameters invalid",
+                  description: error instanceof Error ? error.message : "Tracking parameters must be valid JSON.",
+                  variant: "destructive",
+                });
+                return;
+              }
+
+              onSave({
+                store_id: storeId,
+                partner_id: partnerId === "none" ? null : partnerId,
+                title: title.trim(),
+                display_title: displayTitle.trim() || title.trim(),
+                description: description.trim() || null,
+                category: category.trim() || null,
+                discount_value: discountValue.trim() || null,
+                expires_at: expiresAt ? new Date(`${expiresAt}T23:59:59`).toISOString() : null,
+                deal_image_url: dealImageUrl.trim() || null,
+                affiliate_link_url: resolvedAffiliateUrl || null,
+                direct_link_url: destinationUrl.trim() || selectedPartner?.default_destination_url || null,
+                deep_link_url: deepLinkUrl.trim() || selectedPartner?.default_deep_link_url || null,
+                affiliate_network: network || selectedPartner?.affiliate_network || null,
+                commission_notes: commissionNotes.trim() || null,
+                tracking_parameters: parsedTracking,
+                link_validation_status: validation.status,
+                link_validation_message: validation.message,
+                link_last_validated_at: new Date().toISOString(),
+                is_affiliate: !!resolvedAffiliateUrl,
+                featured,
+                sponsored,
+                status: active ? "active" : "coming_soon",
+              });
+            }}
+          >
+            {isSaving ? "Creating..." : "Create Deal"}
           </Button>
         </div>
       </DialogContent>
