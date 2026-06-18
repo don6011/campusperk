@@ -38,6 +38,33 @@ type Merchant = {
   featured_merchant: boolean;
 };
 
+type AffiliateDealLogoRow = {
+  id: string;
+  merchant_id: string | null;
+  promoted_deal_id: string | null;
+  merchant_name: string;
+  merchant_logo: string | null;
+  network: string;
+  affiliate_url: string | null;
+  destination_url: string | null;
+  raw_data: Record<string, unknown> | null;
+};
+
+type AffiliateMerchantLogoRow = {
+  id: string;
+  merchant_name: string;
+  merchant_logo: string | null;
+  website_url: string | null;
+  store_id: string | null;
+};
+
+type StoreLogoRow = {
+  id: string;
+  name: string;
+  logo_url: string | null;
+  website_url: string | null;
+};
+
 const emptyForm = {
   partner_name: "",
   logo_url: "",
@@ -52,6 +79,60 @@ const emptyForm = {
   status: "lead",
   featured_merchant: false,
 };
+
+const RAW_LOGO_KEYS = ["Logo URL", "Logo", "Image URL", "Image", "Creative URL", "Thumbnail URL", "merchant_logo", "logo_url", "image_url", "creative_url"];
+const RAW_DOMAIN_KEYS = ["Advertiser URL", "Website URL", "Website", "Landing Page", "Destination URL", "Merchant URL", "direct_url", "destination_url", "website_url"];
+
+function rawValue(raw: Record<string, unknown> | null | undefined, keys: string[]) {
+  if (!raw) return null;
+  const entries = Object.entries(raw);
+  for (const key of keys) {
+    const found = entries.find(([rawKey]) => rawKey.toLowerCase() === key.toLowerCase());
+    if (typeof found?.[1] === "string" && found[1].trim()) return found[1].trim();
+  }
+  return null;
+}
+
+function safeUrl(value: unknown) {
+  if (typeof value !== "string" || !value.trim()) return null;
+  try {
+    const parsed = new URL(value.trim().startsWith("http") ? value.trim() : `https://${value.trim()}`);
+    return ["http:", "https:"].includes(parsed.protocol) ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function domainFrom(value: unknown) {
+  const url = safeUrl(value);
+  if (!url) return null;
+  try {
+    const hostname = new URL(url).hostname.toLowerCase().replace(/^www\./, "");
+    return hostname.includes(".") ? hostname : null;
+  } catch {
+    return null;
+  }
+}
+
+function faviconFor(domain: string) {
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=128`;
+}
+
+function logoFor(deal: AffiliateDealLogoRow, merchant?: AffiliateMerchantLogoRow, store?: StoreLogoRow) {
+  const existing = safeUrl(store?.logo_url) || safeUrl(merchant?.merchant_logo) || safeUrl(deal.merchant_logo);
+  if (existing) return existing;
+
+  const rawLogo = safeUrl(rawValue(deal.raw_data, RAW_LOGO_KEYS));
+  if (rawLogo) return rawLogo;
+
+  const domain = domainFrom(merchant?.website_url)
+    || domainFrom(store?.website_url)
+    || domainFrom(deal.destination_url)
+    || domainFrom(rawValue(deal.raw_data, RAW_DOMAIN_KEYS))
+    || domainFrom(deal.affiliate_url);
+
+  return domain ? faviconFor(domain) : null;
+}
 
 function approvalBadge(status: string) {
   if (status === "approved") return <Badge className="bg-accent/15 text-accent border-accent/30">Approved</Badge>;
@@ -215,6 +296,110 @@ export default function MerchantsPage() {
     onError: (error: Error) => toast({ title: "Delete failed", description: error.message, variant: "destructive" }),
   });
 
+  const backfillLogos = useMutation({
+    mutationFn: async () => {
+      const result = {
+        beforeMissingLogoCount: 0,
+        updatedStores: 0,
+        updatedMerchants: 0,
+        updatedAffiliateDeals: 0,
+        updatedDeals: 0,
+        skippedRows: 0,
+        errors: [] as string[],
+        afterMissingLogoCount: 0,
+      };
+
+      const { data: affiliateDeals, error: dealsError } = await supabase
+        .from("affiliate_deals" as any)
+        .select("id, merchant_id, promoted_deal_id, merchant_name, merchant_logo, network, affiliate_url, destination_url, raw_data")
+        .eq("network", "Impact")
+        .limit(1000);
+      if (dealsError) throw dealsError;
+
+      const dealRows = (affiliateDeals || []) as AffiliateDealLogoRow[];
+      const merchantIds = [...new Set(dealRows.map((deal) => deal.merchant_id).filter(Boolean))] as string[];
+      const { data: affiliateMerchants } = merchantIds.length
+        ? await supabase
+          .from("affiliate_merchants" as any)
+          .select("id, merchant_name, merchant_logo, website_url, store_id")
+          .in("id", merchantIds)
+        : { data: [] };
+
+      const merchantRows = (affiliateMerchants || []) as AffiliateMerchantLogoRow[];
+      const merchantById = new Map(merchantRows.map((merchant) => [merchant.id, merchant]));
+      const storeIds = [...new Set(merchantRows.map((merchant) => merchant.store_id).filter(Boolean))] as string[];
+      const { data: stores } = storeIds.length
+        ? await supabase.from("stores").select("id, name, logo_url, website_url").in("id", storeIds)
+        : { data: [] };
+      const storeRows = (stores || []) as StoreLogoRow[];
+      const storeById = new Map(storeRows.map((store) => [store.id, store]));
+
+      const hasMissingLogo = (deal: AffiliateDealLogoRow) => {
+        const merchant = deal.merchant_id ? merchantById.get(deal.merchant_id) : undefined;
+        const store = merchant?.store_id ? storeById.get(merchant.store_id) : undefined;
+        return !store?.logo_url || !merchant?.merchant_logo || !deal.merchant_logo;
+      };
+
+      result.beforeMissingLogoCount = dealRows.filter(hasMissingLogo).length;
+
+      for (const deal of dealRows) {
+        const merchant = deal.merchant_id ? merchantById.get(deal.merchant_id) : undefined;
+        const store = merchant?.store_id ? storeById.get(merchant.store_id) : undefined;
+        const logoUrl = logoFor(deal, merchant, store);
+        if (!logoUrl) {
+          result.skippedRows += 1;
+          continue;
+        }
+
+        try {
+          if (store && !store.logo_url) {
+            const { error } = await supabase.from("stores").update({ logo_url: logoUrl }).eq("id", store.id);
+            if (error) throw error;
+            store.logo_url = logoUrl;
+            result.updatedStores += 1;
+          }
+
+          if (merchant && !merchant.merchant_logo) {
+            const { error } = await supabase.from("affiliate_merchants" as any).update({ merchant_logo: logoUrl }).eq("id", merchant.id);
+            if (error) throw error;
+            merchant.merchant_logo = logoUrl;
+            result.updatedMerchants += 1;
+          }
+
+          if (!deal.merchant_logo) {
+            const { error } = await supabase.from("affiliate_deals" as any).update({ merchant_logo: logoUrl }).eq("id", deal.id);
+            if (error) throw error;
+            deal.merchant_logo = logoUrl;
+            result.updatedAffiliateDeals += 1;
+          }
+
+          if (deal.promoted_deal_id) {
+            const { error } = await supabase.from("deals").update({ image_url: logoUrl, logo_url: logoUrl } as any).eq("id", deal.promoted_deal_id);
+            if (!error) result.updatedDeals += 1;
+            else if (!error.message.includes("image_url") && !error.message.includes("logo_url") && error.code !== "PGRST204") {
+              result.errors.push(`${deal.merchant_name}: ${error.message}`);
+            }
+          }
+        } catch (error) {
+          result.errors.push(`${deal.merchant_name}: ${error instanceof Error ? error.message : "Unknown error"}`);
+        }
+      }
+
+      result.afterMissingLogoCount = dealRows.filter(hasMissingLogo).length;
+      return result;
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ["affiliate-merchants"] });
+      queryClient.invalidateQueries({ queryKey: ["deals-with-stores"] });
+      queryClient.invalidateQueries({ queryKey: ["dashboard-deals"] });
+      toast({
+        title: "Logo backfill complete",
+        description: `${result.beforeMissingLogoCount} missing before, ${result.afterMissingLogoCount} missing after. Stores: ${result.updatedStores}, merchants: ${result.updatedMerchants}, offers: ${result.updatedAffiliateDeals}.`,
+      });
+    },
+    onError: (error: Error) => toast({ title: "Logo backfill failed", description: error.message, variant: "destructive" }),
+  });
+
   const syncMerchant = async (merchant: Merchant) => {
     setSyncingId(merchant.id);
     const startedAt = new Date().toISOString();
@@ -259,9 +444,15 @@ export default function MerchantsPage() {
             </h1>
             <p className="text-sm text-muted-foreground">Affiliate merchant approvals, commissions, cookies, sync status, and featured placement.</p>
           </div>
-          <Button onClick={openNew} className="gap-2">
-            <Plus className="h-4 w-4" /> Add Merchant
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" onClick={() => backfillLogos.mutate()} disabled={backfillLogos.isPending} className="gap-2">
+              {backfillLogos.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+              Backfill Missing Logos
+            </Button>
+            <Button onClick={openNew} className="gap-2">
+              <Plus className="h-4 w-4" /> Add Merchant
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">

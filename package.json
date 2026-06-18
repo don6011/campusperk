@@ -16,6 +16,7 @@
     "test:growth": "bun scripts/growth-validation.ts",
     "test:campus-routing": "bun scripts/campus-routing-validation.ts",
     "test:private-beta": "bun scripts/private-beta-validation.ts",
+    "backfill:merchant-logos": "bun scripts/backfill-merchant-logos.ts",
     "test:watch": "vitest"
   },
   "dependencies": {
