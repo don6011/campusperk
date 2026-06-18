@@ -1,6 +1,6 @@
-import { useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef } from "react";
 import { usePageTitle } from "@/hooks/use-page-title";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
@@ -29,6 +29,7 @@ import { logPaywallView, isDealPremium } from "@/lib/paywall";
 import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealRow";
 import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
 import { useDealClaimCounts, useClaimDeal } from "@/hooks/use-deal-claims";
+import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
 
 interface DealWithStore {
   id: string; title: string; description: string | null; discount_type: string;
@@ -38,6 +39,7 @@ interface DealWithStore {
   last_checked_at: string | null; visibility: string | null; is_affiliate?: boolean | null;
   sponsor_tier: number | null; sponsor_start_at: string | null; sponsor_end_at: string | null;
   stores: { id: string; name: string; logo_url: string | null; website_url: string | null; };
+  affiliateSearch?: { merchant_name?: string | null; offer_title?: string | null; category?: string | null; raw_data?: Record<string, unknown> | null }[];
 }
 
 const CATEGORIES = ["Software", "Subscriptions", "Tech", "Clothing", "Food", "Learning", "Books", "Travel", "Fitness", "Entertainment"];
@@ -92,7 +94,8 @@ const fadeUp = {
 
 export default function ExploreDeals() {
   usePageTitle("Explore Deals");
-  const [search, setSearch] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get("q") ?? "");
   const [sortBy, setSortBy] = useState("newest");
   const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
   const [selectedStatuses, setSelectedStatuses] = useState<string[]>([]);
@@ -111,6 +114,21 @@ export default function ExploreDeals() {
   const navigate = useNavigate();
   const claimDeal = useClaimDeal();
 
+  useEffect(() => {
+    const q = searchParams.get("q") ?? "";
+    setSearch(q);
+    setVisibleCount(PAGE_SIZE);
+  }, [searchParams]);
+
+  const updateSearch = (value: string) => {
+    setSearch(value);
+    setVisibleCount(PAGE_SIZE);
+    const next = new URLSearchParams(searchParams);
+    if (value.trim()) next.set("q", value);
+    else next.delete("q");
+    setSearchParams(next, { replace: true });
+  };
+
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ["deals-with-stores"],
     queryFn: async () => {
@@ -119,7 +137,15 @@ export default function ExploreDeals() {
         .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return data as unknown as DealWithStore[];
+      const dealRows = data as unknown as DealWithStore[];
+      const dealIds = dealRows.map((deal) => deal.id);
+      const { data: affiliateRows } = dealIds.length
+        ? await supabase
+          .from("affiliate_deals" as any)
+          .select("promoted_deal_id, merchant_name, offer_title, category, raw_data")
+          .in("promoted_deal_id", dealIds)
+        : { data: [] };
+      return attachAffiliateSearchFields(dealRows, (affiliateRows || []) as any[]);
     },
   });
 
@@ -153,7 +179,7 @@ export default function ExploreDeals() {
     queryClient.invalidateQueries({ queryKey: ["favorites-page"] });
   };
   const resetFilters = () => {
-    setSearch(""); setSelectedCategories([]); setSelectedStatuses([]); setSelectedScope("all"); setEduOnly(false);
+    updateSearch(""); setSelectedCategories([]); setSelectedStatuses([]); setSelectedScope("all"); setEduOnly(false);
     setPremiumOnly(false); setFreshnessDays(null); setVerifiedRecently(false); setVisibleCount(PAGE_SIZE);
   };
 
@@ -187,14 +213,6 @@ export default function ExploreDeals() {
 
   const filtered = useMemo(() => {
     let list = [...deals];
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((d) =>
-        d.title.toLowerCase().includes(q) ||
-        d.stores.name.toLowerCase().includes(q) ||
-        (d.category ?? "").toLowerCase().includes(q)
-      );
-    }
     if (selectedCategories.length) list = list.filter((d) => d.category && selectedCategories.includes(d.category));
     if (selectedScope !== "all") list = list.filter((d: any) => d.deal_scope === selectedScope);
     if (selectedStatuses.length) {
@@ -215,6 +233,8 @@ export default function ExploreDeals() {
       const cutoff = Date.now() - 24 * 60 * 60 * 1000;
       list = list.filter((d) => d.last_checked_at && new Date(d.last_checked_at).getTime() >= cutoff);
     }
+
+    if (search) return filterAndRankDeals(list, search);
 
     switch (sortBy) {
       case "newest":
@@ -334,8 +354,8 @@ export default function ExploreDeals() {
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search deals, stores, categories…" value={search} onChange={(e) => { setSearch(e.target.value); setVisibleCount(PAGE_SIZE); }} className="pl-9 bg-secondary border-border h-11 text-sm" />
-            {search && (<button onClick={() => setSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>)}
+            <Input placeholder="Search deals, merchants, categories…" value={search} onChange={(e) => updateSearch(e.target.value)} className="pl-9 bg-secondary border-border h-11 text-sm" />
+            {search && (<button onClick={() => updateSearch("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"><X className="h-4 w-4" /></button>)}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" className="gap-1.5 h-11" onClick={() => setFiltersOpen(!filtersOpen)}>

@@ -41,6 +41,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
 
 type DealWithStore = {
   id: string;
@@ -65,6 +66,7 @@ type DealWithStore = {
   is_affiliate: boolean;
   requires_edu_email: boolean;
   stores: { name: string } | null;
+  affiliateSearch?: { merchant_name?: string | null; offer_title?: string | null; category?: string | null; raw_data?: Record<string, unknown> | null }[];
 };
 
 const DealsManager = () => {
@@ -93,29 +95,27 @@ const DealsManager = () => {
         ? await supabase.from("partners" as any).select("id, advertiser_id").in("id", partnerIds)
         : { data: [] };
       const { data: affiliateImports } = dealIds.length
-        ? await supabase.from("affiliate_deals" as any).select("promoted_deal_id, raw_data").in("promoted_deal_id", dealIds)
+        ? await supabase.from("affiliate_deals" as any).select("promoted_deal_id, merchant_name, offer_title, category, raw_data").in("promoted_deal_id", dealIds)
         : { data: [] };
       const storeMap = new Map((stores || []).map((store: any) => [store.id, { name: store.name }]));
       const partnerMap = new Map((partners || []).map((partner: any) => [partner.id, partner]));
       const affiliateImportMap = new Map((affiliateImports || []).map((row: any) => [row.promoted_deal_id, row.raw_data || {}]));
-      return deals.map((deal) => ({
+      const enrichedDeals = deals.map((deal) => ({
         ...deal,
         stores: storeMap.get(deal.store_id) ?? null,
         advertiser_id: partnerMap.get(deal.partner_id)?.advertiser_id ?? affiliateImportMap.get(deal.id)?.advertiser_id ?? null,
         commission_text: affiliateImportMap.get(deal.id)?.commission_text ?? null,
         deep_link_enabled: affiliateImportMap.get(deal.id)?.deep_link_enabled ?? null,
       })) as DealWithStore[];
+      return attachAffiliateSearchFields(enrichedDeals, (affiliateImports || []) as any[]);
     },
   });
 
   const categories = Array.from(new Set(deals.map((d) => d.category).filter(Boolean)));
 
-  const filtered = deals.filter((d) => {
-    const matchesSearch =
-      d.title.toLowerCase().includes(search.toLowerCase()) ||
-      (d.stores?.name || "").toLowerCase().includes(search.toLowerCase());
+  const filtered = filterAndRankDeals(deals, search).filter((d) => {
     const matchesCategory = filterCategory === "all" || d.category === filterCategory;
-    return matchesSearch && matchesCategory;
+    return matchesCategory;
   });
 
   const toggleMutation = useMutation({

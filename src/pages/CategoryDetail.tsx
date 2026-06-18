@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
 import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealRow";
+import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
 
 interface DealWithStore {
   id: string;
@@ -55,6 +56,7 @@ interface DealWithStore {
     logo_url: string | null;
     website_url: string | null;
   };
+  affiliateSearch?: { merchant_name?: string | null; offer_title?: string | null; category?: string | null; raw_data?: Record<string, unknown> | null }[];
 }
 
 const CATEGORY_META: Record<string, { name: string; icon: any; description: string; dbNames: string[]; iconColor: string; gradient: string; seoDescription: string }> = {
@@ -176,7 +178,15 @@ export default function CategoryDetail() {
         .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)")
         .order("created_at", { ascending: false });
       if (error) throw error;
-      return (data as unknown as DealWithStore[]).filter(
+      const dealRows = data as unknown as DealWithStore[];
+      const dealIds = dealRows.map((deal) => deal.id);
+      const { data: affiliateRows } = dealIds.length
+        ? await supabase
+          .from("affiliate_deals" as any)
+          .select("promoted_deal_id, merchant_name, offer_title, category, raw_data")
+          .in("promoted_deal_id", dealIds)
+        : { data: [] };
+      return attachAffiliateSearchFields(dealRows, (affiliateRows || []) as any[]).filter(
         (d) => d.category && dbNames.some((n) => n.toLowerCase() === d.category!.toLowerCase())
       );
     },
@@ -261,14 +271,6 @@ export default function CategoryDetail() {
 
   const filtered = useMemo(() => {
     let list = [...deals];
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((d) =>
-        d.title.toLowerCase().includes(q) ||
-        d.stores.name.toLowerCase().includes(q) ||
-        (d.description ?? "").toLowerCase().includes(q)
-      );
-    }
     if (selectedStatuses.length) {
       list = list.filter((d) => {
         if (selectedStatuses.includes("expiring") && d.expires_at) {
@@ -283,6 +285,8 @@ export default function CategoryDetail() {
       const cutoff = Date.now() - freshnessDays * 24 * 60 * 60 * 1000;
       list = list.filter((d) => d.last_checked_at && new Date(d.last_checked_at).getTime() >= cutoff);
     }
+
+    if (search) return filterAndRankDeals(list, search);
 
     switch (sortBy) {
       case "sponsored":

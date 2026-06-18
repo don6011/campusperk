@@ -67,6 +67,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const location = useLocation();
   const navigate = useNavigate();
   const { profile, user, signOut } = useAuth();
+  const [globalSearch, setGlobalSearch] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -77,6 +78,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       .eq("role", "admin")
       .then(({ data }) => setIsAdmin(!!(data && data.length > 0)));
   }, [user]);
+
+  useEffect(() => {
+    if (location.pathname === "/explore") {
+      setGlobalSearch(new URLSearchParams(location.search).get("q") ?? "");
+    }
+  }, [location.pathname, location.search]);
+
+  const handleGlobalSearch = (value: string) => {
+    setGlobalSearch(value);
+    const params = new URLSearchParams();
+    if (value.trim()) params.set("q", value);
+    navigate(`/explore${params.toString() ? `?${params.toString()}` : ""}`, { replace: location.pathname === "/explore" });
+  };
 
   const handleLogout = async () => {
     await signOut();
@@ -206,7 +220,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="relative flex-1 max-w-md">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search deals, stores, categories…"
+              value={globalSearch}
+              onChange={(event) => handleGlobalSearch(event.target.value)}
+              placeholder="Search deals, merchants, categories…"
               className="pl-9 glass border-border/40 h-9 text-sm"
             />
           </div>
