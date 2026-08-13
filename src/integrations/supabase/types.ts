@@ -802,6 +802,7 @@ export type Database = {
           created_at: string
           founding_conversion_goal: number
           id: string
+          is_test_fixture: boolean
           merchant_lead_goal: number
           referral_code: string
           reward_balance_cents: number
@@ -816,6 +817,7 @@ export type Database = {
           created_at?: string
           founding_conversion_goal?: number
           id?: string
+          is_test_fixture?: boolean
           merchant_lead_goal?: number
           referral_code: string
           reward_balance_cents?: number
@@ -830,6 +832,7 @@ export type Database = {
           created_at?: string
           founding_conversion_goal?: number
           id?: string
+          is_test_fixture?: boolean
           merchant_lead_goal?: number
           referral_code?: string
           reward_balance_cents?: number
@@ -2985,6 +2988,7 @@ export type Database = {
         }
         Returns: number
       }
+      count_founding_members: { Args: never; Returns: number }
       create_founding_member_reservation: {
         Args: {
           p_campus?: string
