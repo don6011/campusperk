@@ -15,6 +15,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "sonner";
+import { ACTIVE_DEAL_STATUS, fetchActiveDealCount } from "@/lib/deal-counts";
 
 const CATEGORIES = [
   { name: "Clothing", slug: "clothing", icon: ShoppingBag, gradient: "from-pink-500/20 to-rose-500/20", iconColor: "text-pink-400", description: "Student savings on apparel & footwear" },
@@ -71,7 +72,7 @@ export default function Categories() {
       const { data, error } = await supabase
         .from("deals")
         .select("category, stores(name, logo_url)")
-        .eq("status", "active");
+        .eq("status", ACTIVE_DEAL_STATUS);
       if (error) throw error;
       return (data ?? []).map((d: any) => ({
         category: d.category,
@@ -153,7 +154,11 @@ export default function Categories() {
     return { ...cat, count, brands, isSubscribed };
   });
 
-  const totalDeals = dealData.length;
+  // Shared helper — same filter Explore and Account Settings report against.
+  const { data: totalDeals = 0 } = useQuery({
+    queryKey: ["active-deal-count"],
+    queryFn: fetchActiveDealCount,
+  });
 
   return (
     <DashboardLayout>

@@ -159,9 +159,6 @@ const OutboundRedirect = () => {
 
         <div className="flex items-center justify-center gap-2 mb-4">
           <StatusBadge status={deal.status} />
-          {deal.sponsored && (
-            <span className="text-[10px] text-primary bg-primary/10 px-2 py-0.5 rounded-full">Sponsored</span>
-          )}
         </div>
 
         <h1 className="font-display text-xl font-bold mb-1">{deal.title}</h1>

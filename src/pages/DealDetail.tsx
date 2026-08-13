@@ -8,7 +8,7 @@ import { motion } from "framer-motion";
 import {
   ArrowLeft, ExternalLink, Shield, Clock, Crown, Info, GraduationCap,
   CheckCircle2, Tag, Calendar, ShoppingBag, AlertTriangle, Heart,
-  Share2, Copy, Sparkles, Flame, TrendingUp, Bell, BellOff,
+  Share2, Copy, Flame, TrendingUp, Bell, BellOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -259,11 +259,6 @@ export default function DealDetail() {
                 ) : (
                   <Badge className="bg-accent/15 text-accent border-accent/30 text-xs font-semibold gap-1">
                     <Shield className="h-3 w-3" /> Verified
-                  </Badge>
-                )}
-                {deal.sponsored && (
-                  <Badge className="bg-primary/15 text-primary border-primary/30 text-xs gap-1">
-                    <Sparkles className="h-3 w-3" /> Sponsored
                   </Badge>
                 )}
                 {deal.requires_edu_email && (

@@ -23,11 +23,20 @@ export default function AmbassadorLeaderboard() {
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ["public-ambassador-leaderboard"],
     queryFn: async () => {
-      const { data: ambassadors } = await supabase
+      // Validation scripts create ambassador rows against a fixture account.
+      // They are flagged in the database and must never reach the public board.
+      const selectColumns = "user_id, referral_code, university, status";
+      const filtered = await supabase
         .from("ambassadors")
-        .select("user_id, referral_code, university, status")
+        .select(selectColumns)
         .eq("status", "active")
+        .eq("is_test_fixture" as never, false as never)
         .limit(100);
+      // Fall back only while the flag column is still being rolled out.
+      const flagColumnMissing = filtered.error?.message?.includes("is_test_fixture") ?? false;
+      const { data: ambassadors } = flagColumnMissing
+        ? await supabase.from("ambassadors").select(selectColumns).eq("status", "active").limit(100)
+        : filtered;
       if (!ambassadors?.length) return [];
 
       const codes = ambassadors.map((a) => a.referral_code);
