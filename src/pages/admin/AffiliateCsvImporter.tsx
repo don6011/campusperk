@@ -993,7 +993,7 @@ export default function AffiliateCsvImporter() {
             merchant_description: row.merchant_description || null,
             advertiser_id: row.advertiser_id || null,
             website_url: row.website_url || null,
-            status: row.status === "rejected" ? "pending" : row.status,
+            status: (row.status as string) === "rejected" ? "pending" : row.status,
             store_id: storeId,
             partner_id: partnerId,
             metadata: { source_file: row.source_file },

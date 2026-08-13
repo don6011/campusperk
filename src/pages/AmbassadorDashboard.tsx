@@ -203,7 +203,7 @@ export default function AmbassadorDashboard() {
       p_expires_at: null,
       p_sponsored_interest: false,
       p_monthly_budget_cents: null,
-      p_campus_target: ambassador.university || profile?.school || null,
+      p_campus_target: ambassador.university || profile?.campus_name || null,
       p_proof_url: null,
       p_referral_code: ambassador.referral_code,
     });

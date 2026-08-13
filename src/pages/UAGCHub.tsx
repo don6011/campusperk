@@ -17,7 +17,7 @@ export default function UAGCHub() {
     queryFn: async () => {
       let query = supabase
         .from("deals")
-        .select("id, title, category, discount_value, scope, stores(name, logo_url)")
+        .select("id, title, category, discount_value, deal_scope, stores(name, logo_url)")
         .eq("status", "active")
         .limit(8);
       if (profile?.campus_id) query = query.eq("campus_id", profile.campus_id);
