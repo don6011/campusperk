@@ -80,18 +80,9 @@ export default function SignIn() {
             Join 50,000+ students saving hundreds each semester on software, food, tech, and more.
           </motion.p>
 
-          <motion.div variants={fadeUp} custom={3} className="mt-10 grid grid-cols-3 gap-4">
-            {[
-              { value: "200+", label: "Deals" },
-              { value: "$2.4M", label: "Saved" },
-              { value: "98%", label: "Accuracy" },
-            ].map((s) => (
-              <div key={s.label} className="text-center rounded-xl glass inner-glow p-3">
-                <div className="font-display text-xl font-bold text-foreground">{s.value}</div>
-                <div className="text-xs text-muted-foreground">{s.label}</div>
-              </div>
-            ))}
-          </motion.div>
+          {/* Stat grid removed: "$2.4M Saved" and "98% Accuracy" were invented — nothing
+              measures either. "200+ Deals" was a hardcoded string that drifts from the
+              real catalogue rather than reading it, so the block goes as a unit. */}
         </motion.div>
       </div>
 

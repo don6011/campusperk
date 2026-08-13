@@ -22,10 +22,11 @@ export function SavingsCounter({ totalSaved, isPremium }: SavingsCounterProps) {
             <p className="font-display text-2xl font-black text-accent leading-tight">
               ${totalSaved.toFixed(0)} <span className="text-sm font-normal text-muted-foreground">saved so far</span>
             </p>
+            {/* No averaged-savings figure: nothing measures one. */}
             {!isPremium && (
               <p className="text-[11px] text-muted-foreground mt-1 flex items-center gap-1">
                 <Crown className="h-3 w-3 text-gold" />
-                Premium members average <span className="text-gold font-semibold">$280</span> in savings per year.
+                Premium unlocks early access and Premium-only deals.
               </p>
             )}
           </div>

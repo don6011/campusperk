@@ -77,6 +77,7 @@ export default function DealDetail() {
         .from("deals")
         .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, ai_summary, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, stores:store_id(name, logo_url, website_url)")
         .eq("id", dealId!)
+        .eq("is_test_fixture", false)
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -118,6 +119,7 @@ export default function DealDetail() {
               .eq("store_id", deal.store_id)
               .neq("id", dealId!)
               .eq("status", "active")
+              .eq("is_test_fixture", false)
               .limit(4)
           : Promise.resolve({ data: [] }),
         deal?.category
@@ -127,6 +129,7 @@ export default function DealDetail() {
               .eq("category", deal.category)
               .neq("id", dealId!)
               .eq("status", "active")
+              .eq("is_test_fixture", false)
               .limit(6)
           : Promise.resolve({ data: [] }),
       ]);

@@ -72,7 +72,8 @@ export default function Categories() {
       const { data, error } = await supabase
         .from("deals")
         .select("category, stores(name, logo_url)")
-        .eq("status", ACTIVE_DEAL_STATUS);
+        .eq("status", ACTIVE_DEAL_STATUS)
+        .eq("is_test_fixture", false);
       if (error) throw error;
       return (data ?? []).map((d: any) => ({
         category: d.category,

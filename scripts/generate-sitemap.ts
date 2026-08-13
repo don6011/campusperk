@@ -44,6 +44,7 @@ async function fetchDynamicEntries(): Promise<SitemapEntry[]> {
     .from("deals")
     .select("id, updated_at")
     .eq("status", "active")
+    .eq("is_test_fixture", false)
     .order("updated_at", { ascending: false });
 
   if (dealsError) {

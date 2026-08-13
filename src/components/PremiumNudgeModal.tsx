@@ -69,7 +69,7 @@ export function PremiumNudgeModal({ open, onOpenChange, reason = "premium_deal" 
             <div className="text-3xl font-display font-bold text-foreground">
               $4.99<span className="text-base font-normal text-muted-foreground">/mo</span>
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Cancel anytime · Average savings $280/yr</p>
+            <p className="text-xs text-muted-foreground mt-1">Billed monthly · Cancel anytime</p>
           </div>
 
           {/* Benefits */}

@@ -19,6 +19,7 @@ export default function UAGCHub() {
         .from("deals")
         .select("id, title, category, discount_value, deal_scope, stores(name, logo_url)")
         .eq("status", "active")
+        .eq("is_test_fixture", false)
         .limit(8);
       if (profile?.campus_id) query = query.eq("campus_id", profile.campus_id);
       return ((await query).data || []) as any[];
