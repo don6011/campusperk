@@ -56,7 +56,7 @@ export default function PartnerInquiryModal({ open, onOpenChange }: PartnerInqui
     if (!validate()) return;
     setSubmitting(true);
 
-    const { error } = await supabase.from("partner_inquiries" as any).insert({
+    const { error } = await (supabase as any).from("partner_inquiries").insert({
       business_name: form.business_name.trim(),
       contact_name: form.contact_name.trim(),
       email: form.email.trim().toLowerCase(),

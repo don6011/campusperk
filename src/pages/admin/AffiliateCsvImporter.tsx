@@ -709,8 +709,8 @@ export default function AffiliateCsvImporter() {
   const { data: importHistory = [] } = useQuery({
     queryKey: ["affiliate-import-history"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("affiliate_import_logs" as any)
+      const { data, error } = await (supabase as any)
+        .from("affiliate_import_logs")
         .select("id, network, source_file, status, total_rows, approved_rows, published_rows, duplicate_rows, rejected_rows, error_message, created_at, completed_at")
         .order("created_at", { ascending: false })
         .limit(8);
@@ -787,8 +787,8 @@ export default function AffiliateCsvImporter() {
   const detectMerchantDuplicates = async (normalized: NormalizedMerchant[]) => {
     const [{ data: stores }, { data: partners }, { data: affiliateMerchants }] = await Promise.all([
       supabase.from("stores").select("id, name").limit(2000),
-      supabase.from("partners" as any).select("id, partner_name, affiliate_network").limit(2000),
-      supabase.from("affiliate_merchants" as any).select("id, merchant_name, network, advertiser_id").limit(2000),
+      (supabase as any).from("partners").select("id, partner_name, affiliate_network").limit(2000),
+      (supabase as any).from("affiliate_merchants").select("id, merchant_name, network, advertiser_id").limit(2000),
     ]);
     const storeRows = (stores || []) as any[];
     const partnerRows = (partners || []) as any[];
@@ -819,8 +819,8 @@ export default function AffiliateCsvImporter() {
         .from("deals")
         .select("id, title, partner_offer_id, affiliate_link_url, direct_link_url, discount_value, stores(name)")
         .limit(2000),
-      supabase
-        .from("affiliate_deals" as any)
+      (supabase as any)
+        .from("affiliate_deals")
         .select("id, promoted_deal_id, partner_offer_id, merchant_name, offer_title, coupon_code, affiliate_url, destination_url, duplicate_key")
         .limit(2000),
     ]);
@@ -891,8 +891,8 @@ export default function AffiliateCsvImporter() {
     mutationFn: async () => {
       const result: ImportSummary = { imported: 0, skipped: 0, duplicates: 0, errors: 0, replaced: 0, merged: 0, failed: 0, rolledBack: false };
       const { data: authData } = await supabase.auth.getUser();
-      const { data: importLog, error: importLogError } = await supabase
-        .from("affiliate_import_logs" as any)
+      const { data: importLog, error: importLogError } = await (supabase as any)
+        .from("affiliate_import_logs")
         .insert({
           network,
           source_file: sourceFile || null,
@@ -939,15 +939,15 @@ export default function AffiliateCsvImporter() {
           }
 
           const { data: partnerByAdvertiser } = row.advertiser_id
-            ? await supabase
-                .from("partners" as any)
+            ? await (supabase as any)
+                .from("partners")
                 .select("id")
                 .eq("affiliate_network", row.affiliate_network)
                 .eq("advertiser_id", row.advertiser_id)
                 .maybeSingle()
             : { data: null };
           const { data: partnerByName } = !partnerByAdvertiser?.id
-            ? await supabase.from("partners" as any).select("id").eq("partner_name", row.merchant_name).maybeSingle()
+            ? await (supabase as any).from("partners").select("id").eq("partner_name", row.merchant_name).maybeSingle()
             : { data: null };
           const partner = partnerByAdvertiser || partnerByName;
           let partnerId = partner?.id;
@@ -962,24 +962,24 @@ export default function AffiliateCsvImporter() {
             status: row.status === "active" ? "active" : "pending",
           };
           if (partnerId) {
-            if (duplicateMode === "merge" || duplicateMode === "replace") await supabase.from("partners" as any).update(partnerPayload).eq("id", partnerId);
+            if (duplicateMode === "merge" || duplicateMode === "replace") await (supabase as any).from("partners").update(partnerPayload).eq("id", partnerId);
           } else {
-            const { data: newPartner, error } = await supabase.from("partners" as any).insert(partnerPayload).select("id").single();
+            const { data: newPartner, error } = await (supabase as any).from("partners").insert(partnerPayload).select("id").single();
             if (error) throw error;
             partnerId = newPartner.id;
           }
 
           const { data: existingAffiliateMerchantByAdvertiser } = row.advertiser_id
-            ? await supabase
-                .from("affiliate_merchants" as any)
+            ? await (supabase as any)
+                .from("affiliate_merchants")
                 .select("id")
                 .eq("network", row.affiliate_network)
                 .eq("advertiser_id", row.advertiser_id)
                 .maybeSingle()
             : { data: null };
           const { data: existingAffiliateMerchantByName } = !existingAffiliateMerchantByAdvertiser?.id
-            ? await supabase
-                .from("affiliate_merchants" as any)
+            ? await (supabase as any)
+                .from("affiliate_merchants")
                 .select("id")
                 .eq("network", row.affiliate_network)
                 .ilike("merchant_name", row.merchant_name)
@@ -993,14 +993,14 @@ export default function AffiliateCsvImporter() {
             merchant_description: row.merchant_description || null,
             advertiser_id: row.advertiser_id || null,
             website_url: row.website_url || null,
-            status: row.status === "rejected" ? "pending" : row.status,
+            status: (row.status as string) === "rejected" ? "pending" : row.status,
             store_id: storeId,
             partner_id: partnerId,
             metadata: { source_file: row.source_file },
           };
           if (existingAffiliateMerchant?.id) {
             if (duplicateMode === "merge" || duplicateMode === "replace") {
-              const { error } = await supabase.from("affiliate_merchants" as any).update(affiliateMerchantPayload).eq("id", existingAffiliateMerchant.id);
+              const { error } = await (supabase as any).from("affiliate_merchants").update(affiliateMerchantPayload).eq("id", existingAffiliateMerchant.id);
               if (error) throw error;
               result.merged += duplicateMode === "merge" ? 1 : 0;
               result.replaced += duplicateMode === "replace" ? 1 : 0;
@@ -1008,14 +1008,14 @@ export default function AffiliateCsvImporter() {
               result.skipped += 1;
             }
           } else {
-            const { error } = await supabase.from("affiliate_merchants" as any).insert(affiliateMerchantPayload);
+            const { error } = await (supabase as any).from("affiliate_merchants").insert(affiliateMerchantPayload);
             if (error) throw error;
             result.imported += 1;
           }
         }
 
-        await supabase
-          .from("affiliate_import_logs" as any)
+        await (supabase as any)
+          .from("affiliate_import_logs")
           .update({
             status: "published",
             published_rows: result.imported + result.merged + result.replaced,
@@ -1025,8 +1025,8 @@ export default function AffiliateCsvImporter() {
         return result;
       } catch (error) {
         result.failed += 1;
-        await supabase
-          .from("affiliate_import_logs" as any)
+        await (supabase as any)
+          .from("affiliate_import_logs")
           .update({
             status: "failed",
             error_message: error instanceof Error ? error.message : "Merchant import failed",
@@ -1061,8 +1061,8 @@ export default function AffiliateCsvImporter() {
       let importLogId: string | null = null;
 
       try {
-        const { data: importLog, error: importLogError } = await supabase
-          .from("affiliate_import_logs" as any)
+        const { data: importLog, error: importLogError } = await (supabase as any)
+          .from("affiliate_import_logs")
           .insert({
             network,
             source_file: sourceFile || null,
@@ -1110,15 +1110,15 @@ export default function AffiliateCsvImporter() {
           }
 
           const { data: partnerByAdvertiser } = row.advertiser_id
-            ? await supabase
-                .from("partners" as any)
+            ? await (supabase as any)
+                .from("partners")
                 .select("id")
                 .eq("affiliate_network", row.affiliate_network)
                 .eq("advertiser_id", row.advertiser_id)
                 .maybeSingle()
             : { data: null };
           const { data: partnerByName } = !partnerByAdvertiser?.id
-            ? await supabase.from("partners" as any).select("id").eq("partner_name", row.merchant_name).maybeSingle()
+            ? await (supabase as any).from("partners").select("id").eq("partner_name", row.merchant_name).maybeSingle()
             : { data: null };
           const partner = partnerByAdvertiser || partnerByName;
           let partnerId = partner?.id;
@@ -1134,25 +1134,25 @@ export default function AffiliateCsvImporter() {
             status: row.approval_status === "approved" ? "active" : "lead",
           };
           if (partnerId) {
-            await supabase.from("partners" as any).update(partnerPayload).eq("id", partnerId);
+            await (supabase as any).from("partners").update(partnerPayload).eq("id", partnerId);
           } else {
-            const { data: newPartner, error } = await supabase.from("partners" as any).insert(partnerPayload).select("id").single();
+            const { data: newPartner, error } = await (supabase as any).from("partners").insert(partnerPayload).select("id").single();
             if (error) throw error;
             partnerId = newPartner.id;
             createdPartnerIds.push(partnerId);
           }
 
           const { data: existingAffiliateMerchantByAdvertiser } = row.advertiser_id
-            ? await supabase
-                .from("affiliate_merchants" as any)
+            ? await (supabase as any)
+                .from("affiliate_merchants")
                 .select("id")
                 .eq("network", row.affiliate_network)
                 .eq("advertiser_id", row.advertiser_id)
                 .maybeSingle()
             : { data: null };
           const { data: existingAffiliateMerchantByName } = !existingAffiliateMerchantByAdvertiser?.id
-            ? await supabase
-                .from("affiliate_merchants" as any)
+            ? await (supabase as any)
+                .from("affiliate_merchants")
                 .select("id")
                 .eq("network", row.affiliate_network)
                 .ilike("merchant_name", row.merchant_name)
@@ -1175,10 +1175,10 @@ export default function AffiliateCsvImporter() {
             },
           };
           if (affiliateMerchantId) {
-            const { error } = await supabase.from("affiliate_merchants" as any).update(affiliateMerchantPayload).eq("id", affiliateMerchantId);
+            const { error } = await (supabase as any).from("affiliate_merchants").update(affiliateMerchantPayload).eq("id", affiliateMerchantId);
             if (error) throw error;
           } else {
-            const { data: merchant, error } = await supabase.from("affiliate_merchants" as any).insert(affiliateMerchantPayload).select("id").single();
+            const { data: merchant, error } = await (supabase as any).from("affiliate_merchants").insert(affiliateMerchantPayload).select("id").single();
             if (error) throw error;
             affiliateMerchantId = merchant.id;
             createdAffiliateMerchantIds.push(affiliateMerchantId);
@@ -1307,8 +1307,8 @@ export default function AffiliateCsvImporter() {
               import_date: row.import_date,
             },
           };
-          const { data: affiliateDeal, error: affiliateDealError } = await supabase
-            .from("affiliate_deals" as any)
+          const { data: affiliateDeal, error: affiliateDealError } = await (supabase as any)
+            .from("affiliate_deals")
             .insert(affiliateDealPayload)
             .select("id")
             .single();
@@ -1316,8 +1316,8 @@ export default function AffiliateCsvImporter() {
           createdAffiliateDealIds.push(affiliateDeal.id);
         }
         if (importLogId) {
-          await supabase
-            .from("affiliate_import_logs" as any)
+          await (supabase as any)
+            .from("affiliate_import_logs")
             .update({
               status: "published",
               published_rows: result.imported + result.merged + result.replaced,
@@ -1329,14 +1329,14 @@ export default function AffiliateCsvImporter() {
       } catch (error) {
         result.failed += 1;
         result.rolledBack = true;
-        if (createdAffiliateDealIds.length) await supabase.from("affiliate_deals" as any).delete().in("id", createdAffiliateDealIds);
+        if (createdAffiliateDealIds.length) await (supabase as any).from("affiliate_deals").delete().in("id", createdAffiliateDealIds);
         if (createdDealIds.length) await supabase.from("deals").delete().in("id", createdDealIds);
         if (createdPartnerIds.length) await supabase.from("partners").delete().in("id", createdPartnerIds);
         if (createdStoreIds.length) await supabase.from("stores").delete().in("id", createdStoreIds);
-        if (createdAffiliateMerchantIds.length) await supabase.from("affiliate_merchants" as any).delete().in("id", createdAffiliateMerchantIds);
+        if (createdAffiliateMerchantIds.length) await (supabase as any).from("affiliate_merchants").delete().in("id", createdAffiliateMerchantIds);
         if (importLogId) {
-          await supabase
-            .from("affiliate_import_logs" as any)
+          await (supabase as any)
+            .from("affiliate_import_logs")
             .update({
               status: "rolled_back",
               error_message: error instanceof Error ? error.message : "Import failed",

@@ -79,8 +79,8 @@ export default function AffiliateNetworksPage() {
   const { data: networks = [], isLoading: networksLoading } = useQuery({
     queryKey: ["affiliate-networks-command"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("affiliate_networks" as any)
+      const { data, error } = await (supabase as any)
+        .from("affiliate_networks")
         .select("*")
         .order("network_name", { ascending: true });
       if (error) throw error;
@@ -103,8 +103,8 @@ export default function AffiliateNetworksPage() {
   const { data: syncLogs = [] } = useQuery({
     queryKey: ["affiliate-sync-logs"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("affiliate_sync_logs" as any)
+      const { data, error } = await (supabase as any)
+        .from("affiliate_sync_logs")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(25);
@@ -116,8 +116,8 @@ export default function AffiliateNetworksPage() {
   const { data: revenue = [] } = useQuery({
     queryKey: ["affiliate-revenue-command"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("affiliate_revenue" as any)
+      const { data, error } = await (supabase as any)
+        .from("affiliate_revenue")
         .select("network, commission_amount, conversion_date, merchant_id")
         .order("conversion_date", { ascending: false })
         .limit(1000);
@@ -233,7 +233,7 @@ export default function AffiliateNetworksPage() {
         if (error) throw error;
 
         const results = (data as any)?.results || {};
-        await supabase.from("affiliate_sync_logs" as any).insert({
+        await (supabase as any).from("affiliate_sync_logs").insert({
           network_id: network?.id || null,
           source_id: sourceLookup.data?.id || null,
           network: network?.network_name || "All Networks",
@@ -247,10 +247,10 @@ export default function AffiliateNetworksPage() {
           raw_result: data || {},
         });
         if (network) {
-          await supabase.from("affiliate_networks" as any).update({ last_sync_at: new Date().toISOString() }).eq("id", network.id);
+          await (supabase as any).from("affiliate_networks").update({ last_sync_at: new Date().toISOString() }).eq("id", network.id);
         }
       } catch (error) {
-        await supabase.from("affiliate_sync_logs" as any).insert({
+        await (supabase as any).from("affiliate_sync_logs").insert({
           network_id: network?.id || null,
           source_id: sourceLookup.data?.id || null,
           network: network?.network_name || "All Networks",

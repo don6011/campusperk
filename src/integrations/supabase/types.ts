@@ -29,6 +29,7 @@ export type Database = {
           is_premium_user: boolean | null
           is_sponsored: boolean | null
           is_verified_student: boolean | null
+          network: string | null
           referral_code: string | null
           referrer: string | null
           scope: string | null
@@ -48,6 +49,7 @@ export type Database = {
           is_premium_user?: boolean | null
           is_sponsored?: boolean | null
           is_verified_student?: boolean | null
+          network?: string | null
           referral_code?: string | null
           referrer?: string | null
           scope?: string | null
@@ -67,6 +69,7 @@ export type Database = {
           is_premium_user?: boolean | null
           is_sponsored?: boolean | null
           is_verified_student?: boolean | null
+          network?: string | null
           referral_code?: string | null
           referrer?: string | null
           scope?: string | null
@@ -2197,6 +2200,9 @@ export type Database = {
       }
       profiles: {
         Row: {
+          beta_access: boolean
+          beta_access_granted_at: string | null
+          beta_access_source: string | null
           campus_city: string | null
           campus_domain: string | null
           campus_id: string | null
@@ -2232,6 +2238,9 @@ export type Database = {
           verified_at: string | null
         }
         Insert: {
+          beta_access?: boolean
+          beta_access_granted_at?: string | null
+          beta_access_source?: string | null
           campus_city?: string | null
           campus_domain?: string | null
           campus_id?: string | null
@@ -2267,6 +2276,9 @@ export type Database = {
           verified_at?: string | null
         }
         Update: {
+          beta_access?: boolean
+          beta_access_granted_at?: string | null
+          beta_access_source?: string | null
           campus_city?: string | null
           campus_domain?: string | null
           campus_id?: string | null

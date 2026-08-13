@@ -156,8 +156,8 @@ const LandingPage = () => {
   }, [campusQuery]);
 
   useEffect(() => {
-    supabase
-      .from("partners" as any)
+    (supabase as any)
+      .from("partners")
       .select("id, partner_name, logo_url, affiliate_network, active_deals")
       .eq("featured_merchant", true)
       .eq("status", "active")

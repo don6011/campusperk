@@ -149,8 +149,8 @@ export default function ExploreDeals() {
       const dealRows = data as unknown as DealWithStore[];
       const dealIds = dealRows.map((deal) => deal.id);
       const { data: affiliateRows } = dealIds.length
-        ? await supabase
-          .from("affiliate_deals" as any)
+        ? await (supabase as any)
+          .from("affiliate_deals")
           .select("promoted_deal_id, merchant_name, offer_title, category, raw_data")
           .in("promoted_deal_id", dealIds)
         : { data: [] };

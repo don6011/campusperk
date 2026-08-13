@@ -15,9 +15,9 @@ export default function UAGCHub() {
   const { data: campusDeals = [] } = useQuery({
     queryKey: ["uagc-campus-deals", profile?.campus_id, profile?.campus_name],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from("deals")
-        .select("id, title, category, discount_value, scope, stores(name, logo_url)")
+        .select("id, title, category, discount_value, deal_scope, stores(name, logo_url)")
         .eq("status", "active")
         .limit(8);
       if (profile?.campus_id) query = query.eq("campus_id", profile.campus_id);
@@ -28,8 +28,8 @@ export default function UAGCHub() {
   const { data: localMerchants = [] } = useQuery({
     queryKey: ["uagc-local-merchants", profile?.campus_name],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("partners" as any)
+      const { data } = await (supabase as any)
+        .from("partners")
         .select("id, partner_name, logo_url, status, active_deals, featured_merchant")
         .eq("status", "active")
         .order("featured_merchant", { ascending: false })
