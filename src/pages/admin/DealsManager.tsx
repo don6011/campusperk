@@ -136,9 +136,9 @@ const DealsManager = () => {
       const { data: affiliateImports } = dealIds.length
         ? await (supabase as any).from("affiliate_deals").select("promoted_deal_id, merchant_name, merchant_logo, offer_title, affiliate_url, destination_url, discount_value, coupon_code, category, raw_data").in("promoted_deal_id", dealIds)
         : { data: [] };
-      const storeMap = new Map((stores || []).map((store: any) => [store.id, { name: store.name, logo_url: store.logo_url }]));
-      const partnerMap = new Map((partners || []).map((partner: any) => [partner.id, partner]));
-      const affiliateImportMap = new Map((affiliateImports || []).map((row: any) => [row.promoted_deal_id, row.raw_data || {}]));
+      const storeMap = new Map<string, any>((stores || []).map((store: any) => [store.id, { name: store.name, logo_url: store.logo_url }]));
+      const partnerMap = new Map<string, any>((partners || []).map((partner: any) => [partner.id, partner]));
+      const affiliateImportMap = new Map<string, any>((affiliateImports || []).map((row: any) => [row.promoted_deal_id, row.raw_data || {}]));
       const enrichedDeals = deals.map((deal) => ({
         ...deal,
         stores: storeMap.get(deal.store_id) ?? null,

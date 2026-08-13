@@ -15,7 +15,7 @@ export default function UAGCHub() {
   const { data: campusDeals = [] } = useQuery({
     queryKey: ["uagc-campus-deals", profile?.campus_id, profile?.campus_name],
     queryFn: async () => {
-      let query = supabase
+      let query = (supabase as any)
         .from("deals")
         .select("id, title, category, discount_value, deal_scope, stores(name, logo_url)")
         .eq("status", "active")
