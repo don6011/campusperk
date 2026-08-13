@@ -217,6 +217,7 @@ export default function CampusHub() {
               .from("deals")
               .select("id, title, category, discount_value, featured, deal_scope, eligible_campuses, stores(name, logo_url)")
               .eq("status", "active")
+              .eq("is_test_fixture", false)
               .or(`deal_scope.eq.campus,eligible_campuses.cs.{${campus.id}}`)
               .limit(8)
           : Promise.resolve({ data: [] }),

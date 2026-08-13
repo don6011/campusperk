@@ -65,8 +65,8 @@ export default function Premium() {
     const fetchStats = async () => {
       const favRes = await supabase.from("favorites").select("id", { count: "exact", head: true }).eq("user_id", user.id);
       const alertRes = await supabase.from("alert_subscriptions").select("id", { count: "exact", head: true }).eq("user_id", user.id);
-      const dealsRes = await supabase.from("deals").select("id", { count: "exact", head: true }).eq("early_access", true).eq("status", "active");
-      const premRes = await supabase.from("deals").select("id", { count: "exact", head: true }).eq("status", "active");
+      const dealsRes = await supabase.from("deals").select("id", { count: "exact", head: true }).eq("early_access", true).eq("status", "active").eq("is_test_fixture", false);
+      const premRes = await supabase.from("deals").select("id", { count: "exact", head: true }).eq("status", "active").eq("is_test_fixture", false);
       setStats({
         favoritesCount: favRes.count ?? 0,
         alertsCount: alertRes.count ?? 0,
@@ -84,11 +84,11 @@ export default function Premium() {
     const fetchDeals = async () => {
       const earlyRes = await supabase.from("deals")
         .select("id, title, discount_value, discount_type, stores(name, logo_url)")
-        .eq("early_access", true).eq("status", "active")
+        .eq("early_access", true).eq("status", "active").eq("is_test_fixture", false)
         .order("created_at", { ascending: false }).limit(4);
       const premRes = await supabase.from("deals")
         .select("id, title, discount_value, discount_type, stores(name, logo_url)")
-        .eq("status", "active")
+        .eq("status", "active").eq("is_test_fixture", false)
         .order("created_at", { ascending: false }).limit(6);
       setExclusiveDeals(earlyRes.data || []);
       setPremiumOnlyDeals(premRes.data || []);

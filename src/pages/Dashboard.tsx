@@ -4,7 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   ArrowRight, Heart, Clock, Shield, Crown, TrendingUp, Bell, Tag, ChevronRight,
   ExternalLink, Sparkles, AlertTriangle, ShoppingBag, Monitor, Cpu, CreditCard,
-  Utensils, Plane, Lock, BellRing, MapPin, Megaphone, Flame, Zap, Timer, Star,
+  Utensils, Plane, Lock, Megaphone, Flame, Zap, Timer, Star,
   Copy, ChevronLeft, DollarSign, Send, Award, Users, Trophy, Target, Gift, CheckCircle2, Store,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -19,10 +19,6 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
-import { toast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
-import { resolveLocation } from "@/lib/deal-eligibility";
-import { citiesMatch, statesMatch } from "@/lib/state-codes";
 import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
 import { useDealClick } from "@/hooks/use-deal-click";
 import PushNotificationPrompt from "@/components/PushNotificationPrompt";
@@ -32,7 +28,6 @@ import { SurpriseDropCard } from "@/components/dashboard/SurpriseDropCard";
 import { isDealDropVisible } from "@/lib/deal-drops";
 import { useCampusTheme } from "@/contexts/CampusThemeContext";
 import { MissedDealFeedCard } from "@/components/MissedDealFeedCard";
-import { FoundingPremiumBanner } from "@/components/FoundingPremiumBanner";
 import { PremiumNudgeModal } from "@/components/PremiumNudgeModal";
 import { getDealDisplayTitle, getStoredOrComputedQualityScore } from "@/lib/deal-quality";
 
@@ -853,9 +848,6 @@ const categoryIcons = [
   { name: "Travel", icon: Plane, accent: "text-gold" },
 ];
 
-/* ── LOCAL DEAL DISCOVERY ── */
-const requestedLocalBrands = ["Chipotle", "Dutch Bros", "AMC Theatres", "Planet Fitness", "Chick-fil-A"];
-
 /* ── Skeleton ── */
 function SectionSkeleton() {
   return (
@@ -895,6 +887,7 @@ export default function Dashboard() {
         .from("deals")
         .select(selectWithQuality)
         .eq("status", "active")
+        .eq("is_test_fixture", false)
         .order("updated_at", { ascending: false })
         .limit(60);
       const { data, error } = first.error && isQualityColumnMissing(first.error.message)
@@ -902,6 +895,7 @@ export default function Dashboard() {
           .from("deals")
           .select(selectLegacy)
           .eq("status", "active")
+          .eq("is_test_fixture", false)
           .order("updated_at", { ascending: false })
           .limit(60)
         : first;
@@ -919,6 +913,7 @@ export default function Dashboard() {
         .from("deals")
         .select(selectWithQuality)
         .eq("status", "active")
+        .eq("is_test_fixture", false)
         .eq("featured", true)
         .limit(25);
       const { data, error } = first.error && isQualityColumnMissing(first.error.message)
@@ -926,6 +921,7 @@ export default function Dashboard() {
           .from("deals")
           .select(selectLegacy)
           .eq("status", "active")
+          .eq("is_test_fixture", false)
           .eq("featured", true)
           .limit(25)
         : first;
@@ -947,7 +943,7 @@ export default function Dashboard() {
   const { data: categoryCounts = {} } = useQuery({
     queryKey: ["dashboard-category-counts"],
     queryFn: async () => {
-      const { data } = await supabase.from("deals").select("category").eq("status", "active");
+      const { data } = await supabase.from("deals").select("category").eq("status", "active").eq("is_test_fixture", false);
       const counts: Record<string, number> = {};
       data?.forEach((d) => { if (d.category) counts[d.category] = (counts[d.category] || 0) + 1; });
       return counts;
@@ -1023,42 +1019,8 @@ export default function Dashboard() {
       .slice(0, 5);
   }, [deals, isPremium]);
 
-  // Local deals
-  const locationEnabled = profile?.location_opt_in ?? false;
-  const useCampusLocation = profile?.use_campus_location ?? true;
-  const [subscribing, setSubscribing] = useState(false);
-
-  const loc = resolveLocation({
-    useCampusLocation,
-    campusCity: profile?.campus_city ?? null,
-    campusState: profile?.campus_state ?? null,
-    userCity: profile?.user_city ?? null,
-    userState: profile?.user_state ?? null,
-  });
-
-  const localDeals = deals.filter((d: any) => {
-    if (d.deal_scope !== "local" && d.deal_scope !== "regional") return false;
-    if (!locationEnabled) return false;
-    const cities: string[] = d.eligible_cities ?? [];
-    const regions: string[] = d.eligible_regions ?? [];
-    if (cities.length > 0 && loc.city && cities.some((c: string) => citiesMatch(c, loc.city!))) return true;
-    if (regions.length > 0 && loc.state && regions.some((r: string) => statesMatch(r, loc.state!))) return true;
-    if (cities.length === 0 && regions.length === 0) return true;
-    return false;
-  }).slice(0, 10);
-
-  const handleLocalAlert = async () => {
-    if (!user?.id) return;
-    setSubscribing(true);
-    try {
-      await supabase.from("alert_subscriptions").insert({ user_id: user.id, alert_type: "local_deals", categories: [] });
-      toast({ title: "You're subscribed!", description: "We'll notify you when local deals drop near your campus." });
-    } catch {
-      toast({ title: "Already subscribed or error", variant: "destructive" });
-    } finally {
-      setSubscribing(false);
-    }
-  };
+  // Local deals removed: this campus is online-only and local merchants are off
+  // the roadmap permanently, so there is no local rail and no location opt-in CTA.
 
   return (
     <DashboardLayout>
@@ -1078,11 +1040,6 @@ export default function Dashboard() {
 
         {/* PUSH NOTIFICATION PROMPT */}
         <PushNotificationPrompt />
-
-        {/* FOUNDING PREMIUM BANNER — only for free users */}
-        {!isPremium && !isFoundingMember && (
-          <FoundingPremiumBanner onUpgrade={() => handlePremiumNudge("premium_deal")} />
-        )}
 
         {/* DEAL STREAK */}
         <DealStreakWidget />
@@ -1125,13 +1082,15 @@ export default function Dashboard() {
 
         {/* 🔥 TRENDING ON CAMPUS */}
         <motion.section initial="hidden" animate="visible" variants={stagger}>
-          <SectionHeader icon={Flame} title={campusName ? `Trending at ${campusName}` : "Trending on Campus"} linkTo="/explore" iconColor="text-destructive" subtitle={campusName ? `Most clicked deals by ${campusName} students` : "Most clicked deals by students right now"} />
+          {/* Ranked by deal quality score and featured status — not by clicks.
+              The old subtitle claimed click counts this rail never read. */}
+          <SectionHeader icon={Flame} title={campusName ? `Picked for ${campusName}` : "Picked for You"} linkTo="/explore" iconColor="text-destructive" subtitle="Highest-quality active deals in the catalogue right now" />
           {dealsLoading ? (
             <SectionSkeleton />
           ) : (
             <ScrollRow>
               {trendingDeals.map((deal, i) => (
-                <DealCard key={deal.id} deal={deal} index={i} {...sharedProps} badgeLabel="Trending" badgeIcon={Flame} />
+                <DealCard key={deal.id} deal={deal} index={i} {...sharedProps} badgeLabel="Top Rated" badgeIcon={Flame} />
               ))}
             </ScrollRow>
           )}
@@ -1158,56 +1117,6 @@ export default function Dashboard() {
             </ScrollRow>
           </motion.section>
         )}
-
-        {/* LOCAL NEAR CAMPUS */}
-        <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={7}>
-          <SectionHeader icon={MapPin} title="Local Near Campus" iconColor="text-accent" subtitle={locationEnabled ? `Deals near ${loc.city || "you"}${loc.state ? `, ${loc.state}` : ""}` : "Deals from businesses near your campus"} />
-          {!locationEnabled ? (
-            <Card className="border-primary/20 bg-card relative overflow-hidden">
-              <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-primary/5 rounded-full blur-[60px] pointer-events-none" />
-              <CardContent className="relative z-10 p-6 space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <MapPin className="h-6 w-6 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="font-display text-base font-bold text-foreground">Enable Local Deals</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">Deals requested by students near your campus.</p>
-                  </div>
-                  <Button onClick={() => navigate("/settings")} className="gap-2 shrink-0 h-10 px-5 text-sm">
-                    <MapPin className="h-4 w-4" /> Enable
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : localDeals.length === 0 ? (
-            <Card className="border-border/50 bg-card">
-              <CardContent className="p-6 space-y-4">
-                <p className="text-xs text-muted-foreground">Deals requested by students near your campus.</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {requestedLocalBrands.map(brand => (
-                    <Badge key={brand} variant="outline" className="text-xs text-foreground border-border">{brand}</Badge>
-                  ))}
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  <Link to="/partners/request">
-                    <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9"><MapPin className="h-3.5 w-3.5" /> Request Local Deal</Button>
-                  </Link>
-                  <Button variant="outline" size="sm" className="gap-1.5 text-xs h-9" onClick={handleLocalAlert} disabled={subscribing}>
-                    {subscribing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <BellRing className="h-3.5 w-3.5" />}
-                    Notify Me When Available
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <ScrollRow>
-              {localDeals.map((deal, i) => (
-                <DealCard key={deal.id} deal={deal} index={i} {...sharedProps} badgeLabel="Local" badgeIcon={MapPin} />
-              ))}
-            </ScrollRow>
-          )}
-        </motion.section>
 
         {/* MISSED PREMIUM DEALS — free users only */}
         {missedDeals.length > 0 && !isPremium && (

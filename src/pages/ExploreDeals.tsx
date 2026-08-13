@@ -54,13 +54,25 @@ const FRESHNESS = [
   { value: 7, label: "Last 7 days" },
   { value: 30, label: "Last 30 days" },
 ];
-const SORT_OPTIONS = [
+/**
+ * `deals.last_checked_at` was populated by CSV imports, not by anyone checking a
+ * deal, so every surface that ranks or filters on it is sorting by an import
+ * timestamp while telling the student it means "verified". The sort option and
+ * the two freshness controls stay in the code but are hidden until a real
+ * verification pass writes that column.
+ */
+const SHOW_VERIFICATION_FRESHNESS_UI = false;
+
+const ALL_SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
   { value: "popular", label: "Most Popular" },
   { value: "expiring", label: "Ending Soon" },
   { value: "discount", label: "Biggest Discount" },
   { value: "verified", label: "Recently Verified" },
 ];
+const SORT_OPTIONS = ALL_SORT_OPTIONS.filter(
+  (option) => SHOW_VERIFICATION_FRESHNESS_UI || option.value !== "verified",
+);
 const PAGE_SIZE = 9;
 
 function discountNum(deal: DealWithStore) {
@@ -141,9 +153,10 @@ export default function ExploreDeals() {
       const first = await supabase
         .from("deals")
         .select(selectWithQuality)
+        .eq("is_test_fixture", false)
         .order("created_at", { ascending: false });
       const { data, error } = first.error && isQualityColumnMissing(first.error.message)
-        ? await supabase.from("deals").select(selectLegacy).order("created_at", { ascending: false })
+        ? await supabase.from("deals").select(selectLegacy).eq("is_test_fixture", false).order("created_at", { ascending: false })
         : first;
       if (error) throw error;
       const dealRows = data as unknown as DealWithStore[];
@@ -404,17 +417,21 @@ export default function ExploreDeals() {
                 <Checkbox id="premium" checked={premiumOnly} onCheckedChange={(v) => { setPremiumOnly(!!v); setVisibleCount(PAGE_SIZE); }} />
                 <Label htmlFor="premium" className="text-xs text-muted-foreground flex items-center gap-1"><Crown className="h-3.5 w-3.5" /> Premium only</Label>
               </div>
-              <div className="flex items-center gap-2">
-                <Checkbox id="verified24h" checked={verifiedRecently} onCheckedChange={(v) => { setVerifiedRecently(!!v); setVisibleCount(PAGE_SIZE); }} />
-                <Label htmlFor="verified24h" className="text-xs text-muted-foreground flex items-center gap-1"><Sparkles className="h-3.5 w-3.5" /> Verified within 24 hours</Label>
-              </div>
-              <Select value={freshnessDays?.toString() ?? "all"} onValueChange={(v) => { setFreshnessDays(v === "all" ? null : Number(v)); setVisibleCount(PAGE_SIZE); }}>
-                <SelectTrigger className="w-[160px] h-8 text-xs bg-secondary border-border"><Clock className="h-3 w-3 mr-1.5 text-muted-foreground" /><SelectValue placeholder="Freshness" /></SelectTrigger>
-                <SelectContent className="bg-card border-border z-50">
-                  <SelectItem value="all">Any freshness</SelectItem>
-                  {FRESHNESS.map((f) => (<SelectItem key={f.value} value={f.value.toString()}>{f.label}</SelectItem>))}
-                </SelectContent>
-              </Select>
+              {SHOW_VERIFICATION_FRESHNESS_UI && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <Checkbox id="verified24h" checked={verifiedRecently} onCheckedChange={(v) => { setVerifiedRecently(!!v); setVisibleCount(PAGE_SIZE); }} />
+                    <Label htmlFor="verified24h" className="text-xs text-muted-foreground flex items-center gap-1"><Sparkles className="h-3.5 w-3.5" /> Verified within 24 hours</Label>
+                  </div>
+                  <Select value={freshnessDays?.toString() ?? "all"} onValueChange={(v) => { setFreshnessDays(v === "all" ? null : Number(v)); setVisibleCount(PAGE_SIZE); }}>
+                    <SelectTrigger className="w-[160px] h-8 text-xs bg-secondary border-border"><Clock className="h-3 w-3 mr-1.5 text-muted-foreground" /><SelectValue placeholder="Freshness" /></SelectTrigger>
+                    <SelectContent className="bg-card border-border z-50">
+                      <SelectItem value="all">Any freshness</SelectItem>
+                      {FRESHNESS.map((f) => (<SelectItem key={f.value} value={f.value.toString()}>{f.label}</SelectItem>))}
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
             </div>
             {hasFilters && (
               <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1.5" onClick={resetFilters}><RotateCcw className="h-3 w-3" /> Reset filters</Button>

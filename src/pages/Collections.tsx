@@ -30,6 +30,7 @@ export default function Collections() {
         .from("deals")
         .select("id, title, description, category, created_at, stores:store_id(name, logo_url)")
         .eq("status", "active")
+        .eq("is_test_fixture", false)
         .order("created_at", { ascending: false })
         .limit(200);
       if (error) throw error;

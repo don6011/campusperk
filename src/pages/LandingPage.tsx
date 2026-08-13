@@ -174,6 +174,7 @@ const LandingPage = () => {
         .from("deals")
         .select(selectWithQuality)
         .eq("status", "active")
+        .eq("is_test_fixture", false)
         .order("created_at", { ascending: false })
         .limit(120);
 
@@ -182,6 +183,7 @@ const LandingPage = () => {
           .from("deals")
           .select(selectLegacy)
           .eq("status", "active")
+          .eq("is_test_fixture", false)
           .order("created_at", { ascending: false })
           .limit(120);
         setHomepageDeals(((fallback.data || []) as any[]).filter(isHomepageQualityEligible));
@@ -241,7 +243,7 @@ const LandingPage = () => {
     setCampusQuery(campus.campus_name ?? campus.domain_root);
     setCampuses([]);
     setSearchLoading(true);
-    const { count } = await supabase.from("deals").select("id", { count: "exact", head: true }).eq("status", "active");
+    const { count } = await supabase.from("deals").select("id", { count: "exact", head: true }).eq("status", "active").eq("is_test_fixture", false);
     setMatchedDealsCount(count ?? 0);
     setSearchLoading(false);
   };
@@ -400,7 +402,7 @@ const LandingPage = () => {
               <motion.h1 variants={fadeUp} custom={0.5} className="font-display text-4xl sm:text-5xl md:text-6xl font-bold leading-[1.08] tracking-tight">
                 Save More. Spend Less.{" "}
                 <span className="bg-gradient-to-r from-emerald-300 via-foreground to-primary bg-clip-text text-transparent">
-                  Student Discounts Verified Daily.
+                  Every deal checked by hand before it's listed.
                 </span>
               </motion.h1>
               <motion.p variants={fadeUp} custom={1} className="mt-6 text-base md:text-lg text-muted-foreground leading-relaxed max-w-md">
@@ -558,7 +560,7 @@ const LandingPage = () => {
         <div className="container mx-auto px-4">
           <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} className="text-center">
             <motion.h2 variants={fadeUp} custom={0} className="font-display text-2xl md:text-3xl font-bold text-foreground mb-2">
-              Save More. Spend Less. Student Discounts Verified Daily.
+              Save More. Spend Less. Every deal checked by hand before it's listed.
             </motion.h2>
             <motion.p variants={fadeUp} custom={1} className="text-sm text-muted-foreground mb-10">
               Software, tech, food, travel, and local deals curated for verified students nationwide.

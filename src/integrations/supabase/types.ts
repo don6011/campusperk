@@ -1285,6 +1285,7 @@ export type Database = {
           geo_radius_miles: number | null
           id: string
           is_affiliate: boolean
+          is_test_fixture: boolean
           is_surprise_drop: boolean
           last_checked_at: string | null
           partner_id: string | null
@@ -1331,6 +1332,7 @@ export type Database = {
           geo_radius_miles?: number | null
           id?: string
           is_affiliate?: boolean
+          is_test_fixture?: boolean
           is_surprise_drop?: boolean
           last_checked_at?: string | null
           partner_id?: string | null
@@ -1377,6 +1379,7 @@ export type Database = {
           geo_radius_miles?: number | null
           id?: string
           is_affiliate?: boolean
+          is_test_fixture?: boolean
           is_surprise_drop?: boolean
           last_checked_at?: string | null
           partner_id?: string | null

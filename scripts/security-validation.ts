@@ -165,7 +165,16 @@ async function findDeal(query: string): Promise<DealCandidate | null> {
   return body[0] as DealCandidate;
 }
 
-async function findDealByTitle(title: string): Promise<DealCandidate | null> {
+// Fixtures are selected by `deals.is_test_fixture`, the flag the truth-pass-2
+// migration sets on everything owned by `CampusPerk Security Test Store`. The
+// public catalogue filters that same flag out, so these rows stay testable
+// without being counted as inventory or shown to a student. Title is kept as a
+// fallback for databases where the migration has not been applied yet.
+async function findFixtureDeal(title: string): Promise<DealCandidate | null> {
+  const byFlag = await findDeal(
+    `is_test_fixture=eq.true&title=eq.${encodeURIComponent(title)}`,
+  );
+  if (byFlag) return byFlag;
   return findDeal(`title=eq.${encodeURIComponent(title)}`);
 }
 
@@ -198,7 +207,7 @@ async function testRedirectDeal(name: string, deal: DealCandidate, expectedBlock
 }
 
 async function testFixtureRedirect(name: string, title: string, fallbackQuery: string, expectedBlockedReason: string): Promise<ValidationResult> {
-  const deal = (await findDealByTitle(title)) || (await findDeal(fallbackQuery));
+  const deal = (await findFixtureDeal(title)) || (await findDeal(fallbackQuery));
   if (!deal) return skip(name, `No fixture or fallback deal exists. Expected fixture title: ${title}`);
   return testRedirectDeal(name, deal, expectedBlockedReason);
 }

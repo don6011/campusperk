@@ -43,6 +43,7 @@ export default function CollectionDetail() {
         .from("deals")
         .select("id, store_id, title, description, discount_value, category, featured, created_at, stores:store_id(id, name, logo_url)")
         .eq("status", "active")
+        .eq("is_test_fixture", false)
         .order("featured", { ascending: false })
         .order("created_at", { ascending: false })
         .limit(250);
