@@ -136,6 +136,262 @@ export type Database = {
           },
         ]
       }
+      affiliate_deals: {
+        Row: {
+          affiliate_url: string
+          approved_at: string | null
+          approved_by: string | null
+          category: string | null
+          claim_count: number
+          click_count: number
+          conversion_count: number
+          coupon_code: string | null
+          created_at: string
+          destination_url: string | null
+          discount_value: string | null
+          duplicate_key: string | null
+          end_date: string | null
+          external_id: string | null
+          id: string
+          imported_at: string
+          merchant_id: string
+          merchant_logo: string | null
+          merchant_name: string
+          network: string
+          offer_description: string | null
+          offer_title: string
+          partner_offer_id: string | null
+          promoted_deal_id: string | null
+          published_at: string | null
+          published_by: string | null
+          raw_data: Json
+          save_count: number
+          source_file: string | null
+          source_row_number: number | null
+          start_date: string | null
+          status: string
+          unpublished_at: string | null
+          unpublished_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          affiliate_url: string
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string | null
+          claim_count?: number
+          click_count?: number
+          conversion_count?: number
+          coupon_code?: string | null
+          created_at?: string
+          destination_url?: string | null
+          discount_value?: string | null
+          duplicate_key?: string | null
+          end_date?: string | null
+          external_id?: string | null
+          id?: string
+          imported_at?: string
+          merchant_id: string
+          merchant_logo?: string | null
+          merchant_name: string
+          network: string
+          offer_description?: string | null
+          offer_title: string
+          partner_offer_id?: string | null
+          promoted_deal_id?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          raw_data?: Json
+          save_count?: number
+          source_file?: string | null
+          source_row_number?: number | null
+          start_date?: string | null
+          status?: string
+          unpublished_at?: string | null
+          unpublished_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          affiliate_url?: string
+          approved_at?: string | null
+          approved_by?: string | null
+          category?: string | null
+          claim_count?: number
+          click_count?: number
+          conversion_count?: number
+          coupon_code?: string | null
+          created_at?: string
+          destination_url?: string | null
+          discount_value?: string | null
+          duplicate_key?: string | null
+          end_date?: string | null
+          external_id?: string | null
+          id?: string
+          imported_at?: string
+          merchant_id?: string
+          merchant_logo?: string | null
+          merchant_name?: string
+          network?: string
+          offer_description?: string | null
+          offer_title?: string
+          partner_offer_id?: string | null
+          promoted_deal_id?: string | null
+          published_at?: string | null
+          published_by?: string | null
+          raw_data?: Json
+          save_count?: number
+          source_file?: string | null
+          source_row_number?: number | null
+          start_date?: string | null
+          status?: string
+          unpublished_at?: string | null
+          unpublished_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_deals_merchant_id_fkey"
+            columns: ["merchant_id"]
+            isOneToOne: false
+            referencedRelation: "affiliate_merchants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_deals_partner_offer_id_fkey"
+            columns: ["partner_offer_id"]
+            isOneToOne: false
+            referencedRelation: "partner_offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_deals_promoted_deal_id_fkey"
+            columns: ["promoted_deal_id"]
+            isOneToOne: false
+            referencedRelation: "deals"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      affiliate_import_logs: {
+        Row: {
+          approved_rows: number
+          completed_at: string | null
+          created_at: string
+          duplicate_rows: number
+          error_message: string | null
+          id: string
+          metadata: Json
+          network: string
+          preview_rows: number
+          published_rows: number
+          rejected_rows: number
+          source_file: string | null
+          status: string
+          total_rows: number
+          uploaded_by: string | null
+        }
+        Insert: {
+          approved_rows?: number
+          completed_at?: string | null
+          created_at?: string
+          duplicate_rows?: number
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          network: string
+          preview_rows?: number
+          published_rows?: number
+          rejected_rows?: number
+          source_file?: string | null
+          status?: string
+          total_rows?: number
+          uploaded_by?: string | null
+        }
+        Update: {
+          approved_rows?: number
+          completed_at?: string | null
+          created_at?: string
+          duplicate_rows?: number
+          error_message?: string | null
+          id?: string
+          metadata?: Json
+          network?: string
+          preview_rows?: number
+          published_rows?: number
+          rejected_rows?: number
+          source_file?: string | null
+          status?: string
+          total_rows?: number
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
+      affiliate_merchants: {
+        Row: {
+          advertiser_id: string | null
+          created_at: string
+          external_id: string | null
+          id: string
+          merchant_description: string | null
+          merchant_logo: string | null
+          merchant_name: string
+          metadata: Json
+          network: string
+          partner_id: string | null
+          status: string
+          store_id: string | null
+          updated_at: string
+          website_url: string | null
+        }
+        Insert: {
+          advertiser_id?: string | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          merchant_description?: string | null
+          merchant_logo?: string | null
+          merchant_name: string
+          metadata?: Json
+          network: string
+          partner_id?: string | null
+          status?: string
+          store_id?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Update: {
+          advertiser_id?: string | null
+          created_at?: string
+          external_id?: string | null
+          id?: string
+          merchant_description?: string | null
+          merchant_logo?: string | null
+          merchant_name?: string
+          metadata?: Json
+          network?: string
+          partner_id?: string | null
+          status?: string
+          store_id?: string | null
+          updated_at?: string
+          website_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "affiliate_merchants_partner_id_fkey"
+            columns: ["partner_id"]
+            isOneToOne: false
+            referencedRelation: "partners"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "affiliate_merchants_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       affiliate_networks: {
         Row: {
           api_connected: boolean
@@ -1941,11 +2197,6 @@ export type Database = {
       }
       profiles: {
         Row: {
-          beta_access: boolean
-          beta_access_granted_at: string | null
-          beta_access_granted_by: string | null
-          beta_access_notes: string | null
-          beta_access_source: string | null
           campus_city: string | null
           campus_domain: string | null
           campus_id: string | null
@@ -1981,11 +2232,6 @@ export type Database = {
           verified_at: string | null
         }
         Insert: {
-          beta_access?: boolean
-          beta_access_granted_at?: string | null
-          beta_access_granted_by?: string | null
-          beta_access_notes?: string | null
-          beta_access_source?: string | null
           campus_city?: string | null
           campus_domain?: string | null
           campus_id?: string | null
@@ -2021,11 +2267,6 @@ export type Database = {
           verified_at?: string | null
         }
         Update: {
-          beta_access?: boolean
-          beta_access_granted_at?: string | null
-          beta_access_granted_by?: string | null
-          beta_access_notes?: string | null
-          beta_access_source?: string | null
           campus_city?: string | null
           campus_domain?: string | null
           campus_id?: string | null
@@ -2680,7 +2921,21 @@ export type Database = {
         Args: { p_submission_id: string }
         Returns: Json
       }
+      assign_user_campus: {
+        Args: {
+          p_admin_override?: boolean
+          p_campus_id?: string
+          p_role?: Database["public"]["Enums"]["campus_role"]
+          p_target_user_id?: string
+        }
+        Returns: Json
+      }
       award_campus_points: { Args: { p_action: string }; Returns: undefined }
+      campus_slugify: { Args: { p_value: string }; Returns: string }
+      canonical_campus_slug: {
+        Args: { p_campus_name?: string; p_domain_root: string }
+        Returns: string
+      }
       check_domain_abuse: {
         Args: {
           p_domain: string
