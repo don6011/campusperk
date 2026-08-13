@@ -156,6 +156,8 @@ async function createAmbassadorFixture(userId: string): Promise<AmbassadorRecord
         referral_code: validationReferralCode,
         status: "active",
         approved_at: new Date().toISOString(),
+        // Keeps validation runs out of the public ambassador leaderboard.
+        is_test_fixture: true,
       }),
     },
     adminToken,
@@ -334,6 +336,8 @@ async function main() {
             referral_code: `APP${String(runId).slice(-9)}`,
             status: "active",
             approved_at: new Date().toISOString(),
+            // Keeps validation runs out of the public ambassador leaderboard.
+            is_test_fixture: true,
           }),
         },
         adminToken,

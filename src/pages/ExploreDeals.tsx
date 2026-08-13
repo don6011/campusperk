@@ -26,11 +26,11 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
-import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealRow";
 import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
 import { useDealClaimCounts, useClaimDeal } from "@/hooks/use-deal-claims";
 import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
 import { getDealDisplayTitle, getStoredOrComputedQualityScore } from "@/lib/deal-quality";
+import { fetchActiveDealCount } from "@/lib/deal-counts";
 
 interface DealWithStore {
   id: string; title: string; display_title?: string | null; deal_quality_score?: number | null; description: string | null; discount_type: string;
@@ -85,7 +85,6 @@ function trendingBadge(deal: DealWithStore, rank: number) {
   if (deal.expires_at && daysUntil(deal.expires_at) <= 3) return { label: "Ending Soon", icon: <Timer className="h-3 w-3" />, className: "bg-destructive/15 text-destructive border-destructive/30" };
   if (rank === 0) return { label: "Featured", icon: <Flame className="h-3 w-3" />, className: "bg-destructive/15 text-destructive border-destructive/30" };
   if (deal.featured) return { label: "Featured", icon: <Zap className="h-3 w-3" />, className: "bg-gold/15 text-gold border-gold/30" };
-  if (deal.sponsored) return { label: "Sponsored", icon: <Sparkles className="h-3 w-3" />, className: "bg-primary/15 text-primary border-primary/30" };
   return { label: "Active Deal", icon: <TrendingUp className="h-3 w-3" />, className: "bg-primary/15 text-primary border-primary/30" };
 }
 
@@ -195,26 +194,19 @@ export default function ExploreDeals() {
 
   const hasFilters = search || selectedCategories.length || selectedStatuses.length || selectedScope !== "all" || eduOnly || premiumOnly || freshnessDays || verifiedRecently;
 
+  // Platform total comes from the shared helper so Explore, Categories and
+  // Account Settings can never disagree about how many deals CampusPerk has.
+  const { data: activeDealTotal = 0 } = useQuery({
+    queryKey: ["active-deal-count"],
+    queryFn: fetchActiveDealCount,
+  });
+
   const trendingDeals = useMemo(() => {
     return [...deals]
       .filter((d) => d.status === "active" && (d.featured || d.sponsored || (claimCountsMap?.get(d.id)?.total ?? 0) > 0))
       .sort((a, b) => engagementScore(b, claimCountsMap) - engagementScore(a, claimCountsMap) || getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a))
       .slice(0, 8);
   }, [deals, claimCountsMap]);
-
-  const sponsoredDeals = useMemo(() => {
-    return deals.filter((d) => {
-      if (!isSponsoredActive(d) || d.status !== "active") return false;
-      if (selectedScope === "local" && (d as any).deal_scope !== "local") return false;
-      if (selectedScope === "regional" && (d as any).deal_scope !== "regional") return false;
-      return true;
-    }).sort((a, b) =>
-      ((b as any).sponsor_priority ?? 0) - ((a as any).sponsor_priority ?? 0) ||
-      (b.sponsor_tier ?? 0) - (a.sponsor_tier ?? 0) ||
-      (new Date((a as any).sponsor_start_at ?? 0).getTime()) - (new Date((b as any).sponsor_start_at ?? 0).getTime()) ||
-      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-    );
-  }, [deals, selectedScope]);
 
   const scrollCarousel = (dir: "left" | "right") => {
     if (!carouselRef.current) return;
@@ -293,7 +285,12 @@ export default function ExploreDeals() {
       <div className="max-w-7xl mx-auto space-y-6">
         <div>
           <h1 className="font-display text-3xl font-bold text-foreground">Explore Student Deals</h1>
-          <p className="text-sm text-muted-foreground mt-1">{filtered.length} deal{filtered.length !== 1 ? "s" : ""} available</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {hasFilters
+              ? `${filtered.length} of ${activeDealTotal} deals`
+              : `${activeDealTotal} deal${activeDealTotal !== 1 ? "s" : ""}`}{" "}
+            available
+          </p>
         </div>
 
         {/* Trending carousel */}
@@ -346,18 +343,6 @@ export default function ExploreDeals() {
               </div>
             </div>
           </div>
-        )}
-
-        {/* Sponsored Placements */}
-        {sponsoredDeals.length > 0 && (selectedScope === "local" || selectedScope === "regional") && (
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
-            <SponsoredDealRow deals={sponsoredDeals} label="Sponsored" scope={selectedScope} />
-          </motion.div>
-        )}
-        {sponsoredDeals.length > 0 && selectedScope !== "local" && selectedScope !== "regional" && (
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1}>
-            <SponsoredDealRow deals={sponsoredDeals} scope={selectedScope !== "all" ? selectedScope : undefined} />
-          </motion.div>
         )}
 
         {/* Search + Sort */}

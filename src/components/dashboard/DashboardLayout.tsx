@@ -11,8 +11,8 @@ import {
   Crown,
   Settings,
   Search,
-  Menu,
-  X,
+  PanelLeftClose,
+  PanelLeftOpen,
   ChevronDown,
   LogOut,
   User,
@@ -211,9 +211,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             variant="ghost"
             size="icon"
             className="shrink-0 text-muted-foreground"
+            aria-label={sidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+            aria-expanded={sidebarOpen}
             onClick={() => setSidebarOpen(!sidebarOpen)}
           >
-            {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {/* A bare ✕ here read as a stray "close" control on every screen.
+                Panel icons say what the button actually does. */}
+            {sidebarOpen ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeftOpen className="h-5 w-5" />}
           </Button>
 
           {/* Search */}

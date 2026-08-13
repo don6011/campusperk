@@ -27,6 +27,7 @@ import { toStateCode, STATE_MAP } from "@/lib/state-codes";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Check, ChevronsUpDown } from "lucide-react";
+import { fetchActiveDealCount } from "@/lib/deal-counts";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -688,15 +689,10 @@ function LocationOptInCard() {
 }
 
 function AccountStatsSection({ userId }: { userId?: string }) {
-  const { data: deals = [] } = useQuery({
-    queryKey: ["account-stats-deals"],
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("deals")
-        .select("id, category, discount_value, stores(name)")
-        .eq("status", "active");
-      return data || [];
-    },
+  // Shared helper — same filter Explore and Categories report against.
+  const { data: activeDealTotal = 0 } = useQuery({
+    queryKey: ["active-deal-count"],
+    queryFn: fetchActiveDealCount,
   });
 
   const { data: favorites = [] } = useQuery({
@@ -727,7 +723,7 @@ function AccountStatsSection({ userId }: { userId?: string }) {
   const dealsRedeemed = uniqueRedeemed.size;
 
   const stats = [
-    { label: "Active Deals", value: `${deals.length}`, icon: Tag, color: "text-primary" },
+    { label: "Active Deals", value: `${activeDealTotal}`, icon: Tag, color: "text-primary" },
     { label: "Deals Redeemed", value: `${dealsRedeemed}`, icon: ShoppingBag, color: "text-accent" },
     { label: "Savings Tracking", value: "Preview", icon: DollarSign, color: "text-accent" },
     { label: "Your Favorites", value: `${favorites.length}`, icon: Heart, color: "text-destructive" },

@@ -21,7 +21,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
 import { toast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
-import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealRow";
 import { resolveLocation } from "@/lib/deal-eligibility";
 import { citiesMatch, statesMatch } from "@/lib/state-codes";
 import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
@@ -29,7 +28,6 @@ import { useDealClick } from "@/hooks/use-deal-click";
 import PushNotificationPrompt from "@/components/PushNotificationPrompt";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { usePageTitle } from "@/hooks/use-page-title";
-import { NextDropWidget } from "@/components/dashboard/NextDropWidget";
 import { SurpriseDropCard } from "@/components/dashboard/SurpriseDropCard";
 import { isDealDropVisible } from "@/lib/deal-drops";
 import { useCampusTheme } from "@/contexts/CampusThemeContext";
@@ -164,7 +162,6 @@ function socialProof(deal: DealRow, campusName?: string | null): { text: string;
   const campus = campusName || "campus";
   if (deal.expires_at && daysUntil(deal.expires_at) <= 3) return { text: "Ends soon", icon: Timer };
   if (deal.featured) return { text: `Featured for ${campus} students`, icon: Flame };
-  if (deal.sponsored) return { text: "Sponsored student offer", icon: Zap };
   return { text: "Verified student deal", icon: Flame };
 }
 
@@ -255,9 +252,6 @@ function HeroDealSection({ deal, onUpgrade, isPremium, userId, onGetDeal }: {
             <Badge className="bg-gold/10 text-gold border-gold/20 text-[10px] font-bold gap-1 px-2 py-0.5">
               <Timer className="h-2.5 w-2.5" /> Limited Time
             </Badge>
-            {deal.sponsored && (
-              <Badge variant="outline" className="text-[10px] text-muted-foreground border-border">Sponsored</Badge>
-            )}
           </div>
 
           <div className="flex flex-col lg:flex-row lg:items-center gap-6">
@@ -500,8 +494,11 @@ type CampusActivityItem = {
   detail: string;
   amount?: string;
   createdAt: string;
-  source: "live" | "seed";
 };
+
+/** A feed with only one or two events is noise, not social proof. */
+const CAMPUS_ACTIVITY_MIN_EVENTS = 3;
+const CAMPUS_ACTIVITY_WINDOW_DAYS = 7;
 
 function campusLabel(value?: string | null): string {
   const campus = (value || "Campus").trim();
@@ -518,13 +515,15 @@ function firstNameOnly(name?: string | null, fallback = "Student"): string {
   return clean || fallback;
 }
 
+/**
+ * Only returns a dollar figure the deal actually states. A percentage discount
+ * says nothing about dollars saved, so it produces no amount rather than an
+ * invented one.
+ */
 function savingsAmount(value?: string | null): string | undefined {
   if (!value) return undefined;
   const dollars = value.match(/\$\s?(\d[\d,]*(?:\.\d+)?)/);
-  if (dollars) return dollars[0].replace(/\s+/g, "");
-  const percent = value.match(/(\d{1,3})\s*%/);
-  if (percent) return `$${Math.max(25, Number(percent[1]) * 3)}`;
-  return undefined;
+  return dollars ? dollars[0].replace(/\s+/g, "") : undefined;
 }
 
 function activityText(item: CampusActivityItem): string {
@@ -538,13 +537,25 @@ function CampusActivityFeed() {
     queryKey: ["dashboard-campus-activity-feed"],
     refetchInterval: 60_000,
     queryFn: async () => {
+      const since = new Date(Date.now() - CAMPUS_ACTIVITY_WINDOW_DAYS * 86_400_000).toISOString();
       const { data: claims } = await supabase
         .from("deal_claims")
-        .select("id, user_id, claimed_at, campus_domains(campus_name), deals(title, discount_value, stores(name))")
+        .select("id, user_id, deal_id, claimed_at, campus_domains(campus_name), deals(title, discount_value, stores(name))")
+        .gte("claimed_at", since)
         .order("claimed_at", { ascending: false })
-        .limit(8);
+        .limit(50);
 
-      const rows = (claims || []) as any[];
+      // One row per user+deal — the same student claiming the same deal twice is
+      // one piece of activity, not two.
+      const seen = new Set<string>();
+      const rows = ((claims || []) as any[]).filter((row) => {
+        if (!row.user_id || !row.deal_id) return false;
+        const key = `${row.user_id}:${row.deal_id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
       const userIds = Array.from(new Set(rows.map((row) => row.user_id).filter(Boolean)));
       let profileMap = new Map<string, { name: string | null; campus_name: string | null }>();
 
@@ -568,13 +579,16 @@ function CampusActivityFeed() {
           detail: row.deals?.stores?.name || dealTitle,
           amount,
           createdAt: row.claimed_at,
-          source: "live",
         };
       });
 
       return liveItems.slice(0, 6);
     },
   });
+
+  // Below the threshold there is nothing honest to show, so the section is hidden
+  // rather than padded out with placeholder rows or an empty-state pitch.
+  if (!isLoading && activities.length < CAMPUS_ACTIVITY_MIN_EVENTS) return null;
 
   return (
     <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={2}>
@@ -597,30 +611,17 @@ function CampusActivityFeed() {
             <div className="grid gap-2 sm:grid-cols-2">
               {Array.from({ length: 4 }).map((_, index) => <Skeleton key={index} className="h-12 rounded-xl" />)}
             </div>
-          ) : activities.length > 0 ? (
+          ) : (
             <div className="grid gap-2 sm:grid-cols-2">
               {activities.map((item) => (
                 <div key={item.id} className="flex items-center gap-3 rounded-xl border border-border/50 bg-background/55 p-3">
                   <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-500" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-semibold text-foreground">{activityText(item)}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {timeAgo(item.createdAt)} {item.source === "seed" ? "from launch activity" : "from recent claims"}
-                    </p>
+                    <p className="text-[11px] text-muted-foreground">{timeAgo(item.createdAt)} from recent claims</p>
                   </div>
                 </div>
               ))}
-            </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-border bg-background/50 p-5 text-center">
-              <CheckCircle2 className="mx-auto mb-3 h-8 w-8 text-muted-foreground/50" />
-              <p className="text-sm font-semibold text-foreground">Beta Preview: no campus activity yet</p>
-              <p className="mx-auto mt-1 max-w-md text-xs text-muted-foreground">
-                Real claims will appear here as students start using CampusPerk. Claim a deal or invite classmates to start the feed.
-              </p>
-              <Button asChild size="sm" className="mt-4">
-                <Link to="/explore">Explore Deals</Link>
-              </Button>
             </div>
           )}
         </CardContent>
@@ -688,7 +689,6 @@ function DealCard({ deal, index, favIds, onToggleFav, isPremiumUser, userId, onU
   const getBadge = () => {
     if (deal.expires_at && daysUntil(deal.expires_at) <= 3) return { label: "Ending Soon", icon: Timer, color: "bg-destructive/10 text-destructive border-destructive/20" };
     if (deal.featured) return { label: "Most Popular", icon: Star, color: "bg-gold/10 text-gold border-gold/20" };
-    if (deal.sponsored) return { label: "Sponsored", icon: Sparkles, color: "bg-primary/10 text-primary border-primary/20" };
     return { label: badgeLabel || "Student Favorite", icon: BadgeIcon, color: "bg-destructive/10 text-destructive border-destructive/20" };
   };
   const badge = getBadge();
@@ -784,91 +784,6 @@ function StudentEssentialsSection({ deals }: { deals: DealRow[] }) {
           </CardContent>
         </Card>
       )}
-    </motion.section>
-  );
-}
-
-/* ═══════════════════════════════════════════
-   DAILY STUDENT DROP — Countdown
-   ═══════════════════════════════════════════ */
-function DailyDropSection({ deal, onGetDeal }: { deal: DealRow | null; onGetDeal: (id: string) => void }) {
-  const [timeLeft, setTimeLeft] = useState({ h: 0, m: 0, s: 0 });
-
-  useEffect(() => {
-    const tick = () => {
-      const now = new Date();
-      const midnight = new Date(now);
-      midnight.setHours(23, 59, 59, 999);
-      const diff = Math.max(0, Math.floor((midnight.getTime() - now.getTime()) / 1000));
-      setTimeLeft({ h: Math.floor(diff / 3600), m: Math.floor((diff % 3600) / 60), s: diff % 60 });
-    };
-    tick();
-    const interval = setInterval(tick, 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  if (!deal) return null;
-  const storeName = deal.stores?.name || "Featured Brand";
-  const isUrgent = timeLeft.h < 12;
-
-  return (
-    <motion.section initial="hidden" animate="visible" variants={fadeUp} custom={6}>
-      <SectionHeader
-        icon={Zap}
-        title="Student Drop"
-        iconColor="text-accent"
-        subtitle="Today's exclusive deal — gone at midnight"
-        badge={
-          <Badge className={`${isUrgent ? "bg-destructive/15 text-destructive border-destructive/30 animate-pulse" : "bg-accent/15 text-accent border-accent/30"} text-[10px] font-bold gap-1 px-2 ml-2`}>
-            <Timer className="h-3 w-3" /> {timeLeft.h}h {timeLeft.m}m {timeLeft.s}s
-          </Badge>
-        }
-      />
-      <Card className="relative overflow-hidden border-accent/20 bg-card ring-1 ring-accent/10">
-        <div className="absolute top-0 left-1/3 w-64 h-64 bg-accent/6 rounded-full blur-[100px] pointer-events-none -translate-y-1/2" />
-
-        <CardContent className="relative z-10 p-6 sm:p-8">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-            <div className="flex items-center gap-4 flex-1">
-              <div className="logo-banner flex h-24 w-36 shrink-0 items-center justify-center rounded-3xl overflow-hidden p-0">
-                {deal.stores?.logo_url ? (
-                  <img src={deal.stores.logo_url} alt={storeName} className="merchant-logo-panel--cover" />
-                ) : (
-                  <Store className="h-10 w-10 text-accent" />
-                )}
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{storeName}</div>
-                <h3 className="font-display text-lg sm:text-xl font-bold text-foreground mt-1">{displayDealTitle(deal)}</h3>
-                <div className="mt-2">
-                  <span className="font-display text-3xl sm:text-4xl font-black text-accent">
-                    {formatDiscount(deal.discount_value)}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col items-center gap-3 shrink-0">
-              {/* Countdown display */}
-              <div className="flex gap-2">
-                {[
-                  { val: timeLeft.h, label: "HRS" },
-                  { val: timeLeft.m, label: "MIN" },
-                  { val: timeLeft.s, label: "SEC" },
-                ].map(({ val, label }) => (
-                  <div key={label} className={`bg-secondary/60 border ${isUrgent ? "border-destructive/30" : "border-border/40"} rounded-xl px-3.5 py-2.5 text-center min-w-[54px] ${isUrgent ? "animate-pulse" : ""}`}>
-                    <div className={`font-display text-2xl font-black ${isUrgent ? "text-destructive" : "text-foreground"}`}>{String(val).padStart(2, '0')}</div>
-                    <div className="text-[8px] text-muted-foreground font-bold tracking-wider">{label}</div>
-                  </div>
-                ))}
-              </div>
-              <Button size="lg" className="gap-2 font-bold text-sm bg-accent hover:bg-accent/90 text-accent-foreground h-12 px-8 shadow-lg shadow-accent/25 hover:shadow-accent/40 transition-shadow" onClick={() => onGetDeal(deal.id)} style={{ filter: isUrgent ? "drop-shadow(0 0 12px hsl(142 71% 45% / 0.4))" : undefined }}>
-                Claim Now <Zap className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
     </motion.section>
   );
 }
@@ -1085,13 +1000,6 @@ export default function Dashboard() {
     [deals]
   );
 
-  const dailyDrop = useMemo(() => {
-    const dayOfYear = Math.floor(now / (1000 * 60 * 60 * 24));
-    const candidates = deals.filter(d => d.id !== heroDeal?.id);
-    if (candidates.length === 0) return null;
-    return candidates[dayOfYear % candidates.length];
-  }, [deals, heroDeal, now]);
-
   // Surprise deal drops - filter by visibility (founding members get early access)
   const surpriseDrops = useMemo(() => {
     return deals.filter(d =>
@@ -1182,9 +1090,6 @@ export default function Dashboard() {
         {/* CAMPUS ACTIVITY FEED */}
         <CampusActivityFeed />
 
-        {/* NEXT DROP WINDOW WIDGET */}
-        <NextDropWidget />
-
         {/* SURPRISE DEAL DROPS */}
         {surpriseDrops.length > 0 && (
           <motion.section initial="hidden" animate="visible" variants={stagger}>
@@ -1231,9 +1136,6 @@ export default function Dashboard() {
             </ScrollRow>
           )}
         </motion.section>
-
-        {/* DAILY DROP */}
-        <DailyDropSection deal={dailyDrop} onGetDeal={handleGetDeal} />
 
         {/* 🔥 DEALS ENDING SOON */}
         {endingSoonDeals.length > 0 && (

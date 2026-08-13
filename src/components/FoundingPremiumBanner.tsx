@@ -1,19 +1,31 @@
 import { motion } from "framer-motion";
 import { Crown, Sparkles, GraduationCap } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { supabase } from "@/integrations/supabase/client";
 
 interface FoundingPremiumBannerProps {
   onUpgrade: () => void;
 }
 
 export function FoundingPremiumBanner({ onUpgrade }: FoundingPremiumBannerProps) {
-  // Simulated counter — in production, fetch from DB
-  const spotsClaimed = 312;
   const totalSpots = 500;
-  const percentClaimed = (spotsClaimed / totalSpots) * 100;
+
+  // Real count from the database. `profiles` RLS hides other users' rows, so the
+  // aggregate comes from a SECURITY DEFINER function rather than a client count.
+  const { data: spotsClaimed = 0 } = useQuery({
+    queryKey: ["founding-premium-claimed-count"],
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc("count_founding_members" as never);
+      if (error) return 0;
+      return typeof data === "number" ? data : 0;
+    },
+  });
+
+  const percentClaimed = totalSpots > 0 ? Math.min(100, (spotsClaimed / totalSpots) * 100) : 0;
 
   return (
     <motion.div
@@ -31,21 +43,25 @@ export function FoundingPremiumBanner({ onUpgrade }: FoundingPremiumBannerProps)
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2 mb-1">
                 <h3 className="font-display text-lg font-bold text-foreground">🎓 Founding Premium</h3>
-                <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] font-bold gap-1 animate-pulse">
+                <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] font-bold gap-1">
                   <Sparkles className="h-2.5 w-2.5" /> Limited
                 </Badge>
               </div>
+              {/* Price string left at its existing value pending the pricing decision. */}
               <p className="text-sm text-muted-foreground">
-                First {totalSpots} students get Premium for{" "}
-                <span className="text-gold font-bold">$1.99/month forever</span>.
+                <span className="text-gold font-bold">$1.99/month</span>, locked for life.
+                First {totalSpots} students.
               </p>
-              <div className="mt-3 space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground font-medium">{spotsClaimed} of {totalSpots} spots claimed</span>
-                  <span className="text-gold font-bold">{totalSpots - spotsClaimed} left</span>
+              {/* No claims yet → no progress bar and no "spots left" number. */}
+              {spotsClaimed > 0 && (
+                <div className="mt-3 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground font-medium">{spotsClaimed} of {totalSpots} spots claimed</span>
+                    <span className="text-gold font-bold">{Math.max(0, totalSpots - spotsClaimed)} left</span>
+                  </div>
+                  <Progress value={percentClaimed} className="h-2 bg-secondary" />
                 </div>
-                <Progress value={percentClaimed} className="h-2 bg-secondary" />
-              </div>
+              )}
             </div>
             <Button
               onClick={onUpgrade}

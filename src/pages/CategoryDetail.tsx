@@ -27,7 +27,6 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
-import { SponsoredDealRow, isSponsoredActive } from "@/components/SponsoredDealRow";
 import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
 
 interface DealWithStore {
@@ -257,18 +256,6 @@ export default function CategoryDetail() {
     return Array.from(map.entries()).slice(0, 6).map(([name, logo]) => ({ name, logo }));
   }, [deals]);
 
-  const sponsoredDeals = useMemo(() => {
-    return deals.filter((d) => {
-      if (!isSponsoredActive(d) || d.status !== "active") return false;
-      return true;
-    }).sort((a, b) =>
-      ((b as any).sponsor_priority ?? 0) - ((a as any).sponsor_priority ?? 0) ||
-      (b.sponsor_tier ?? 0) - (a.sponsor_tier ?? 0) ||
-      (new Date((a as any).sponsor_start_at ?? 0).getTime()) - (new Date((b as any).sponsor_start_at ?? 0).getTime()) ||
-      new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime()
-    );
-  }, [deals]);
-
   const filtered = useMemo(() => {
     let list = [...deals];
     if (selectedStatuses.length) {
@@ -363,11 +350,6 @@ export default function CategoryDetail() {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-3 flex-wrap mb-2">
                   <h1 className="font-display text-2xl md:text-3xl font-bold text-foreground">{meta.name}</h1>
-                  {sponsoredDeals.length > 0 && (
-                    <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] gap-1">
-                      <Sparkles className="h-2.5 w-2.5" /> Sponsored Deals Available
-                    </Badge>
-                  )}
                 </div>
                 <p className="text-muted-foreground mb-3">{meta.description}</p>
                 <div className="flex items-center gap-3 flex-wrap">
@@ -409,13 +391,6 @@ export default function CategoryDetail() {
                 ))}
               </div>
             </div>
-          </motion.div>
-        )}
-
-        {/* Sponsored Placements */}
-        {sponsoredDeals.length > 0 && (
-          <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2}>
-            <SponsoredDealRow deals={sponsoredDeals} scope={slug} />
           </motion.div>
         )}
 
@@ -533,9 +508,6 @@ export default function CategoryDetail() {
                             {deal.discount_value ?? "Special"}
                           </span>
                           <div className="flex items-center gap-1.5">
-                            {deal.sponsored && (
-                              <Badge className="bg-primary/15 text-primary border-primary/30 text-[10px] gap-1">Sponsored</Badge>
-                            )}
                             {isPremiumDeal && (
                               <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] gap-1"><Crown className="h-2.5 w-2.5" /> Premium</Badge>
                             )}
