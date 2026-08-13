@@ -179,8 +179,8 @@ export default function MerchantsPage() {
   const { data: networks = [] } = useQuery({
     queryKey: ["merchant-networks"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("affiliate_networks" as any)
+      const { data, error } = await (supabase as any)
+        .from("affiliate_networks")
         .select("id, network_name")
         .order("network_name", { ascending: true });
       if (error) throw error;
@@ -191,8 +191,8 @@ export default function MerchantsPage() {
   const { data: merchants = [], isLoading } = useQuery({
     queryKey: ["affiliate-merchants"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("partners" as any)
+      const { data, error } = await (supabase as any)
+        .from("partners")
         .select("*")
         .or("partner_type.eq.affiliate_network,affiliate_network.not.is.null,advertiser_id.not.is.null")
         .order("updated_at", { ascending: false })
@@ -324,11 +324,11 @@ export default function MerchantsPage() {
       };
 
       if (editing) {
-        const { error } = await supabase.from("partners" as any).update(payload).eq("id", editing.id);
+        const { error } = await (supabase as any).from("partners").update(payload).eq("id", editing.id);
         if (error) throw error;
         await supabase.from("deals").update({ featured: form.featured_merchant }).eq("partner_id", editing.id);
       } else {
-        const { error } = await supabase.from("partners" as any).insert(payload);
+        const { error } = await (supabase as any).from("partners").insert(payload);
         if (error) throw error;
       }
     },
@@ -344,7 +344,7 @@ export default function MerchantsPage() {
   const toggleFeatured = useMutation({
     mutationFn: async (merchant: Merchant) => {
       const next = !merchant.featured_merchant;
-      const { error } = await supabase.from("partners" as any).update({ featured_merchant: next }).eq("id", merchant.id);
+      const { error } = await (supabase as any).from("partners").update({ featured_merchant: next }).eq("id", merchant.id);
       if (error) throw error;
       await supabase.from("deals").update({ featured: next }).eq("partner_id", merchant.id);
     },
@@ -358,7 +358,7 @@ export default function MerchantsPage() {
   const pauseMerchant = useMutation({
     mutationFn: async (merchant: Merchant) => {
       const next = merchant.status === "paused" ? "active" : "paused";
-      const { error } = await supabase.from("partners" as any).update({ status: next }).eq("id", merchant.id);
+      const { error } = await (supabase as any).from("partners").update({ status: next }).eq("id", merchant.id);
       if (error) throw error;
     },
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["affiliate-merchants"] }),
@@ -391,8 +391,8 @@ export default function MerchantsPage() {
         afterMissingLogoCount: 0,
       };
 
-      const { data: affiliateDeals, error: dealsError } = await supabase
-        .from("affiliate_deals" as any)
+      const { data: affiliateDeals, error: dealsError } = await (supabase as any)
+        .from("affiliate_deals")
         .select("id, merchant_id, promoted_deal_id, merchant_name, merchant_logo, network, affiliate_url, destination_url, raw_data")
         .eq("network", "Impact")
         .limit(1000);
@@ -401,8 +401,8 @@ export default function MerchantsPage() {
       const dealRows = (affiliateDeals || []) as AffiliateDealLogoRow[];
       const merchantIds = [...new Set(dealRows.map((deal) => deal.merchant_id).filter(Boolean))] as string[];
       const { data: affiliateMerchants } = merchantIds.length
-        ? await supabase
-          .from("affiliate_merchants" as any)
+        ? await (supabase as any)
+          .from("affiliate_merchants")
           .select("id, merchant_name, merchant_logo, website_url, store_id")
           .in("id", merchantIds)
         : { data: [] };
@@ -442,14 +442,14 @@ export default function MerchantsPage() {
           }
 
           if (merchant && !merchant.merchant_logo) {
-            const { error } = await supabase.from("affiliate_merchants" as any).update({ merchant_logo: logoUrl }).eq("id", merchant.id);
+            const { error } = await (supabase as any).from("affiliate_merchants").update({ merchant_logo: logoUrl }).eq("id", merchant.id);
             if (error) throw error;
             merchant.merchant_logo = logoUrl;
             result.updatedMerchants += 1;
           }
 
           if (!deal.merchant_logo) {
-            const { error } = await supabase.from("affiliate_deals" as any).update({ merchant_logo: logoUrl }).eq("id", deal.id);
+            const { error } = await (supabase as any).from("affiliate_deals").update({ merchant_logo: logoUrl }).eq("id", deal.id);
             if (error) throw error;
             deal.merchant_logo = logoUrl;
             result.updatedAffiliateDeals += 1;
@@ -488,7 +488,7 @@ export default function MerchantsPage() {
     try {
       const { data, error } = await supabase.functions.invoke("ingest-deals", { body: {} });
       if (error) throw error;
-      await supabase.from("affiliate_sync_logs" as any).insert({
+      await (supabase as any).from("affiliate_sync_logs").insert({
         network_id: merchant.affiliate_network_id,
         network: merchant.affiliate_network,
         status: "success",
@@ -497,11 +497,11 @@ export default function MerchantsPage() {
         message: `Manual merchant sync: ${merchant.partner_name}`,
         raw_result: data || {},
       });
-      await supabase.from("partners" as any).update({ last_sync_at: new Date().toISOString() }).eq("id", merchant.id);
+      await (supabase as any).from("partners").update({ last_sync_at: new Date().toISOString() }).eq("id", merchant.id);
       toast({ title: "Merchant sync completed" });
       queryClient.invalidateQueries({ queryKey: ["affiliate-merchants"] });
     } catch (error) {
-      await supabase.from("affiliate_sync_logs" as any).insert({
+      await (supabase as any).from("affiliate_sync_logs").insert({
         network_id: merchant.affiliate_network_id,
         network: merchant.affiliate_network,
         status: "failed",

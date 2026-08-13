@@ -131,10 +131,10 @@ const DealsManager = () => {
         ? await supabase.from("stores").select("id, name, logo_url").in("id", storeIds)
         : { data: [] };
       const { data: partners } = partnerIds.length
-        ? await supabase.from("partners" as any).select("id, advertiser_id, default_affiliate_link_url, default_destination_url, default_deep_link_url, commission_notes").in("id", partnerIds)
+        ? await (supabase as any).from("partners").select("id, advertiser_id, default_affiliate_link_url, default_destination_url, default_deep_link_url, commission_notes").in("id", partnerIds)
         : { data: [] };
       const { data: affiliateImports } = dealIds.length
-        ? await supabase.from("affiliate_deals" as any).select("promoted_deal_id, merchant_name, merchant_logo, offer_title, affiliate_url, destination_url, discount_value, coupon_code, category, raw_data").in("promoted_deal_id", dealIds)
+        ? await (supabase as any).from("affiliate_deals").select("promoted_deal_id, merchant_name, merchant_logo, offer_title, affiliate_url, destination_url, discount_value, coupon_code, category, raw_data").in("promoted_deal_id", dealIds)
         : { data: [] };
       const storeMap = new Map((stores || []).map((store: any) => [store.id, { name: store.name, logo_url: store.logo_url }]));
       const partnerMap = new Map((partners || []).map((partner: any) => [partner.id, partner]));
@@ -168,8 +168,8 @@ const DealsManager = () => {
   const { data: adminPartners = [] } = useQuery({
     queryKey: ["admin-partner-options"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("partners" as any)
+      const { data, error } = await (supabase as any)
+        .from("partners")
         .select("id, partner_name, default_affiliate_link_url, default_destination_url, default_deep_link_url, affiliate_network")
         .or("partner_type.eq.affiliate_network,affiliate_network.not.is.null,advertiser_id.not.is.null")
         .order("partner_name", { ascending: true })
@@ -242,8 +242,8 @@ const DealsManager = () => {
         .eq("id", deal.id);
       if (error) throw error;
 
-      await supabase
-        .from("affiliate_deals" as any)
+      await (supabase as any)
+        .from("affiliate_deals")
         .update({
           display_title: quality.displayTitle,
           deal_quality_score: quality.score,

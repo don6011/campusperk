@@ -54,8 +54,8 @@ export default function MerchantSubmissionsQueue() {
   const { data: submissions = [], isLoading } = useQuery({
     queryKey: ["admin-merchant-submissions"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("merchant_submissions" as any)
+      const { data, error } = await (supabase as any)
+        .from("merchant_submissions")
         .select("*")
         .order("created_at", { ascending: false })
         .limit(250);
@@ -89,8 +89,8 @@ export default function MerchantSubmissionsQueue() {
 
   const rejectMutation = useMutation({
     mutationFn: async ({ submissionId, notes }: { submissionId: string; notes: string }) => {
-      const { error } = await supabase
-        .from("merchant_submissions" as any)
+      const { error } = await (supabase as any)
+        .from("merchant_submissions")
         .update({
           status: "rejected",
           admin_notes: notes.trim() || null,

@@ -309,8 +309,8 @@ export default function CampusHub() {
     queryKey: ["campus-hub-merchant-targets", slug],
     enabled: isUagc,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("partners" as any)
+      const { data } = await (supabase as any)
+        .from("partners")
         .select("id, partner_name, logo_url, status, active_deals, featured_merchant")
         .eq("status", "active")
         .order("featured_merchant", { ascending: false })

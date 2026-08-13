@@ -89,8 +89,8 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
     }
     setSearchLoading(true);
     const timeout = setTimeout(async () => {
-      const { data } = await supabase
-        .from("campuses" as any)
+      const { data } = await (supabase as any)
+        .from("campuses")
         .select("id, name, city, state")
         .or(`name.ilike.%${campusQuery}%,city.ilike.%${campusQuery}%,state.ilike.%${campusQuery}%`)
         .eq("status", "active")
@@ -127,15 +127,15 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
       const campusId: string | null = selectedCampus?.id || null;
 
       // Check existing signup
-      const { data: existing } = await supabase
-        .from("waitlist_signups" as any)
+      const { data: existing } = await (supabase as any)
+        .from("waitlist_signups")
         .select("referral_code, campus")
         .eq("email_normalized", normalized)
         .maybeSingle();
 
       if (existing) {
-        const { count } = await supabase
-          .from("waitlist_signups" as any)
+        const { count } = await (supabase as any)
+          .from("waitlist_signups")
           .select("id", { count: "exact", head: true })
           .eq("campus_slug", slugify((existing as any).campus));
 
@@ -149,7 +149,7 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
       }
 
       // Insert
-      const { error } = await supabase.from("waitlist_signups" as any).insert({
+      const { error } = await (supabase as any).from("waitlist_signups").insert({
         email: normalized,
         email_normalized: normalized,
         campus: campusName,
@@ -165,17 +165,17 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
       if (error) {
         if (error.code === "23505" && error.message?.includes("referral_code")) {
           const retry = generateReferralCode();
-          await supabase.from("waitlist_signups" as any).insert({
+          await (supabase as any).from("waitlist_signups").insert({
             email: normalized, email_normalized: normalized, campus: campusName,
             campus_slug: campusSlug, referral_code: retry, referred_by: referredBy || null,
             source: source || null, campus_id: campusId,
             campus_text: selectedCampus ? null : campusQuery.trim(), email_type: emailType,
           } as any);
-          const { count } = await supabase.from("waitlist_signups" as any).select("id", { count: "exact", head: true }).eq("campus_slug", campusSlug);
+          const { count } = await (supabase as any).from("waitlist_signups").select("id", { count: "exact", head: true }).eq("campus_slug", campusSlug);
           setSuccess({ campus: campusName, referralCode: retry, campusCount: (count as number) ?? 1 });
         } else if (error.code === "23505") {
           toast("You're already on the list! 🎉");
-          const { data: ex } = await supabase.from("waitlist_signups" as any).select("referral_code, campus").eq("email_normalized", normalized).maybeSingle();
+          const { data: ex } = await (supabase as any).from("waitlist_signups").select("referral_code, campus").eq("email_normalized", normalized).maybeSingle();
           if (ex) setSuccess({ campus: (ex as any).campus, referralCode: (ex as any).referral_code, campusCount: 1 });
         } else {
           toast.error("Something went wrong. Please try again.");
@@ -184,7 +184,7 @@ export default function WaitlistModal({ open, onOpenChange, referredBy }: Waitli
         return;
       }
 
-      const { count } = await supabase.from("waitlist_signups" as any).select("id", { count: "exact", head: true }).eq("campus_slug", campusSlug);
+      const { count } = await (supabase as any).from("waitlist_signups").select("id", { count: "exact", head: true }).eq("campus_slug", campusSlug);
       setSuccess({ campus: campusName, referralCode, campusCount: (count as number) ?? 1 });
     } catch {
       toast.error("Something went wrong. Please try again.");

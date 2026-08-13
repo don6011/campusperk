@@ -72,8 +72,8 @@ export default function AmbassadorDashboard() {
     queryKey: ["my-merchant-leads", ambassador?.referral_code],
     enabled: !!ambassador?.referral_code,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("merchant_submissions" as any)
+      const { data } = await (supabase as any)
+        .from("merchant_submissions")
         .select("id, business_name, offer_title, status, created_at")
         .eq("referral_code", ambassador!.referral_code)
         .order("created_at", { ascending: false });
@@ -85,8 +85,8 @@ export default function AmbassadorDashboard() {
     queryKey: ["my-founding-reservations", ambassador?.referral_code],
     enabled: !!ambassador?.referral_code,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("founding_member_reservations" as any)
+      const { data } = await (supabase as any)
+        .from("founding_member_reservations")
         .select("id, status, created_at")
         .eq("referral_code", ambassador!.referral_code)
         .order("created_at", { ascending: false });
@@ -98,8 +98,8 @@ export default function AmbassadorDashboard() {
     queryKey: ["my-reward-unlocks", ambassador?.id],
     enabled: !!ambassador?.id,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("ambassador_reward_unlocks" as any)
+      const { data } = await (supabase as any)
+        .from("ambassador_reward_unlocks")
         .select("*")
         .eq("ambassador_id", ambassador!.id)
         .order("unlocked_at", { ascending: false });

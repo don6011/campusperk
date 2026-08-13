@@ -28,8 +28,8 @@ export default function UAGCHub() {
   const { data: localMerchants = [] } = useQuery({
     queryKey: ["uagc-local-merchants", profile?.campus_name],
     queryFn: async () => {
-      const { data } = await supabase
-        .from("partners" as any)
+      const { data } = await (supabase as any)
+        .from("partners")
         .select("id, partner_name, logo_url, status, active_deals, featured_merchant")
         .eq("status", "active")
         .order("featured_merchant", { ascending: false })
