@@ -163,7 +163,7 @@ export default function DealDetail() {
           <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
           <h1 className="font-display text-xl font-bold text-foreground">Deal not found</h1>
           <p className="text-sm text-muted-foreground mt-2">This deal may have been removed or doesn't exist.</p>
-          <Button variant="outline" className="mt-6 gap-2" onClick={() => navigate("/dashboard")}>
+          <Button variant="outline" className="mt-6 gap-2" onClick={() => navigate("/deals")}>
             <ArrowLeft className="h-4 w-4" /> Back to Dashboard
           </Button>
         </div>

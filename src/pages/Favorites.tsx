@@ -181,7 +181,7 @@ export default function Favorites() {
                 Browse deals and tap the heart icon to save them here for quick access.
               </p>
             </div>
-            <Link to="/explore"><Button className="mt-2">Explore Deals</Button></Link>
+            <Link to="/deals"><Button className="mt-2">Explore Deals</Button></Link>
           </div>
         )}
 

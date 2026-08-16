@@ -30,7 +30,7 @@ const comparisonRows = [
 const Pricing = () => {
   usePageTitle("Pricing");
   const { isLoggedIn } = useAuth();
-  const backTo = isLoggedIn ? "/dashboard" : "/";
+  const backTo = isLoggedIn ? "/deals" : "/";
 
   return (
     <div className="min-h-screen bg-background relative noise-overlay">

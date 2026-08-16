@@ -5,7 +5,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useSearchParams } from "react-router-dom";
-import { AuthProvider } from "@/contexts/AuthContext";
+import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { CampusThemeProvider } from "@/contexts/CampusThemeContext";
 import ProtectedRoute from "@/components/ProtectedRoute";
 import AdminRoute from "@/components/AdminRoute";
@@ -28,7 +28,6 @@ import FoundingMembers from "./pages/FoundingMembers";
 import AmbassadorProgram from "./pages/AmbassadorProgram";
 import AmbassadorApply from "./pages/AmbassadorApply";
 
-const Dashboard = lazy(() => import("./pages/Dashboard"));
 const OutboundRedirect = lazy(() => import("./pages/OutboundRedirect"));
 const ExploreDeals = lazy(() => import("./pages/ExploreDeals"));
 const DealDetail = lazy(() => import("./pages/DealDetail"));
@@ -76,6 +75,23 @@ function JoinRedirect() {
   return <Navigate to={`/waitlist${ref ? `?ref=${ref}` : ""}`} replace />;
 }
 
+/**
+ * `/` is the marketing page for signed-out visitors and the deal catalogue for
+ * signed-in students. Explore replaced the old Dashboard as the post-login home,
+ * so there is one home screen rather than a dashboard and a catalogue that
+ * showed overlapping slices of the same deals.
+ */
+function HomeRoute() {
+  const { isLoggedIn, isLoading } = useAuth();
+  if (isLoading) return <PageFallback />;
+  if (!isLoggedIn) return <LandingPage />;
+  return (
+    <ProtectedRoute>
+      <LazyPage><ExploreDeals /></LazyPage>
+    </ProtectedRoute>
+  );
+}
+
 const queryClient = new QueryClient();
 
 function PageFallback() {
@@ -97,7 +113,7 @@ const App = () => (
           <main>
           <Routes>
             {/* Public routes */}
-            <Route path="/" element={<LandingPage />} />
+            <Route path="/" element={<HomeRoute />} />
             <Route path="/sign-in" element={<SignIn />} />
             <Route path="/sign-up" element={<SignUp />} />
             <Route path="/join" element={<JoinRedirect />} />
@@ -123,8 +139,11 @@ const App = () => (
 
             {/* Protected routes */}
             <Route path="/splash" element={<ProtectedRoute><LazyPage><Splash /></LazyPage></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><LazyPage><Dashboard /></LazyPage></ProtectedRoute>} />
-            <Route path="/explore" element={<ProtectedRoute><LazyPage><ExploreDeals /></LazyPage></ProtectedRoute>} />
+            {/* Deals is the post-login home. /dashboard and /explore are the two
+                URLs it used to live behind; both redirect so no link goes dead. */}
+            <Route path="/deals" element={<ProtectedRoute><LazyPage><ExploreDeals /></LazyPage></ProtectedRoute>} />
+            <Route path="/dashboard" element={<Navigate to="/deals" replace />} />
+            <Route path="/explore" element={<Navigate to="/deals" replace />} />
             <Route path="/favorites" element={<ProtectedRoute><LazyPage><Favorites /></LazyPage></ProtectedRoute>} />
             <Route path="/submit" element={<ProtectedRoute><LazyPage><SubmitDeal /></LazyPage></ProtectedRoute>} />
             <Route path="/alerts" element={<ProtectedRoute><LazyPage><Alerts /></LazyPage></ProtectedRoute>} />

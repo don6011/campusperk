@@ -300,7 +300,7 @@ export default function Premium() {
                   <Zap className="h-4 w-4 text-gold" /> Early Access Deals
                   <Badge className="bg-primary/15 text-primary border-primary/30 text-[9px] font-bold">⚡ Premium Early Access</Badge>
                 </CardTitle>
-                <Button variant="ghost" size="sm" className="text-xs text-primary gap-1" onClick={() => navigate("/explore")}>
+                <Button variant="ghost" size="sm" className="text-xs text-primary gap-1" onClick={() => navigate("/deals")}>
                   View All <ArrowRight className="h-3 w-3" />
                 </Button>
               </CardHeader>
@@ -392,7 +392,7 @@ export default function Premium() {
                     Stack student discounts, promo codes, and cashback on any deal page to see your total savings.
                   </p>
                 </div>
-                <Button variant="outline" size="sm" className="shrink-0 gap-1 text-xs" onClick={() => navigate("/explore")}>
+                <Button variant="outline" size="sm" className="shrink-0 gap-1 text-xs" onClick={() => navigate("/deals")}>
                   Try it <ArrowRight className="h-3 w-3" />
                 </Button>
               </div>

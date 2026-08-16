@@ -88,7 +88,7 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
         </nav>
         <div className="p-4 border-t border-sidebar-border">
           <Button asChild variant="ghost" size="sm" className="w-full justify-start text-muted-foreground">
-            <Link to="/dashboard">← Back to Dashboard</Link>
+            <Link to="/deals">← Back to Dashboard</Link>
           </Button>
         </div>
       </aside>
@@ -105,7 +105,7 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
             <Menu className="h-5 w-5" />
           </Button>
           <nav className="flex items-center gap-1 text-sm truncate">
-            <Link to="/dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+            <Link to="/deals" className="text-muted-foreground hover:text-foreground transition-colors">
               Dashboard
             </Link>
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60 shrink-0" />

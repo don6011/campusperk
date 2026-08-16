@@ -12,6 +12,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { slugifyCampus } from "@/lib/campus-routing";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 type CampusOption = {
   id: string;
@@ -91,7 +92,8 @@ export default function CampusSelection() {
       const result = data as { status?: string; campus_slug?: string; browse_only?: boolean } | null;
       if (result?.status === "assigned") {
         await refreshProfile();
-        navigate("/campus");
+        // Campus Hub is hidden; send the student to the deal catalogue instead.
+        navigate(FEATURE_FLAGS.showCampusHub ? "/campus" : "/deals");
         return;
       }
 

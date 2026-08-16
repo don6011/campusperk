@@ -50,7 +50,7 @@ const NotFound = () => {
             </Link>
           </Button>
           <Button asChild variant="outline" className="glass border-border/40">
-            <Link to="/explore">Browse Deals</Link>
+            <Link to="/deals">Browse Deals</Link>
           </Button>
         </div>
       </motion.div>

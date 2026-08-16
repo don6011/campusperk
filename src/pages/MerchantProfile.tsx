@@ -145,7 +145,7 @@ export default function MerchantProfile() {
           <h1 className="font-display text-2xl font-bold text-foreground">Merchant not found</h1>
           <p className="text-muted-foreground mt-2">This merchant may not have active student deals yet.</p>
           <Button asChild className="mt-6">
-            <Link to="/explore">Explore Deals</Link>
+            <Link to="/deals">Explore Deals</Link>
           </Button>
         </div>
       </DashboardLayout>

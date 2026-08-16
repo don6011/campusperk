@@ -7,7 +7,6 @@ import {
   Compass,
   Grid3X3,
   Heart,
-  Bell,
   Crown,
   Settings,
   Search,
@@ -39,23 +38,29 @@ import { AmbassadorBadge } from "@/components/AmbassadorBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import NotificationBell from "@/components/NotificationBell";
 import { CampusPrideBadge } from "@/components/CampusPrideBadge";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
-const navItems = [
-  { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
-  { title: "Explore Deals", url: "/explore", icon: Compass },
-  { title: "Categories", url: "/categories", icon: Grid3X3 },
-  { title: "Favorites", url: "/favorites", icon: Heart },
-  { title: "Submit Deal", url: "/submit", icon: Send },
-  { title: "Alerts", url: "/alerts", icon: Bell },
-  { title: "Badges", url: "/badges", icon: Sparkles },
-  { title: "Campus Leaderboard", url: "/campus-leaderboard", icon: Trophy },
-  { title: "Campus Hub", url: "/campus", icon: GraduationCap },
-  { title: "Ambassador", url: "/ambassador/dashboard", icon: Medal },
-  { title: "Ambassador Board", url: "/ambassador/leaderboard", icon: Trophy },
-  { title: "Founders", url: "/founding-showcase", icon: Award },
-  { title: "Premium", url: "/pricing", icon: Crown, premiumUrl: "/premium" },
-  { title: "Account Settings", url: "/settings", icon: Settings },
+/**
+ * Navigation is five items. Everything previously listed here still exists and
+ * is still routed — see FEATURE_FLAGS for what is hidden and why. Alerts moved
+ * into Account as a settings section rather than earning its own row.
+ */
+const ALL_NAV_ITEMS = [
+  { title: "Deals", url: "/deals", icon: Compass, flag: null },
+  { title: "Categories", url: "/categories", icon: Grid3X3, flag: null },
+  { title: "Saved", url: "/favorites", icon: Heart, flag: null },
+  { title: "Submit", url: "/submit", icon: Send, flag: null },
+  { title: "Account", url: "/settings", icon: Settings, flag: null },
+  { title: "Badges", url: "/badges", icon: Sparkles, flag: "showBadges" as const },
+  { title: "Campus Leaderboard", url: "/campus-leaderboard", icon: Trophy, flag: "showCampusLeaderboard" as const },
+  { title: "Campus Hub", url: "/campus", icon: GraduationCap, flag: "showCampusHub" as const },
+  { title: "Ambassador", url: "/ambassador/dashboard", icon: Medal, flag: "showAmbassadorDashboard" as const },
+  { title: "Ambassador Board", url: "/ambassador/leaderboard", icon: Trophy, flag: "showAmbassadorLeaderboard" as const },
+  { title: "Founders", url: "/founding-showcase", icon: Award, flag: "showFoundersShowcase" as const },
+  { title: "Premium", url: "/pricing", icon: Crown, premiumUrl: "/premium", flag: "showPremiumNavEntry" as const },
 ];
+
+const navItems = ALL_NAV_ITEMS.filter((item) => item.flag === null || FEATURE_FLAGS[item.flag]);
 
 const adminItems = [
   { title: "Admin Portal", url: "/admin/deals", icon: LayoutDashboard },
@@ -80,7 +85,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [user]);
 
   useEffect(() => {
-    if (location.pathname === "/explore") {
+    if (location.pathname === "/deals") {
       setGlobalSearch(new URLSearchParams(location.search).get("q") ?? "");
     }
   }, [location.pathname, location.search]);
@@ -89,7 +94,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setGlobalSearch(value);
     const params = new URLSearchParams();
     if (value.trim()) params.set("q", value);
-    navigate(`/explore${params.toString() ? `?${params.toString()}` : ""}`, { replace: location.pathname === "/explore" });
+    navigate(`/deals${params.toString() ? `?${params.toString()}` : ""}`, { replace: location.pathname === "/deals" });
   };
 
   const handleLogout = async () => {
@@ -268,9 +273,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <DropdownMenuItem className="gap-2" onClick={() => navigate("/settings")}>
                   <User className="h-4 w-4" /> Account Settings
                 </DropdownMenuItem>
-                <DropdownMenuItem className="gap-2" onClick={() => navigate("/badges")}>
-                  <Sparkles className="h-4 w-4" /> Badge Collection
-                </DropdownMenuItem>
+                {FEATURE_FLAGS.showBadges && (
+                  <DropdownMenuItem className="gap-2" onClick={() => navigate("/badges")}>
+                    <Sparkles className="h-4 w-4" /> Badge Collection
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuItem className="gap-2" onClick={() => navigate(profile?.premium_status ? "/premium" : "/pricing")}>
                   <Crown className={`h-4 w-4 ${profile?.premium_status ? "text-gold" : ""}`} />
                   {profile?.premium_status ? (

@@ -2,6 +2,8 @@ import { useState, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { BadgeEngine } from "@/components/BadgeEngine";
+import { AlertsSection } from "@/components/account/AlertsSection";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 import { motion } from "framer-motion";
 import {
   GraduationCap, BookOpen, Briefcase, Users, ShieldCheck, ShieldX,
@@ -167,7 +169,8 @@ export default function Account() {
 
       await refreshProfile();
       toast({ title: "✓ Campus Verified!", description: `Your ${role} status has been auto-verified (score: ${score}).` });
-      navigate("/campus");
+      // Campus Hub is hidden; stay on Account rather than routing into it.
+      if (FEATURE_FLAGS.showCampusHub) navigate("/campus");
     } catch (e: any) {
       toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
@@ -237,6 +240,11 @@ export default function Account() {
           <p className="text-sm text-muted-foreground mt-1">Manage your campus verification and profile.</p>
         </motion.div>
 
+        {/* Deal Alerts — moved here from its own nav item. */}
+        <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0.4}>
+          <AlertsSection />
+        </motion.div>
+
         {/* Quick Links */}
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0.5}>
           <Card className="border-border bg-card">
@@ -251,16 +259,18 @@ export default function Account() {
               </div>
               <ChevronRight className="h-4 w-4 text-muted-foreground" />
             </Link>
-              <Link to="/badges" className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/40 transition-colors">
-                <div className="h-9 w-9 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
-                  <Sparkles className="h-4 w-4 text-accent" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-foreground">Badge Collection</p>
-                  <p className="text-xs text-muted-foreground">View earned badges, locked badges, rarity, and unlock progress</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </Link>
+              {FEATURE_FLAGS.showBadges && (
+                <Link to="/badges" className="flex items-center gap-3 p-3 rounded-lg hover:bg-secondary/40 transition-colors">
+                  <div className="h-9 w-9 rounded-lg bg-accent/10 flex items-center justify-center shrink-0">
+                    <Sparkles className="h-4 w-4 text-accent" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground">Badge Collection</p>
+                    <p className="text-xs text-muted-foreground">View earned badges, locked badges, rarity, and unlock progress</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -321,6 +331,7 @@ export default function Account() {
         {/* Your Stats */}
         <AccountStatsSection userId={user?.id} />
 
+        {FEATURE_FLAGS.showBadges && (
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={1.6}>
           <Card className="border-border bg-card">
             <CardHeader className="pb-3">
@@ -337,6 +348,7 @@ export default function Account() {
             </CardContent>
           </Card>
         </motion.div>
+        )}
 
 
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={2}>

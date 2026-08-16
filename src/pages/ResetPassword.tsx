@@ -65,7 +65,7 @@ export default function ResetPassword() {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
       setSuccess(true);
-      setTimeout(() => navigate("/dashboard"), 2000);
+      setTimeout(() => navigate("/deals"), 2000);
     }
   };
 

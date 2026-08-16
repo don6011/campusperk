@@ -3,7 +3,9 @@
  *
  * Everything here is hidden, not removed: the components, routes and logic all
  * still exist and still compile. Flipping a flag back to `true` is the whole
- * cost of turning the feature back on — there is no code to restore.
+ * cost of turning the feature back on — there is no code to restore. Routes
+ * behind these flags stay registered and reachable by direct URL for testing;
+ * what the flags remove is the navigation entry and every in-app link to them.
  *
  * Declared without `as const` on purpose, so each value is typed `boolean` and
  * a flag can be flipped without TypeScript narrowing every guarded branch to
@@ -19,4 +21,31 @@ export const FEATURE_FLAGS = {
    * verification pass writes that column.
    */
   showVerificationFreshnessUI: false,
+
+  /** Badge collection: /badges, the avatar-menu entry, and the Account nudge. */
+  showBadges: false,
+
+  /** National campus rankings: /campus-leaderboard. */
+  showCampusLeaderboard: false,
+
+  /** Campus hubs: /campus and /campus/:slug. */
+  showCampusHub: false,
+
+  /** The UAGC-specific hub: /uagc. */
+  showUagcHub: false,
+
+  /** Ambassador tools for active ambassadors: /ambassador/dashboard. */
+  showAmbassadorDashboard: false,
+
+  /** Ambassador rankings: /ambassador/leaderboard. */
+  showAmbassadorLeaderboard: false,
+
+  /** Founding member showcase: /founding-showcase. */
+  showFoundersShowcase: false,
+
+  /**
+   * The Premium sidebar entry only. /pricing, /premium and the whole upgrade
+   * path stay live — this hides one nav row, nothing else.
+   */
+  showPremiumNavEntry: false,
 };

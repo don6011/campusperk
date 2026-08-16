@@ -332,7 +332,7 @@ export default function SubmitDeal() {
               }}>
                 Submit Another
               </Button>
-              <Link to="/explore">
+              <Link to="/deals">
                 <Button>Explore Deals</Button>
               </Link>
             </div>
