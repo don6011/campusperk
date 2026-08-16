@@ -44,7 +44,7 @@ interface DealWithStore {
   affiliateSearch?: { merchant_name?: string | null; offer_title?: string | null; category?: string | null; raw_data?: Record<string, unknown> | null }[];
 }
 
-const CATEGORIES = ["Software", "Subscriptions", "Tech", "Clothing", "Food", "Learning", "Books", "Travel", "Fitness", "Entertainment"];
+const CATEGORIES = ["Software & Creative", "Subscriptions & Media", "Learning & Productivity", "Tech & Hardware", "Everyday"];
 const STATUSES = [
   { value: "active", label: "Active" },
   { value: "expiring", label: "Expiring Soon" },

@@ -18,27 +18,19 @@ import { toast } from "sonner";
 import { ACTIVE_DEAL_STATUS, fetchActiveDealCount } from "@/lib/deal-counts";
 
 const CATEGORIES = [
-  { name: "Clothing", slug: "clothing", icon: ShoppingBag, gradient: "from-pink-500/20 to-rose-500/20", iconColor: "text-pink-400", description: "Student savings on apparel & footwear" },
-  { name: "Software", slug: "software", icon: Monitor, gradient: "from-primary/20 to-blue-400/20", iconColor: "text-primary", description: "Discounts on creative & productivity tools" },
-  { name: "Tech & Computers", slug: "tech", icon: Cpu, gradient: "from-violet-500/20 to-purple-500/20", iconColor: "text-violet-400", description: "Laptops, phones & tech accessories deals" },
-  { name: "Subscriptions", slug: "subscriptions", icon: CreditCard, gradient: "from-accent/20 to-emerald-500/20", iconColor: "text-accent", description: "Student pricing on streaming & services" },
-  { name: "Travel", slug: "travel", icon: Plane, gradient: "from-sky-500/20 to-cyan-500/20", iconColor: "text-sky-400", description: "Student travel deals on flights & hotels" },
-  { name: "Food", slug: "food", icon: Utensils, gradient: "from-orange-500/20 to-amber-500/20", iconColor: "text-orange-400", description: "Discounts on delivery & meal services" },
-  { name: "Books & Learning", slug: "learning", icon: BookOpen, gradient: "from-gold/20 to-yellow-500/20", iconColor: "text-gold", description: "Save on textbooks & online courses" },
-  { name: "Fitness", slug: "fitness", icon: Dumbbell, gradient: "from-red-500/20 to-rose-500/20", iconColor: "text-red-400", description: "Gym memberships & activewear deals" },
-  { name: "Entertainment", slug: "entertainment", icon: Film, gradient: "from-indigo-500/20 to-blue-500/20", iconColor: "text-indigo-400", description: "Streaming, gaming & entertainment pricing" },
+  { name: "Software & Creative", slug: "software-creative", icon: Monitor, gradient: "from-primary/20 to-blue-400/20", iconColor: "text-primary", description: "Creative and developer tools at student pricing" },
+  { name: "Subscriptions & Media", slug: "subscriptions-media", icon: CreditCard, gradient: "from-accent/20 to-emerald-500/20", iconColor: "text-accent", description: "Streaming, music and membership pricing" },
+  { name: "Learning & Productivity", slug: "learning-productivity", icon: BookOpen, gradient: "from-gold/20 to-yellow-500/20", iconColor: "text-gold", description: "Courses, study tools and productivity apps" },
+  { name: "Tech & Hardware", slug: "tech-hardware", icon: Cpu, gradient: "from-violet-500/20 to-purple-500/20", iconColor: "text-violet-400", description: "Laptops, phones and education pricing" },
+  { name: "Everyday", slug: "everyday", icon: ShoppingBag, gradient: "from-pink-500/20 to-rose-500/20", iconColor: "text-pink-400", description: "Food, travel, apparel and wellbeing" },
 ];
 
 const CATEGORY_DB_MAP: Record<string, string[]> = {
-  clothing: ["Clothing"],
-  software: ["Software"],
-  tech: ["Tech", "Tech & Computers"],
-  subscriptions: ["Subscriptions"],
-  travel: ["Travel"],
-  food: ["Food"],
-  learning: ["Learning", "Books & Learning", "Books"],
-  fitness: ["Fitness"],
-  entertainment: ["Entertainment"],
+  "software-creative": ["Software & Creative"],
+  "subscriptions-media": ["Subscriptions & Media"],
+  "learning-productivity": ["Learning & Productivity"],
+  "tech-hardware": ["Tech & Hardware"],
+  everyday: ["Everyday"],
 };
 
 const fadeUp = {
