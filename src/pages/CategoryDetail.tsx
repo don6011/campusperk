@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
 import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 interface DealWithStore {
   id: string;
@@ -92,13 +93,19 @@ const FRESHNESS = [
   { value: 7, label: "Last 7 days" },
   { value: 30, label: "Last 30 days" },
 ];
-const SORT_OPTIONS = [
+// See FEATURE_FLAGS.showVerificationFreshnessUI for why these controls are hidden.
+const SHOW_VERIFICATION_FRESHNESS_UI = FEATURE_FLAGS.showVerificationFreshnessUI;
+
+const ALL_SORT_OPTIONS = [
   { value: "sponsored", label: "Recommended" },
   { value: "newest", label: "Newest" },
   { value: "discount", label: "Highest Discount" },
   { value: "expiring", label: "Expiring Soon" },
   { value: "verified", label: "Recently Verified" },
 ];
+const SORT_OPTIONS = ALL_SORT_OPTIONS.filter(
+  (option) => SHOW_VERIFICATION_FRESHNESS_UI || option.value !== "verified",
+);
 const PAGE_SIZE = 9;
 
 function daysUntil(dateStr: string) {
@@ -435,13 +442,15 @@ export default function CategoryDetail() {
                 <Checkbox id="premium-cat" checked={premiumOnly} onCheckedChange={(v) => { setPremiumOnly(!!v); setVisibleCount(PAGE_SIZE); }} />
                 <Label htmlFor="premium-cat" className="text-xs text-muted-foreground flex items-center gap-1"><Crown className="h-3.5 w-3.5" /> Premium Only</Label>
               </div>
-              <Select value={freshnessDays?.toString() ?? "all"} onValueChange={(v) => { setFreshnessDays(v === "all" ? null : Number(v)); setVisibleCount(PAGE_SIZE); }}>
-                <SelectTrigger className="w-[160px] h-8 text-xs bg-secondary border-border"><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-card border-border z-50">
-                  <SelectItem value="all">Any freshness</SelectItem>
-                  {FRESHNESS.map((f) => (<SelectItem key={f.value} value={f.value.toString()}>{f.label}</SelectItem>))}
-                </SelectContent>
-              </Select>
+              {SHOW_VERIFICATION_FRESHNESS_UI && (
+                <Select value={freshnessDays?.toString() ?? "all"} onValueChange={(v) => { setFreshnessDays(v === "all" ? null : Number(v)); setVisibleCount(PAGE_SIZE); }}>
+                  <SelectTrigger className="w-[160px] h-8 text-xs bg-secondary border-border"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border z-50">
+                    <SelectItem value="all">Any freshness</SelectItem>
+                    {FRESHNESS.map((f) => (<SelectItem key={f.value} value={f.value.toString()}>{f.label}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             {hasFilters && (
               <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1.5" onClick={resetFilters}><RotateCcw className="h-3 w-3" /> Reset filters</Button>
@@ -464,6 +473,8 @@ export default function CategoryDetail() {
                 const days = deal.expires_at ? daysUntil(deal.expires_at) : null;
                 const refDate = deal.last_checked_at || deal.updated_at;
                 const isVerified24h = (Date.now() - new Date(refDate).getTime()) < 24 * 60 * 60 * 1000;
+                // Logic kept; the badge only renders once last_checked_at reflects a real check.
+                const showVerifiedBadge = SHOW_VERIFICATION_FRESHNESS_UI && isVerified24h;
                 const isPremiumDeal = isDealPremium(deal) && !isPremium;
 
                 return (
@@ -529,9 +540,9 @@ export default function CategoryDetail() {
                         )}
 
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-3">
-                          <span className={`flex items-center gap-1 ${isVerified24h ? "text-accent font-medium" : freshnessColor(refDate)}`}>
-                            {isVerified24h ? <Sparkles className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
-                            {isVerified24h ? "Verified today" : timeAgo(refDate)}
+                          <span className={`flex items-center gap-1 ${showVerifiedBadge ? "text-accent font-medium" : freshnessColor(refDate)}`}>
+                            {showVerifiedBadge ? <Sparkles className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
+                            {showVerifiedBadge ? "Verified today" : timeAgo(refDate)}
                           </span>
                           {deal.requires_edu_email && (
                             <span className="flex items-center gap-1 text-primary"><GraduationCap className="h-3 w-3" /> .edu</span>

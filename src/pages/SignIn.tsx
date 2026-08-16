@@ -77,7 +77,7 @@ export default function SignIn() {
             </span>
           </motion.h2>
           <motion.p variants={fadeUp} custom={2} className="mt-4 text-muted-foreground leading-relaxed">
-            Join 50,000+ students saving hundreds each semester on software, food, tech, and more.
+            Student discounts on software, food, tech, travel and more — collected in one place.
           </motion.p>
 
           {/* Stat grid removed: "$2.4M Saved" and "98% Accuracy" were invented — nothing

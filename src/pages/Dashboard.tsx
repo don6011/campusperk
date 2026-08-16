@@ -1084,7 +1084,7 @@ export default function Dashboard() {
         <motion.section initial="hidden" animate="visible" variants={stagger}>
           {/* Ranked by deal quality score and featured status — not by clicks.
               The old subtitle claimed click counts this rail never read. */}
-          <SectionHeader icon={Flame} title={campusName ? `Picked for ${campusName}` : "Picked for You"} linkTo="/explore" iconColor="text-destructive" subtitle="Highest-quality active deals in the catalogue right now" />
+          <SectionHeader icon={Flame} title="Top Rated" linkTo="/explore" iconColor="text-destructive" subtitle="Highest-quality active deals in the catalogue right now" />
           {dealsLoading ? (
             <SectionSkeleton />
           ) : (

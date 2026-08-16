@@ -272,7 +272,7 @@ export default function MerchantProfile() {
           ) : (
             <div className="deal-card-premium rounded-2xl p-8 text-center">
               <Tag className="h-10 w-10 text-primary mx-auto mb-3" />
-              <h3 className="font-display text-xl font-bold text-foreground">New deals are being verified</h3>
+              <h3 className="font-display text-xl font-bold text-foreground">No deals listed yet</h3>
               <p className="text-muted-foreground mt-2">Follow this merchant or request a deal so students know what to ask for next.</p>
               <Button asChild className="mt-5">
                 <Link to="/partners/request">Request Deal</Link>
