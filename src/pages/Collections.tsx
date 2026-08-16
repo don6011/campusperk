@@ -53,7 +53,7 @@ export default function Collections() {
               </p>
             </div>
             <Button asChild variant="outline">
-              <Link to="/explore">Explore All Deals</Link>
+              <Link to="/deals">Explore All Deals</Link>
             </Button>
           </div>
         </section>

@@ -3107,7 +3107,7 @@ export type Database = {
         | "partner_provider"
       conversion_status: "pending" | "confirmed" | "paid"
       deal_scope: "national" | "regional" | "local"
-      deal_status: "active" | "expired" | "coming_soon"
+      deal_status: "active" | "expired" | "coming_soon" | "archived"
       discount_type: "percentage" | "fixed" | "free_trial" | "bogo" | "other"
       offer_status: "pending" | "active" | "expired"
       partner_status: "lead" | "active" | "paused"
@@ -3262,7 +3262,7 @@ export const Constants = {
       ],
       conversion_status: ["pending", "confirmed", "paid"],
       deal_scope: ["national", "regional", "local"],
-      deal_status: ["active", "expired", "coming_soon"],
+      deal_status: ["active", "expired", "coming_soon", "archived"],
       discount_type: ["percentage", "fixed", "free_trial", "bogo", "other"],
       offer_status: ["pending", "active", "expired"],
       partner_status: ["lead", "active", "paused"],

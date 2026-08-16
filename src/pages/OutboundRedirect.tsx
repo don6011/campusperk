@@ -122,7 +122,7 @@ const OutboundRedirect = () => {
                 <Crown className="h-4 w-4" /> Upgrade to Premium
               </Button>
               <Button asChild variant="outline">
-                <Link to="/explore"><ArrowLeft className="h-4 w-4 mr-2" /> Browse Free Deals</Link>
+                <Link to="/deals"><ArrowLeft className="h-4 w-4 mr-2" /> Browse Free Deals</Link>
               </Button>
             </>
           ) : (
@@ -135,7 +135,7 @@ const OutboundRedirect = () => {
                   : "This deal is currently under review and temporarily unavailable."}
               </p>
               <Button asChild variant="outline">
-                <Link to="/explore"><ArrowLeft className="h-4 w-4 mr-2" /> Browse Active Deals</Link>
+                <Link to="/deals"><ArrowLeft className="h-4 w-4 mr-2" /> Browse Active Deals</Link>
               </Button>
             </>
           )}

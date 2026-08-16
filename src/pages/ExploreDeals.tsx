@@ -31,6 +31,7 @@ import { useDealClaimCounts, useClaimDeal } from "@/hooks/use-deal-claims";
 import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
 import { getDealDisplayTitle, getStoredOrComputedQualityScore } from "@/lib/deal-quality";
 import { fetchActiveDealCount } from "@/lib/deal-counts";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 interface DealWithStore {
   id: string; title: string; display_title?: string | null; deal_quality_score?: number | null; description: string | null; discount_type: string;
@@ -43,7 +44,7 @@ interface DealWithStore {
   affiliateSearch?: { merchant_name?: string | null; offer_title?: string | null; category?: string | null; raw_data?: Record<string, unknown> | null }[];
 }
 
-const CATEGORIES = ["Software", "Subscriptions", "Tech", "Clothing", "Food", "Learning", "Books", "Travel", "Fitness", "Entertainment"];
+const CATEGORIES = ["Software & Creative", "Subscriptions & Media", "Learning & Productivity", "Tech & Hardware", "Everyday"];
 const STATUSES = [
   { value: "active", label: "Active" },
   { value: "expiring", label: "Expiring Soon" },
@@ -54,14 +55,8 @@ const FRESHNESS = [
   { value: 7, label: "Last 7 days" },
   { value: 30, label: "Last 30 days" },
 ];
-/**
- * `deals.last_checked_at` was populated by CSV imports, not by anyone checking a
- * deal, so every surface that ranks or filters on it is sorting by an import
- * timestamp while telling the student it means "verified". The sort option and
- * the two freshness controls stay in the code but are hidden until a real
- * verification pass writes that column.
- */
-const SHOW_VERIFICATION_FRESHNESS_UI = false;
+// See FEATURE_FLAGS.showVerificationFreshnessUI for why these controls are hidden.
+const SHOW_VERIFICATION_FRESHNESS_UI = FEATURE_FLAGS.showVerificationFreshnessUI;
 
 const ALL_SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
@@ -154,9 +149,10 @@ export default function ExploreDeals() {
         .from("deals")
         .select(selectWithQuality)
         .eq("is_test_fixture", false)
+        .neq("status", "archived")
         .order("created_at", { ascending: false });
       const { data, error } = first.error && isQualityColumnMissing(first.error.message)
-        ? await supabase.from("deals").select(selectLegacy).eq("is_test_fixture", false).order("created_at", { ascending: false })
+        ? await supabase.from("deals").select(selectLegacy).eq("is_test_fixture", false).neq("status", "archived").order("created_at", { ascending: false })
         : first;
       if (error) throw error;
       const dealRows = data as unknown as DealWithStore[];
@@ -452,6 +448,8 @@ export default function ExploreDeals() {
                 const days = deal.expires_at ? daysUntil(deal.expires_at) : null;
                 const refDate = deal.last_checked_at || deal.updated_at;
                 const isVerified24h = (Date.now() - new Date(refDate).getTime()) < 24 * 60 * 60 * 1000;
+                // Logic kept; the badge only renders once last_checked_at reflects a real check.
+                const showVerifiedBadge = SHOW_VERIFICATION_FRESHNESS_UI && isVerified24h;
                 const badge = trendingBadge(deal, i);
 
                 return (
@@ -557,9 +555,9 @@ export default function ExploreDeals() {
 
                         {/* Meta row */}
                         <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-3">
-                          <span className={`flex items-center gap-1 ${isVerified24h ? "text-accent font-medium" : freshnessColor(refDate)}`}>
-                            {isVerified24h ? <Sparkles className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
-                            {isVerified24h ? "Verified today" : timeAgo(refDate)}
+                          <span className={`flex items-center gap-1 ${showVerifiedBadge ? "text-accent font-medium" : freshnessColor(refDate)}`}>
+                            {showVerifiedBadge ? <Sparkles className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
+                            {showVerifiedBadge ? "Verified today" : timeAgo(refDate)}
                           </span>
                           <div className="flex items-center gap-2">
                             {days !== null && days > 0 && days <= 30 && (

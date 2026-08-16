@@ -78,6 +78,7 @@ export default function DealDetail() {
         .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, ai_summary, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, stores:store_id(name, logo_url, website_url)")
         .eq("id", dealId!)
         .eq("is_test_fixture", false)
+        .neq("status", "archived")
         .maybeSingle();
       if (error) throw error;
       return data;
@@ -163,7 +164,7 @@ export default function DealDetail() {
           <ShoppingBag className="h-12 w-12 text-muted-foreground mb-4" />
           <h1 className="font-display text-xl font-bold text-foreground">Deal not found</h1>
           <p className="text-sm text-muted-foreground mt-2">This deal may have been removed or doesn't exist.</p>
-          <Button variant="outline" className="mt-6 gap-2" onClick={() => navigate("/dashboard")}>
+          <Button variant="outline" className="mt-6 gap-2" onClick={() => navigate("/deals")}>
             <ArrowLeft className="h-4 w-4" /> Back to Dashboard
           </Button>
         </div>

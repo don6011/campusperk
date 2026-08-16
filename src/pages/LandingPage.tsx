@@ -56,7 +56,7 @@ const categories = [
 
 const features = [
   { icon: Zap, title: "Instant Verification", description: "Verify your .edu email once and unlock every student deal instantly." },
-  { icon: Shield, title: "Verified Deals Only", description: "Every discount is manually checked and AI-scanned for authenticity." },
+  { icon: Shield, title: "Verified Deals Only", description: "Every discount is checked by hand before it's listed." },
   { icon: TrendingUp, title: "Price Drop Alerts", description: "Get notified the moment your favorite brands offer deeper discounts." },
 ];
 
@@ -418,8 +418,6 @@ const LandingPage = () => {
               </motion.div>
               <motion.div variants={fadeUp} custom={3} className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-muted-foreground">
                 <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-emerald-300">Verified student flow</span>
-                <span className="rounded-full border border-primary/20 bg-primary/10 px-3 py-1 text-primary">Live inventory ready</span>
-                <span className="rounded-full border border-gold/20 bg-gold/10 px-3 py-1 text-gold">Private beta momentum</span>
               </motion.div>
               <motion.div variants={fadeUp} custom={4} className="mt-8 flex gap-3">
                 <div className="flex items-center gap-3 rounded-xl glass inner-glow px-5 py-3 text-sm text-muted-foreground cursor-default hover:border-border/40 transition-all duration-300">

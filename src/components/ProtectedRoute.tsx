@@ -105,9 +105,9 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
     return <BetaAccessScreen />;
   }
 
-  // Redirect to splash on first visit to dashboard
+  // Redirect to splash on first visit to the home screen (now /deals, was /dashboard)
   if (
-    location.pathname === "/dashboard" &&
+    location.pathname === "/deals" &&
     profile &&
     !profile.has_seen_splash
   ) {

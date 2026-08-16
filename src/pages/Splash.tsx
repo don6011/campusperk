@@ -58,7 +58,7 @@ export default function Splash() {
   const handlePrimaryCta = async () => {
     if (isStudentVerified) {
       await markSeen();
-      navigate("/dashboard");
+      navigate("/deals");
     } else {
       setVerifyOpen(true);
     }
@@ -66,12 +66,12 @@ export default function Splash() {
 
   const handleSecondary = async () => {
     await markSeen();
-    navigate("/explore");
+    navigate("/deals");
   };
 
   const handleSkip = async () => {
     await markSeen();
-    navigate("/explore");
+    navigate("/deals");
   };
 
   const verified = isStudentVerified;
@@ -141,7 +141,7 @@ export default function Splash() {
                 key={brand.name}
                 onClick={() => {
                   if (!verified) setVerifyOpen(true);
-                  else navigate("/explore");
+                  else navigate("/deals");
                 }}
                 className="flex-shrink-0 w-[140px] rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-[var(--shadow-glow)] transition-all duration-200 p-4 flex flex-col items-center gap-3 group cursor-pointer"
               >

@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { SavingsLevelProgress } from "@/components/SavingsLevelProgress";
 import { Button } from "@/components/ui/button";
 import { rarityClassName, useBadgeCollection } from "@/hooks/use-badge-collection";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 type BadgeEngineProps = {
   compact?: boolean;
@@ -40,11 +41,13 @@ export function BadgeEngine({ compact = false }: BadgeEngineProps) {
               <p className="text-sm font-semibold text-foreground">{earnedBadges.length} of {collection.length} badges earned</p>
               <p className="text-xs text-muted-foreground">Open the collection center to track locked badges, rarity, and unlock progress.</p>
             </div>
-            <Button asChild size="sm" variant="outline" className="gap-2">
-              <Link to="/badges">
-                <Sparkles className="h-4 w-4" /> View Badges
-              </Link>
-            </Button>
+            {FEATURE_FLAGS.showBadges && (
+              <Button asChild size="sm" variant="outline" className="gap-2">
+                <Link to="/badges">
+                  <Sparkles className="h-4 w-4" /> View Badges
+                </Link>
+              </Button>
+            )}
           </div>
         </>
       )}

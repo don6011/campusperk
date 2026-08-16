@@ -110,7 +110,7 @@ export default function CampusLeaderboard() {
       <div className="space-y-8 max-w-4xl mx-auto">
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-          <Link to="/dashboard" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4 transition-colors">
+          <Link to="/deals" className="text-sm text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4 transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to Dashboard
           </Link>
           <div className="flex items-center gap-4">
@@ -237,7 +237,7 @@ export default function CampusLeaderboard() {
                     Campus rankings will appear once real claim and savings events are recorded. Invite students or claim an active deal to start your campus total.
                   </p>
                   <div className="mt-5 flex flex-col justify-center gap-2 sm:flex-row">
-                    <Link to="/explore"><Button className="gap-2"><Zap className="h-4 w-4" /> Explore Deals</Button></Link>
+                    <Link to="/deals"><Button className="gap-2"><Zap className="h-4 w-4" /> Explore Deals</Button></Link>
                     <Link to="/ambassador"><Button variant="outline">Become an Ambassador</Button></Link>
                   </div>
                 </div>
@@ -256,7 +256,7 @@ export default function CampusLeaderboard() {
               <p className="text-sm text-muted-foreground max-w-md mx-auto">
                 Every deal you claim adds to your campus total. Explore deals now and help your school climb the leaderboard!
               </p>
-              <Link to="/explore">
+              <Link to="/deals">
                 <Button size="lg" className="gap-2 font-bold text-sm h-12 px-10 mt-2">
                   <Zap className="h-4 w-4" /> Explore Deals
                 </Button>

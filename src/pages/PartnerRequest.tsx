@@ -55,8 +55,8 @@ export default function PartnerRequest() {
           <h1 className="font-display text-2xl font-bold text-foreground">Request Submitted!</h1>
           <p className="text-sm text-muted-foreground">We'll look into adding this business. Thanks for helping grow CampusPerk!</p>
           <div className="flex gap-3 justify-center">
-            <Link to="/dashboard"><Button variant="outline">Dashboard</Button></Link>
-            <Link to="/explore"><Button>Explore Deals</Button></Link>
+            <Link to="/deals"><Button variant="outline">Dashboard</Button></Link>
+            <Link to="/deals"><Button>Explore Deals</Button></Link>
           </div>
         </motion.div>
       </div>

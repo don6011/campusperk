@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useCampusLeaderboard } from "@/hooks/use-campus-leaderboard";
 import { useAuth } from "@/contexts/AuthContext";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 const rankIcons = [
   { icon: Crown, color: "text-gold" },
@@ -36,9 +37,11 @@ export function CampusLeaderboardWidget() {
           </h2>
           <p className="text-sm text-muted-foreground mt-1 ml-12">This week's savings leaderboard</p>
         </div>
-        <Link to="/campus-leaderboard" className="text-sm text-primary hover:text-primary/80 flex items-center gap-1 font-semibold transition-colors group">
-          View full board <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
-        </Link>
+        {FEATURE_FLAGS.showCampusLeaderboard && (
+          <Link to="/campus-leaderboard" className="text-sm text-primary hover:text-primary/80 flex items-center gap-1 font-semibold transition-colors group">
+            View full board <ChevronRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+          </Link>
+        )}
       </div>
 
       <Card className="border-gold/20 bg-card relative overflow-hidden glow-premium">
@@ -100,7 +103,7 @@ export function CampusLeaderboardWidget() {
 
           {/* CTA */}
           <div className="px-6 py-4 border-t border-border/30">
-            <Link to="/explore">
+            <Link to="/deals">
               <Button variant="outline" className="w-full gap-2 font-bold text-sm h-11 border-gold/30 text-gold hover:bg-gold/10">
                 <Zap className="h-4 w-4" /> Boost Your Campus Rank
               </Button>

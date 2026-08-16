@@ -28,6 +28,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
 import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 interface DealWithStore {
   id: string;
@@ -59,15 +60,11 @@ interface DealWithStore {
 }
 
 const CATEGORY_META: Record<string, { name: string; icon: any; description: string; dbNames: string[]; iconColor: string; gradient: string; seoDescription: string }> = {
-  clothing: { name: "Clothing", icon: ShoppingBag, description: "Student discounts on fashion, apparel, and accessories from top brands.", dbNames: ["Clothing"], iconColor: "text-pink-400", gradient: "from-pink-500/10 to-rose-500/10", seoDescription: "Browse verified student clothing discounts including Nike, Adidas, and ASOS." },
-  software: { name: "Software", icon: Monitor, description: "Save on creative tools, developer software, and productivity suites.", dbNames: ["Software"], iconColor: "text-primary", gradient: "from-primary/10 to-blue-400/10", seoDescription: "Browse verified student software discounts including Adobe, Notion, and Microsoft." },
-  tech: { name: "Tech & Computers", icon: Cpu, description: "Discounts on laptops, phones, tablets, and tech accessories.", dbNames: ["Tech", "Tech & Computers"], iconColor: "text-violet-400", gradient: "from-violet-500/10 to-purple-500/10", seoDescription: "Browse verified student tech discounts on laptops, phones, and accessories." },
-  subscriptions: { name: "Subscriptions", icon: CreditCard, description: "Student pricing on streaming, music, and subscription services.", dbNames: ["Subscriptions"], iconColor: "text-accent", gradient: "from-accent/10 to-emerald-500/10", seoDescription: "Browse verified student subscription discounts on Spotify, Netflix, and more." },
-  travel: { name: "Travel", icon: Plane, description: "Student travel deals on flights, hotels, and transportation.", dbNames: ["Travel"], iconColor: "text-sky-400", gradient: "from-sky-500/10 to-cyan-500/10", seoDescription: "Browse verified student travel discounts on flights, hotels, and transportation." },
-  food: { name: "Food", icon: Utensils, description: "Discounts on food delivery, restaurants, and meal services.", dbNames: ["Food"], iconColor: "text-orange-400", gradient: "from-orange-500/10 to-amber-500/10", seoDescription: "Browse verified student food discounts on delivery, restaurants, and meal services." },
-  learning: { name: "Books & Learning", icon: BookOpen, description: "Save on textbooks, online courses, and educational resources.", dbNames: ["Learning", "Books & Learning", "Books"], iconColor: "text-gold", gradient: "from-gold/10 to-yellow-500/10", seoDescription: "Browse verified student discounts on textbooks, courses, and educational resources." },
-  fitness: { name: "Fitness", icon: Dumbbell, description: "Student deals on gym memberships, activewear, and fitness apps.", dbNames: ["Fitness"], iconColor: "text-red-400", gradient: "from-red-500/10 to-rose-500/10", seoDescription: "Browse verified student fitness discounts on gyms, activewear, and fitness apps." },
-  entertainment: { name: "Entertainment", icon: Film, description: "Student pricing on streaming, gaming, and entertainment services.", dbNames: ["Entertainment"], iconColor: "text-indigo-400", gradient: "from-indigo-500/10 to-blue-500/10", seoDescription: "Browse verified student entertainment discounts on streaming, gaming, and more." },
+  "software-creative": { name: "Software & Creative", icon: Monitor, description: "Creative and developer tools at student pricing.", dbNames: ["Software & Creative"], iconColor: "text-primary", gradient: "from-primary/10 to-blue-400/10", seoDescription: "Student pricing on creative and developer software, including Adobe, GitHub and Notion." },
+  "subscriptions-media": { name: "Subscriptions & Media", icon: CreditCard, description: "Streaming, music and membership pricing for students.", dbNames: ["Subscriptions & Media"], iconColor: "text-accent", gradient: "from-accent/10 to-emerald-500/10", seoDescription: "Student pricing on streaming, music and membership subscriptions." },
+  "learning-productivity": { name: "Learning & Productivity", icon: BookOpen, description: "Courses, study tools and productivity apps.", dbNames: ["Learning & Productivity"], iconColor: "text-gold", gradient: "from-gold/10 to-yellow-500/10", seoDescription: "Student discounts on online courses, study tools and productivity apps." },
+  "tech-hardware": { name: "Tech & Hardware", icon: Cpu, description: "Laptops, phones and education pricing on hardware.", dbNames: ["Tech & Hardware"], iconColor: "text-violet-400", gradient: "from-violet-500/10 to-purple-500/10", seoDescription: "Education pricing on laptops, phones and student hardware." },
+  everyday: { name: "Everyday", icon: ShoppingBag, description: "Food, travel, apparel and wellbeing.", dbNames: ["Everyday"], iconColor: "text-pink-400", gradient: "from-pink-500/10 to-rose-500/10", seoDescription: "Student discounts on food, travel, apparel and wellbeing." },
 };
 
 const RELATED_CATEGORIES: Record<string, string[]> = {
@@ -92,13 +89,19 @@ const FRESHNESS = [
   { value: 7, label: "Last 7 days" },
   { value: 30, label: "Last 30 days" },
 ];
-const SORT_OPTIONS = [
+// See FEATURE_FLAGS.showVerificationFreshnessUI for why these controls are hidden.
+const SHOW_VERIFICATION_FRESHNESS_UI = FEATURE_FLAGS.showVerificationFreshnessUI;
+
+const ALL_SORT_OPTIONS = [
   { value: "sponsored", label: "Recommended" },
   { value: "newest", label: "Newest" },
   { value: "discount", label: "Highest Discount" },
   { value: "expiring", label: "Expiring Soon" },
   { value: "verified", label: "Recently Verified" },
 ];
+const SORT_OPTIONS = ALL_SORT_OPTIONS.filter(
+  (option) => SHOW_VERIFICATION_FRESHNESS_UI || option.value !== "verified",
+);
 const PAGE_SIZE = 9;
 
 function daysUntil(dateStr: string) {
@@ -176,6 +179,7 @@ export default function CategoryDetail() {
         .from("deals")
         .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)")
         .eq("is_test_fixture", false)
+        .neq("status", "archived")
         .order("created_at", { ascending: false });
       if (error) throw error;
       const dealRows = data as unknown as DealWithStore[];
@@ -435,13 +439,15 @@ export default function CategoryDetail() {
                 <Checkbox id="premium-cat" checked={premiumOnly} onCheckedChange={(v) => { setPremiumOnly(!!v); setVisibleCount(PAGE_SIZE); }} />
                 <Label htmlFor="premium-cat" className="text-xs text-muted-foreground flex items-center gap-1"><Crown className="h-3.5 w-3.5" /> Premium Only</Label>
               </div>
-              <Select value={freshnessDays?.toString() ?? "all"} onValueChange={(v) => { setFreshnessDays(v === "all" ? null : Number(v)); setVisibleCount(PAGE_SIZE); }}>
-                <SelectTrigger className="w-[160px] h-8 text-xs bg-secondary border-border"><SelectValue /></SelectTrigger>
-                <SelectContent className="bg-card border-border z-50">
-                  <SelectItem value="all">Any freshness</SelectItem>
-                  {FRESHNESS.map((f) => (<SelectItem key={f.value} value={f.value.toString()}>{f.label}</SelectItem>))}
-                </SelectContent>
-              </Select>
+              {SHOW_VERIFICATION_FRESHNESS_UI && (
+                <Select value={freshnessDays?.toString() ?? "all"} onValueChange={(v) => { setFreshnessDays(v === "all" ? null : Number(v)); setVisibleCount(PAGE_SIZE); }}>
+                  <SelectTrigger className="w-[160px] h-8 text-xs bg-secondary border-border"><SelectValue /></SelectTrigger>
+                  <SelectContent className="bg-card border-border z-50">
+                    <SelectItem value="all">Any freshness</SelectItem>
+                    {FRESHNESS.map((f) => (<SelectItem key={f.value} value={f.value.toString()}>{f.label}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             {hasFilters && (
               <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1.5" onClick={resetFilters}><RotateCcw className="h-3 w-3" /> Reset filters</Button>
@@ -464,6 +470,8 @@ export default function CategoryDetail() {
                 const days = deal.expires_at ? daysUntil(deal.expires_at) : null;
                 const refDate = deal.last_checked_at || deal.updated_at;
                 const isVerified24h = (Date.now() - new Date(refDate).getTime()) < 24 * 60 * 60 * 1000;
+                // Logic kept; the badge only renders once last_checked_at reflects a real check.
+                const showVerifiedBadge = SHOW_VERIFICATION_FRESHNESS_UI && isVerified24h;
                 const isPremiumDeal = isDealPremium(deal) && !isPremium;
 
                 return (
@@ -529,9 +537,9 @@ export default function CategoryDetail() {
                         )}
 
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-3">
-                          <span className={`flex items-center gap-1 ${isVerified24h ? "text-accent font-medium" : freshnessColor(refDate)}`}>
-                            {isVerified24h ? <Sparkles className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
-                            {isVerified24h ? "Verified today" : timeAgo(refDate)}
+                          <span className={`flex items-center gap-1 ${showVerifiedBadge ? "text-accent font-medium" : freshnessColor(refDate)}`}>
+                            {showVerifiedBadge ? <Sparkles className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
+                            {showVerifiedBadge ? "Verified today" : timeAgo(refDate)}
                           </span>
                           {deal.requires_edu_email && (
                             <span className="flex items-center gap-1 text-primary"><GraduationCap className="h-3 w-3" /> .edu</span>
