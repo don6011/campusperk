@@ -418,7 +418,6 @@ const LandingPage = () => {
               </motion.div>
               <motion.div variants={fadeUp} custom={3} className="mt-5 flex flex-wrap gap-2 text-xs font-semibold text-muted-foreground">
                 <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-1 text-emerald-300">Verified student flow</span>
-                <span className="rounded-full border border-gold/20 bg-gold/10 px-3 py-1 text-gold">Private beta momentum</span>
               </motion.div>
               <motion.div variants={fadeUp} custom={4} className="mt-8 flex gap-3">
                 <div className="flex items-center gap-3 rounded-xl glass inner-glow px-5 py-3 text-sm text-muted-foreground cursor-default hover:border-border/40 transition-all duration-300">

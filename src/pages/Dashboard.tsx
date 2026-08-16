@@ -21,7 +21,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
 import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
 import { useDealClick } from "@/hooks/use-deal-click";
-import PushNotificationPrompt from "@/components/PushNotificationPrompt";
 import { FoundingMemberBadge } from "@/components/FoundingMemberBadge";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { SurpriseDropCard } from "@/components/dashboard/SurpriseDropCard";
@@ -1037,9 +1036,6 @@ export default function Dashboard() {
             profileName={profile?.name}
           />
         )}
-
-        {/* PUSH NOTIFICATION PROMPT */}
-        <PushNotificationPrompt />
 
         {/* DEAL STREAK */}
         <DealStreakWidget />
