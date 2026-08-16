@@ -149,9 +149,10 @@ export default function ExploreDeals() {
         .from("deals")
         .select(selectWithQuality)
         .eq("is_test_fixture", false)
+        .neq("status", "archived")
         .order("created_at", { ascending: false });
       const { data, error } = first.error && isQualityColumnMissing(first.error.message)
-        ? await supabase.from("deals").select(selectLegacy).eq("is_test_fixture", false).order("created_at", { ascending: false })
+        ? await supabase.from("deals").select(selectLegacy).eq("is_test_fixture", false).neq("status", "archived").order("created_at", { ascending: false })
         : first;
       if (error) throw error;
       const dealRows = data as unknown as DealWithStore[];

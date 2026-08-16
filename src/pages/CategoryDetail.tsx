@@ -183,6 +183,7 @@ export default function CategoryDetail() {
         .from("deals")
         .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)")
         .eq("is_test_fixture", false)
+        .neq("status", "archived")
         .order("created_at", { ascending: false });
       if (error) throw error;
       const dealRows = data as unknown as DealWithStore[];
