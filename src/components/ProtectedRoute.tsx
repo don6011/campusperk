@@ -93,7 +93,20 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }
 
   if (!isLoggedIn) {
-    return <Navigate to="/" replace />;
+    /*
+     * Send them to sign-in, remembering where they were going.
+     *
+     * This used to be `<Navigate to="/" replace />`: a logged-out visitor who
+     * tapped a deal was silently returned to the homepage, with `replace` so
+     * there was not even a back-button trace — no sign-in prompt, no
+     * explanation, nothing to act on. It read as a broken link.
+     *
+     * The homepage now lists all seven deals with their caveats, so it
+     * actively invites that tap, and every one of them dead-ended on the page
+     * the visitor was already looking at.
+     */
+    const next = `${location.pathname}${location.search}`;
+    return <Navigate to={`/sign-in?next=${encodeURIComponent(next)}`} replace />;
   }
 
   const hasBetaAccess = !!profile?.beta_access || !!profile?.is_founding_member;
