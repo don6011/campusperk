@@ -198,6 +198,34 @@
     display: block;
   }
 
+  /*
+   * Monochrome brand mark, drawn by masking the SVG with currentColor.
+   *
+   * The old assets were opaque RGB PNGs with the brand's own background baked
+   * in — checked, and none of them carries an alpha channel — which is why
+   * GitHub, Adobe and Apple rendered as solid black squares once the surface
+   * went white. They cannot be recoloured or masked; the background is pixels.
+   *
+   * simple-icons ships single-path marks with no fill, so masking gives a
+   * uniform-weight silhouette that takes the tile's text colour. Every logo on
+   * the site is now either one of these or a monogram, which is the point: one
+   * weight reads as designed, mixed full-colour PNGs read as scraped.
+   */
+  .merchant-logo-mark {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: currentColor;
+    -webkit-mask-image: var(--mark);
+    mask-image: var(--mark);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+  }
+
   .merchant-logo-panel {
     width: 100%;
     height: 100%;

@@ -50,6 +50,7 @@ export function MerchantLogo({
 }: MerchantLogoProps) {
   const [failed, setFailed] = useState(false);
   const showImage = !!logoUrl && !failed;
+  const isMark = !!logoUrl && logoUrl.endsWith(".svg");
 
   return (
     <div
@@ -58,7 +59,19 @@ export function MerchantLogo({
         className,
       )}
     >
-      {showImage ? (
+      {showImage && isMark ? (
+        /*
+         * SVG marks render as a mask filled with currentColor, so every logo on
+         * the site has the same weight and takes the surrounding text colour.
+         * An <img> could not do this: the file's own fill would win.
+         */
+        <span
+          role="img"
+          aria-label={name || fallbackName || "Merchant"}
+          className="merchant-logo-mark"
+          style={{ ["--mark" as string]: `url(${logoUrl})` }}
+        />
+      ) : showImage ? (
         <img
           src={logoUrl!}
           alt={name || fallbackName || "Merchant"}

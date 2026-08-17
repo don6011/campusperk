@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MerchantLogo } from "@/components/MerchantLogo";
+import { DealCard } from "@/components/DealCard";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -40,6 +41,7 @@ interface DealWithStore {
   sponsored: boolean; featured: boolean; category: string | null;
   expires_at: string | null; created_at: string; updated_at: string;
   last_checked_at: string | null; visibility: string | null; is_affiliate?: boolean | null;
+  watch_out?: string | null;
   sponsor_tier: number | null; sponsor_start_at: string | null; sponsor_end_at: string | null;
   stores: { id: string; name: string; logo_url: string | null; website_url: string | null; };
   affiliateSearch?: { merchant_name?: string | null; offer_title?: string | null; category?: string | null; raw_data?: Record<string, unknown> | null }[];
@@ -169,8 +171,8 @@ export default function ExploreDeals() {
   const { data: deals = [], isLoading } = useQuery({
     queryKey: ["deals-with-stores"],
     queryFn: async () => {
-      const selectWithQuality = "id, store_id, title, display_title, deal_quality_score, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)";
-      const selectLegacy = "id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)";
+      const selectWithQuality = "id, store_id, title, display_title, deal_quality_score, description, watch_out, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)";
+      const selectLegacy = "id, store_id, title, description, watch_out, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, sponsor_tier, sponsor_priority, sponsor_start_at, sponsor_end_at, stores(id, name, logo_url, website_url)";
       const first = await supabase
         .from("deals")
         .select(selectWithQuality)
@@ -415,169 +417,68 @@ export default function ExploreDeals() {
         {/* Deals grid — LARGER CARDS */}
         {visible.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {visible.map((deal: any, i) => {
-                const needsVerification = deal.requires_edu_email && !isStudentVerified;
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+              {visible.map((deal: any) => {
+                /*
+                 * D1-D3: the card is `DealCard`. Everything the old inline card
+                 * did beyond gating — the logo band, the badge row, the claim
+                 * counts, the description, the meta row and the full-width
+                 * "Get This Deal" button — is either in that component or
+                 * deliberately gone. See DealCard for the reasoning.
+                 *
+                 * Gating is the one thing that stays here, because it depends on
+                 * this page's auth state. The four separate overlays collapse
+                 * into one computed gate: they were identical blocks differing
+                 * only in icon, label and click handler, and only ever one could
+                 * be visible because each was guarded against the others.
+                 */
                 const isPremiumDeal = isDealPremium(deal) && !isPremium;
                 const eligibleRoles: string[] | null = deal.eligible_roles ?? null;
-                const roleGated = eligibleRoles && eligibleRoles.length > 0 && isCampusVerified && campusRole && !eligibleRoles.includes(campusRole);
-                const campusGated = deal.requires_campus_verification && !isCampusVerified && !isPremiumDeal;
-                const days = deal.expires_at ? daysUntil(deal.expires_at) : null;
-                // `last_checked_at` only — no `updated_at` fallback. See
-                // checkedDateLabel for why the fallback was a falsehood.
-                const checkedLabel = checkedDateLabel(deal.last_checked_at);
-                const isVerified24h = !!deal.last_checked_at &&
-                  (Date.now() - new Date(deal.last_checked_at).getTime()) < 24 * 60 * 60 * 1000;
-                // Logic kept; the badge only renders once last_checked_at reflects a real check.
-                const showVerifiedBadge = SHOW_VERIFICATION_FRESHNESS_UI && isVerified24h;
-                const badge = trendingBadge(deal, i);
+                const roleGated = !!(eligibleRoles && eligibleRoles.length > 0 && isCampusVerified && campusRole && !eligibleRoles.includes(campusRole));
+                const campusGated = !!deal.requires_campus_verification && !isCampusVerified;
+                const needsVerification = !!deal.requires_edu_email && !isStudentVerified;
+
+                const gate = isPremiumDeal
+                  ? { label: "Premium deal", hint: "Upgrade to unlock", onClick: () => { setUpgradeOpen(true); logPaywallView(deal.id, "explore", user?.id); } }
+                  : campusGated
+                  ? { label: "Campus verification required", hint: "Verify campus access", onClick: () => setVerifyOpen(true) }
+                  : roleGated
+                  ? { label: "Not eligible for your role", hint: `Available to: ${eligibleRoles!.join(", ")}`, onClick: undefined }
+                  : needsVerification
+                  ? { label: "Verify your .edu email", hint: "Student-verified deal", onClick: () => setVerifyOpen(true) }
+                  : null;
 
                 return (
-                  <motion.div key={deal.id} initial="hidden" animate="visible" variants={fadeUp} custom={i} whileHover={{ y: -4, transition: { duration: 0.15 } }}>
-                    <Card className={`group relative overflow-hidden deal-card-premium ${deal.featured ? "glow-featured" : ""} ${deal.sponsored ? "glow-sponsored" : ""} ${isPremiumDeal ? "glow-premium" : ""}`}>
-                      {/* Premium lock overlay */}
-                      {isPremiumDeal && (
-                        <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => { setUpgradeOpen(true); logPaywallView(deal.id, "explore", user?.id); }}>
-                          <div className="h-12 w-12 rounded-full bg-gold/15 flex items-center justify-center"><Lock className="h-6 w-6 text-gold" /></div>
-                          <span className="text-sm font-semibold text-foreground">Premium Deal</span>
-                          <span className="text-[11px] text-muted-foreground">Upgrade to unlock</span>
-                        </div>
-                      )}
-                      {/* Campus verification gate overlay */}
-                      {campusGated && !isPremiumDeal && (
-                        <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => setVerifyOpen(true)}>
-                          <div className="h-12 w-12 rounded-full bg-primary/15 flex items-center justify-center"><Shield className="h-6 w-6 text-primary" /></div>
-                          <span className="text-sm font-semibold text-foreground text-center px-4">Campus Verification Required</span>
-                          <span className="text-[11px] text-muted-foreground">Verify campus access</span>
-                        </div>
-                      )}
-                      {/* Role not eligible overlay */}
-                      {roleGated && !isPremiumDeal && !campusGated && (
-                        <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5">
-                          <div className="h-12 w-12 rounded-full bg-secondary flex items-center justify-center"><Shield className="h-6 w-6 text-muted-foreground" /></div>
-                          <span className="text-sm font-semibold text-foreground text-center px-4">Not eligible for your role</span>
-                          <span className="text-[11px] text-muted-foreground">Available to: {eligibleRoles!.join(", ")}</span>
-                        </div>
-                      )}
-                      {/* Verification gate overlay (legacy edu) */}
-                      {needsVerification && !isPremiumDeal && !campusGated && !roleGated && (
-                        <div className="absolute inset-0 z-10 backdrop-blur-[6px] bg-background/60 flex flex-col items-center justify-center gap-2.5 cursor-pointer" onClick={() => setVerifyOpen(true)}>
-                          <div className="h-12 w-12 rounded-full bg-primary/15 flex items-center justify-center"><GraduationCap className="h-6 w-6 text-primary" /></div>
-                          <span className="text-sm font-semibold text-foreground text-center px-4">Verify your .edu email</span>
-                          <span className="text-[11px] text-muted-foreground">Student-verified deal</span>
-                        </div>
-                      )}
+                  <div key={deal.id} className="relative">
+                    <DealCard deal={deal} className={gate ? "pointer-events-none" : undefined} />
 
-                      <CardContent className="p-4">
-                        {/* Badge + Fav row */}
-                        <div className="flex items-center justify-between mb-2">
-                          <Badge className={`text-[9px] font-bold gap-1 ${badge.className}`}>{badge.icon} {badge.label}</Badge>
-                          <motion.button whileTap={{ scale: 0.8 }} onClick={() => toggleFav(deal.id)} className="p-1.5 rounded-lg hover:bg-secondary transition-colors shrink-0">
-                            <Heart className={`h-4 w-4 ${favorites.has(deal.id) ? "fill-destructive text-destructive" : "text-muted-foreground"}`} />
-                          </motion.button>
-                        </div>
+                    {/* Favourite. 44px tap target, clear of the title. Hidden on a
+                        gated card: it sat above the scrim and stayed clickable. */}
+                    {!gate && (
+                    <button
+                      type="button"
+                      aria-label={favorites.has(deal.id) ? "Remove from saved" : "Save deal"}
+                      onClick={(e) => { e.preventDefault(); toggleFav(deal.id); }}
+                      className="absolute right-1 top-1 flex h-11 w-11 items-center justify-center rounded-tile text-muted-faint transition-colors hover:text-foreground"
+                    >
+                      <Heart className={`h-4 w-4 ${favorites.has(deal.id) ? "fill-destructive text-destructive" : ""}`} />
+                    </button>
+                    )}
 
-                        {/* Savings — DOMINANT */}
-                        <MerchantLogo
-                          name={deal.stores.name}
-                          logoUrl={deal.stores.logo_url}
-                          fallbackName={deal.title}
-                          className="logo-banner mb-4 h-20 w-full rounded-xl p-2"
-                          monogramClassName="text-2xl"
-                        />
-
-                        <div className="mb-3">
-                          <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{displayDealTitle(deal)}</div>
-                        </div>
-
-                        {/* No discount_value means no verified figure to show; "Special" was inventing one. */}
-                        {deal.discount_value && <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value}</div>}
-
-                        {/* Claim counter */}
-                        <div className="mb-2 flex items-center gap-2">
-                          {(() => {
-                            if (!SHOW_CLAIM_COUNTS) return null;
-                            const counts = claimCountsMap?.get(deal.id);
-                            if (!counts?.total) return null;
-                            return (
-                              <span className="text-[11px] text-muted-foreground flex items-center gap-1">
-                                <Flame className="h-3 w-3 text-destructive" />
-                                {counts.total.toLocaleString()} claimed
-                              </span>
-                            );
-                          })()}
-                        </div>
-
-                        {/* Claim social proof row */}
-                        {(() => {
-                          if (!SHOW_CLAIM_COUNTS) return null;
-                          const counts = claimCountsMap?.get(deal.id);
-                          const todayCount = counts?.today || 0;
-                          const campusTrending = counts?.campusTrending || false;
-                          if (!todayCount && !campusTrending) return null;
-                          return (
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {todayCount > 0 && (
-                                <span className="text-[10px] font-semibold text-destructive flex items-center gap-1 bg-destructive/10 rounded-full px-2 py-0.5">
-                                  <Flame className="h-2.5 w-2.5" /> {todayCount} claimed today
-                                </span>
-                              )}
-                              {campusTrending && (
-                                <span className="text-[10px] font-semibold text-primary flex items-center gap-1 bg-primary/10 rounded-full px-2 py-0.5">
-                                  <TrendingUp className="h-2.5 w-2.5" /> Trending on campus
-                                </span>
-                              )}
-                            </div>
-                          );
-                        })()}
-
-                        {/* Description */}
-                        {deal.description && (
-                          <p className="text-xs text-muted-foreground line-clamp-2 mb-2">{deal.description}</p>
-                        )}
-
-                        {/* Meta row */}
-                        <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-3">
-                          {/* Explicit date, untinted. Nothing when no check is
-                              recorded — see checkedDateLabel. */}
-                          {showVerifiedBadge ? (
-                            <span className="flex items-center gap-1 text-accent font-medium">
-                              <Sparkles className="h-2.5 w-2.5" /> Verified today
-                            </span>
-                          ) : checkedLabel ? (
-                            <span className="flex items-center gap-1">
-                              <Clock className="h-2.5 w-2.5" /> {checkedLabel}
-                            </span>
-                          ) : <span />}
-                          <div className="flex items-center gap-2">
-                            {days !== null && days > 0 && days <= 30 && (
-                              <Badge className={`text-[10px] font-semibold gap-1 ${urgencyColor(days)}`}>
-                                <AlertTriangle className="h-2.5 w-2.5" /> {days === 1 ? "Ends tomorrow" : `${days}d left`}
-                              </Badge>
-                            )}
-                            {deal.requires_edu_email && (
-                              <span className="flex items-center gap-1 text-primary"><GraduationCap className="h-3 w-3" /> .edu</span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* CTA */}
-                        <div className="pt-2.5 border-t border-border/50">
-                          <Button
-                            size="sm"
-                            className="w-full gap-1.5 h-10 font-bold text-sm opacity-90 group-hover:opacity-100 group-hover:shadow-md group-hover:shadow-primary/25 transition-all"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              claimDeal.mutate(deal.id);
-                              navigate(`/go/${deal.id}`);
-                            }}
-                          >
-                            <ExternalLink className="h-3.5 w-3.5" /> Get This Deal
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
+                    {gate && (
+                      /* Flat scrim, not a blur: the system has one elevation. */
+                      <button
+                        type="button"
+                        onClick={gate.onClick}
+                        disabled={!gate.onClick}
+                        className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 rounded-card border border-border bg-background px-4 text-center"
+                      >
+                        <Lock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
+                        <span className="text-small font-medium text-foreground">{gate.label}</span>
+                        <span className="text-caption text-muted-foreground">{gate.hint}</span>
+                      </button>
+                    )}
+                  </div>
                 );
               })}
             </div>

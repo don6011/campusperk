@@ -105,9 +105,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-background flex relative noise-overlay">
       {/* Sidebar */}
+      {/*
+        D4: the sidebar is desktop only. Under 768px navigation is the bottom tab
+        bar below, so this is `hidden md:flex` rather than an off-canvas drawer —
+        a drawer would put the primary navigation two taps away on the viewport
+        the product is designed for.
+      */}
       <aside
-        className={`fixed inset-y-0 left-0 z-40 flex flex-col border-r border-border/30 glass-strong transition-all duration-300 ${
-          sidebarOpen ? "w-60" : "w-0 -translate-x-full lg:w-16 lg:translate-x-0"
+        className={`fixed inset-y-0 left-0 z-40 hidden md:flex flex-col border-r border-border transition-all duration-300 ${
+          sidebarOpen ? "w-60" : "w-16"
         }`}
       >
         {/* Logo */}
@@ -209,7 +215,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       </aside>
 
       {/* Main content */}
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? "lg:ml-60" : "lg:ml-16"}`}>
+      <div className={`flex-1 flex flex-col transition-all duration-300 ${sidebarOpen ? "md:ml-60" : "md:ml-16"}`}>
         {/* Top nav */}
         <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b border-border/30 glass-strong px-4 lg:px-6">
           <Button
@@ -298,10 +304,59 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 lg:p-6">
+        <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-6">
           {children}
         </main>
       </div>
+
+      <MobileTabBar currentPath={location.pathname} />
     </div>
+  );
+}
+
+/**
+ * D4: bottom tab bar under 768px.
+ *
+ * Four destinations, not five. Submit moves into Account: it is an occasional
+ * action, and a fifth tab would push each target under the 44px minimum at
+ * 375px (375 / 5 = 75px per tab once padding is removed, against 93px at four).
+ *
+ * Every target is 44px tall minimum. Nothing here depends on hover — the labels
+ * are always visible rather than appearing on interaction, because there is no
+ * hover state on a touch device to reveal them.
+ */
+const MOBILE_TABS = [
+  { title: "Deals", url: "/deals", icon: Compass },
+  { title: "Categories", url: "/categories", icon: Grid3X3 },
+  { title: "Saved", url: "/favorites", icon: Heart },
+  { title: "Account", url: "/settings", icon: Settings },
+];
+
+function MobileTabBar({ currentPath }: { currentPath: string }) {
+  return (
+    <nav
+      aria-label="Main"
+      className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background md:hidden"
+    >
+      <ul className="flex">
+        {MOBILE_TABS.map((tab) => {
+          const active = currentPath === tab.url || currentPath.startsWith(`${tab.url}/`);
+          return (
+            <li key={tab.url} className="flex-1">
+              <Link
+                to={tab.url}
+                aria-current={active ? "page" : undefined}
+                className={`flex h-14 flex-col items-center justify-center gap-1 text-caption ${
+                  active ? "text-foreground" : "text-muted-faint"
+                }`}
+              >
+                <tab.icon className="h-5 w-5" aria-hidden="true" />
+                {tab.title}
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </nav>
   );
 }
