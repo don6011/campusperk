@@ -75,7 +75,7 @@ export default function Collections() {
                       <CardContent className="p-5 h-full flex flex-col gap-5">
                         <div className="grid grid-cols-4 gap-2 min-h-20">
                           {previews.length > 0 ? previews.map((deal) => (
-                            <div key={deal.id} className="logo-banner merchant-logo-panel merchant-logo-panel--cover h-20">
+                            <div key={deal.id} className="logo-banner h-20 rounded-lg overflow-hidden flex items-center justify-center p-2">
                               {deal.stores?.logo_url ? (
                                 <img src={deal.stores.logo_url} alt={deal.stores.name || deal.title} className="merchant-logo-img" />
                               ) : (

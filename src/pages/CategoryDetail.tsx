@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
 import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
+import { checkedDateLabel } from "@/lib/deal-utils";
 
 interface DealWithStore {
   id: string;
@@ -95,7 +96,9 @@ const SHOW_VERIFICATION_FRESHNESS_UI = FEATURE_FLAGS.showVerificationFreshnessUI
 const ALL_SORT_OPTIONS = [
   { value: "sponsored", label: "Recommended" },
   { value: "newest", label: "Newest" },
-  { value: "discount", label: "Highest Discount" },
+  // "Highest Discount" removed for the same reason as Explore's: it ranked on
+  // `discount_value`, which is null on every active deal, so it reordered
+  // nothing while implying the data existed.
   { value: "expiring", label: "Expiring Soon" },
   { value: "verified", label: "Recently Verified" },
 ];
@@ -108,19 +111,9 @@ function daysUntil(dateStr: string) {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
-function timeAgo(dateStr: string) {
-  const hours = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60));
-  if (hours < 1) return "Just now";
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
-
-function freshnessColor(dateStr: string) {
-  const days = (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24);
-  if (days <= 1) return "text-accent";
-  if (days <= 7) return "text-gold";
-  return "text-destructive";
-}
+// Local copies of timeAgo/freshnessColor lived here. The card meta row now
+// renders an explicit "Checked <date>" from `checkedDateLabel`, so neither the
+// relative format nor the freshness tint is needed.
 
 function urgencyColor(days: number) {
   if (days < 3) return "bg-destructive/15 text-destructive border-destructive/30";
@@ -129,10 +122,24 @@ function urgencyColor(days: number) {
   return "bg-accent/15 text-accent border-accent/30";
 }
 
-function discountNum(deal: DealWithStore) {
-  const m = (deal.discount_value ?? "").match(/(\d+)/);
-  return m ? parseInt(m[1]) : 0;
-}
+// Sort keys that can be absent. Missing values sort last rather than being
+// coerced to 0 or Infinity at the call site.
+const timeKey = (value: string | null | undefined) =>
+  value ? new Date(value).getTime() : null;
+
+const compareDescNullsLast = (a: number | null, b: number | null) => {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return b - a;
+};
+
+const compareAscNullsLast = (a: number | null, b: number | null) => {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return a - b;
+};
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -287,18 +294,13 @@ export default function CategoryDetail() {
       case "newest":
         list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
-      case "discount":
-        list.sort((a, b) => discountNum(b) - discountNum(a));
-        break;
       case "expiring":
-        list.sort((a, b) => {
-          const da = a.expires_at ? new Date(a.expires_at).getTime() : Infinity;
-          const db = b.expires_at ? new Date(b.expires_at).getTime() : Infinity;
-          return da - db;
-        });
+        list.sort((a, b) => compareAscNullsLast(timeKey(a.expires_at), timeKey(b.expires_at)));
         break;
       case "verified":
-        list.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        // `last_checked_at` only — `updated_at` reports when the row was
+        // written, not when the offer was checked.
+        list.sort((a, b) => compareDescNullsLast(timeKey(a.last_checked_at), timeKey(b.last_checked_at)));
         break;
     }
     return list;
@@ -468,8 +470,10 @@ export default function CategoryDetail() {
               {visible.map((deal, i) => {
                 const needsVerification = deal.requires_edu_email && !isStudentVerified;
                 const days = deal.expires_at ? daysUntil(deal.expires_at) : null;
-                const refDate = deal.last_checked_at || deal.updated_at;
-                const isVerified24h = (Date.now() - new Date(refDate).getTime()) < 24 * 60 * 60 * 1000;
+                // `last_checked_at` only — no `updated_at` fallback.
+                const checkedLabel = checkedDateLabel(deal.last_checked_at);
+                const isVerified24h = !!deal.last_checked_at &&
+                  (Date.now() - new Date(deal.last_checked_at).getTime()) < 24 * 60 * 60 * 1000;
                 // Logic kept; the badge only renders once last_checked_at reflects a real check.
                 const showVerifiedBadge = SHOW_VERIFICATION_FRESHNESS_UI && isVerified24h;
                 const isPremiumDeal = isDealPremium(deal) && !isPremium;
@@ -540,10 +544,15 @@ export default function CategoryDetail() {
                         )}
 
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-3">
-                          <span className={`flex items-center gap-1 ${showVerifiedBadge ? "text-accent font-medium" : freshnessColor(refDate)}`}>
-                            {showVerifiedBadge ? <Sparkles className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
-                            {showVerifiedBadge ? "Verified today" : timeAgo(refDate)}
-                          </span>
+                          {showVerifiedBadge ? (
+                            <span className="flex items-center gap-1 text-accent font-medium">
+                              <Sparkles className="h-2.5 w-2.5" /> Verified today
+                            </span>
+                          ) : checkedLabel ? (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-2.5 w-2.5" /> {checkedLabel}
+                            </span>
+                          ) : <span />}
                           {deal.requires_edu_email && (
                             <span className="flex items-center gap-1 text-primary"><GraduationCap className="h-3 w-3" /> .edu</span>
                           )}

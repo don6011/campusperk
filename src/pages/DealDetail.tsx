@@ -26,15 +26,17 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { useDealClaimCounts, useClaimDeal } from "@/hooks/use-deal-claims";
-import { timeAgo, freshnessColor, daysUntil } from "@/lib/deal-utils";
+import { checkedDateLabel, daysUntil } from "@/lib/deal-utils";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
-// Same guard Explore and CategoryDetail already use. It was never applied here,
-// so the highest-intent page in the product kept asserting a verification that
-// had not happened — three times, and in a worse form than the pages that were
-// fixed: `lastChecked` reads `deal.updated_at`, not `last_checked_at`, so
-// "Verified 4h ago" was reporting when a row was last written by an import.
+// Same guard Explore and CategoryDetail use. It was missing here, so the
+// highest-intent page in the product asserted a verification that had not
+// happened, in three places, sourced from `updated_at` — so "Verified 4h ago"
+// was reporting when an import last wrote the row. Both the guard and the
+// source are now correct; the label is an explicit date from `last_checked_at`.
 const SHOW_VERIFICATION_FRESHNESS_UI = FEATURE_FLAGS.showVerificationFreshnessUI;
+// Claim counts are recorded either way; this only governs display.
+const SHOW_CLAIM_COUNTS = FEATURE_FLAGS.showClaimCounts;
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -184,7 +186,9 @@ export default function DealDetail() {
   const isPremiumDeal = deal.premium_only;
   const isGated = isPremiumDeal && !userIsPremium && !isFoundingMember;
   const daysLeft = deal.expires_at ? daysUntil(deal.expires_at) : null;
-  const lastChecked = deal.updated_at;
+  // `last_checked_at`, never `updated_at`. The old source reported when the row
+  // was last written, so every deal claimed a check that was really an import.
+  const checkedLabel = checkedDateLabel(deal.last_checked_at);
 
   const handleGoToOffer = () => {
     if (isGated) {
@@ -268,19 +272,22 @@ export default function DealDetail() {
                   <Badge className="bg-gold/15 text-gold border-gold/30 text-xs font-semibold gap-1">
                     <Crown className="h-3 w-3" /> Premium Only
                   </Badge>
-                ) : (
+                ) : deal.last_checked_at ? (
+                  /* Was unconditional: every non-premium deal claimed "Verified"
+                     with nothing behind it. Now it requires a recorded check and
+                     states its date rather than asserting a bare status. */
                   <Badge className="bg-accent/15 text-accent border-accent/30 text-xs font-semibold gap-1">
-                    <Shield className="h-3 w-3" /> Verified
+                    <Shield className="h-3 w-3" /> {checkedLabel}
                   </Badge>
-                )}
+                ) : null}
                 {deal.requires_edu_email && (
                   <Badge className="bg-primary/10 text-primary border-primary/20 text-xs gap-1">
                     <GraduationCap className="h-3 w-3" /> .edu Required
                   </Badge>
                 )}
-                {SHOW_VERIFICATION_FRESHNESS_UI && (
-                  <span className={`text-xs flex items-center gap-1 font-medium ${freshnessColor(lastChecked)}`}>
-                    <Clock className="h-3 w-3" /> {timeAgo(lastChecked)}
+                {SHOW_VERIFICATION_FRESHNESS_UI && checkedLabel && (
+                  <span className="text-xs flex items-center gap-1 font-medium text-muted-foreground">
+                    <Clock className="h-3 w-3" /> {checkedLabel}
                   </span>
                 )}
               </div>
@@ -461,7 +468,8 @@ export default function DealDetail() {
 
               <Separator className="my-6" />
 
-              {/* Social proof */}
+              {/* Social proof — display gated; recording is untouched. */}
+              {SHOW_CLAIM_COUNTS && (
               <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <Flame className="h-3.5 w-3.5 text-destructive" />
@@ -478,6 +486,7 @@ export default function DealDetail() {
                   </span>
                 )}
               </div>
+              )}
 
               {/* CTA */}
               <div className="flex items-center gap-3 mt-4">
@@ -493,9 +502,9 @@ export default function DealDetail() {
               </div>
 
               {/* Trust + Affiliate */}
-              {SHOW_VERIFICATION_FRESHNESS_UI && (
+              {SHOW_VERIFICATION_FRESHNESS_UI && checkedLabel && (
                 <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/70 mt-4">
-                  <Clock className="h-3 w-3" /> Last verified {timeAgo(lastChecked)}
+                  <Clock className="h-3 w-3" /> {checkedLabel}
                 </div>
               )}
               {deal.is_affiliate && (
@@ -513,9 +522,9 @@ export default function DealDetail() {
                 {deal.expires_at && (
                   <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Expires {new Date(deal.expires_at).toLocaleDateString()}</span>
                 )}
-                {SHOW_VERIFICATION_FRESHNESS_UI && (
-                  <span className={`flex items-center gap-1 ${freshnessColor(lastChecked)}`}>
-                    <Clock className="h-3 w-3" /> Checked {timeAgo(lastChecked)}
+                {SHOW_VERIFICATION_FRESHNESS_UI && checkedLabel && (
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" /> {checkedLabel}
                   </span>
                 )}
               </div>
@@ -540,17 +549,33 @@ export default function DealDetail() {
                 <Link key={related.id} to={`/deals/${related.id}`}>
                   <Card className="deal-card-premium hover:border-primary/30 transition-all duration-300">
                     <CardContent className="p-5 flex items-center gap-4">
-                      <div className="logo-banner merchant-logo-panel merchant-logo-panel--cover h-16 w-24 shrink-0">
+                      {/*
+                        `merchant-logo-panel` and `--cover` are image rules —
+                        width/height 100% with max-* removed. Applied to this
+                        container they stripped its own sizing, and combined with
+                        an undefined `.merchant-logo-img` on the image, the logo
+                        rendered at natural size and burst out of the tile.
+                        The container now sizes and clips; the image is
+                        constrained by `.merchant-logo-img`.
+                      */}
+                      <div className="logo-banner h-16 w-24 shrink-0 rounded-lg overflow-hidden flex items-center justify-center p-2">
                         {related.stores?.logo_url ? (
                           <img src={related.stores.logo_url} alt={related.stores?.name ?? related.title} className="merchant-logo-img" />
                         ) : (
-                          <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                          <span className="merchant-logo-monogram text-sm" aria-hidden="true">
+                            {(related.stores?.name ?? related.title).trim().charAt(0).toUpperCase()}
+                          </span>
                         )}
                       </div>
                       <div className="min-w-0">
                         <div className="text-[11px] text-muted-foreground truncate">{related.stores?.name ?? "Merchant"}</div>
                         <div className="font-medium text-sm text-foreground truncate">{related.title}</div>
-                        <div className="text-xs text-primary font-semibold mt-0.5">{related.discount_value ?? "Deal"}</div>
+                        {/* No "Deal" placeholder: discount_value is null across
+                            the catalogue, so the fallback printed a bare word
+                            beside every tile. */}
+                        {related.discount_value && (
+                          <div className="text-xs text-primary font-semibold mt-0.5">{related.discount_value}</div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
