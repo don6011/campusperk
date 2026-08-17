@@ -131,7 +131,7 @@ export default function CollectionDetail() {
               <motion.div key={deal.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}>
                 <Card className="deal-card-premium h-full">
                   <CardContent className="p-5 h-full flex flex-col gap-4">
-                    <Link to={`/deals/${deal.id}`} className="logo-banner merchant-logo-panel merchant-logo-panel--cover h-24">
+                    <Link to={`/deals/${deal.id}`} className="logo-banner h-24 rounded-lg overflow-hidden flex items-center justify-center p-3">
                       {deal.stores?.logo_url ? (
                         <img src={deal.stores.logo_url} alt={deal.stores.name || deal.title} className="merchant-logo-img" />
                       ) : (

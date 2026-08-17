@@ -549,17 +549,33 @@ export default function DealDetail() {
                 <Link key={related.id} to={`/deals/${related.id}`}>
                   <Card className="deal-card-premium hover:border-primary/30 transition-all duration-300">
                     <CardContent className="p-5 flex items-center gap-4">
-                      <div className="logo-banner merchant-logo-panel merchant-logo-panel--cover h-16 w-24 shrink-0">
+                      {/*
+                        `merchant-logo-panel` and `--cover` are image rules —
+                        width/height 100% with max-* removed. Applied to this
+                        container they stripped its own sizing, and combined with
+                        an undefined `.merchant-logo-img` on the image, the logo
+                        rendered at natural size and burst out of the tile.
+                        The container now sizes and clips; the image is
+                        constrained by `.merchant-logo-img`.
+                      */}
+                      <div className="logo-banner h-16 w-24 shrink-0 rounded-lg overflow-hidden flex items-center justify-center p-2">
                         {related.stores?.logo_url ? (
                           <img src={related.stores.logo_url} alt={related.stores?.name ?? related.title} className="merchant-logo-img" />
                         ) : (
-                          <ShoppingBag className="h-5 w-5 text-muted-foreground" />
+                          <span className="merchant-logo-monogram text-sm" aria-hidden="true">
+                            {(related.stores?.name ?? related.title).trim().charAt(0).toUpperCase()}
+                          </span>
                         )}
                       </div>
                       <div className="min-w-0">
                         <div className="text-[11px] text-muted-foreground truncate">{related.stores?.name ?? "Merchant"}</div>
                         <div className="font-medium text-sm text-foreground truncate">{related.title}</div>
-                        <div className="text-xs text-primary font-semibold mt-0.5">{related.discount_value ?? "Deal"}</div>
+                        {/* No "Deal" placeholder: discount_value is null across
+                            the catalogue, so the fallback printed a bare word
+                            beside every tile. */}
+                        {related.discount_value && (
+                          <div className="text-xs text-primary font-semibold mt-0.5">{related.discount_value}</div>
+                        )}
                       </div>
                     </CardContent>
                   </Card>
