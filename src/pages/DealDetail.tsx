@@ -27,6 +27,14 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { useDealClaimCounts, useClaimDeal } from "@/hooks/use-deal-claims";
 import { timeAgo, freshnessColor, daysUntil } from "@/lib/deal-utils";
+import { FEATURE_FLAGS } from "@/lib/feature-flags";
+
+// Same guard Explore and CategoryDetail already use. It was never applied here,
+// so the highest-intent page in the product kept asserting a verification that
+// had not happened — three times, and in a worse form than the pages that were
+// fixed: `lastChecked` reads `deal.updated_at`, not `last_checked_at`, so
+// "Verified 4h ago" was reporting when a row was last written by an import.
+const SHOW_VERIFICATION_FRESHNESS_UI = FEATURE_FLAGS.showVerificationFreshnessUI;
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -270,9 +278,11 @@ export default function DealDetail() {
                     <GraduationCap className="h-3 w-3" /> .edu Required
                   </Badge>
                 )}
-                <span className={`text-xs flex items-center gap-1 font-medium ${freshnessColor(lastChecked)}`}>
-                  <Clock className="h-3 w-3" /> {timeAgo(lastChecked)}
-                </span>
+                {SHOW_VERIFICATION_FRESHNESS_UI && (
+                  <span className={`text-xs flex items-center gap-1 font-medium ${freshnessColor(lastChecked)}`}>
+                    <Clock className="h-3 w-3" /> {timeAgo(lastChecked)}
+                  </span>
+                )}
               </div>
 
               <div className="flex flex-wrap items-center gap-2 mt-4">
@@ -289,15 +299,28 @@ export default function DealDetail() {
 
               <Separator className="my-6" />
 
-              {/* Discount highlight */}
+              {/*
+                Same invention as the card badges, in the largest type on the
+                page: with `discount_value` null on every live deal, this block
+                headlined "Special Offer" and then labelled it "discount" from a
+                `discount_type` that was also null. The whole block is dropped
+                when there is no figure, rather than filling the space with a
+                word that means nothing — the real numbers are in the
+                description and the renewal line below.
+              */}
+              {(deal.discount_value || (daysLeft !== null && daysLeft > 0)) && (
               <div className="flex items-center gap-4 p-5 rounded-xl bg-secondary/60 border border-border">
                 <Tag className="h-6 w-6 text-primary shrink-0" />
-                <div>
-                  <div className="font-display text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                    {deal.discount_value ?? "Special Offer"}
+                {deal.discount_value && (
+                  <div>
+                    <div className="font-display text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                      {deal.discount_value}
+                    </div>
+                    {deal.discount_type && (
+                      <div className="text-xs text-muted-foreground mt-0.5 capitalize">{deal.discount_type.replace("_", " ")} discount</div>
+                    )}
                   </div>
-                  <div className="text-xs text-muted-foreground mt-0.5 capitalize">{deal.discount_type?.replace("_", " ")} discount</div>
-                </div>
+                )}
                 {daysLeft !== null && daysLeft > 0 && (
                   <Badge className={`ml-auto text-xs font-semibold gap-1 ${
                     daysLeft < 3 ? "bg-destructive/15 text-destructive border-destructive/30" :
@@ -309,6 +332,7 @@ export default function DealDetail() {
                   </Badge>
                 )}
               </div>
+              )}
 
               {/* Description */}
               <div className="mt-6 space-y-4">
@@ -469,9 +493,11 @@ export default function DealDetail() {
               </div>
 
               {/* Trust + Affiliate */}
-              <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/70 mt-4">
-                <Clock className="h-3 w-3" /> Last verified {timeAgo(lastChecked)}
-              </div>
+              {SHOW_VERIFICATION_FRESHNESS_UI && (
+                <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/70 mt-4">
+                  <Clock className="h-3 w-3" /> Last verified {timeAgo(lastChecked)}
+                </div>
+              )}
               {deal.is_affiliate && (
                 <div className="flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground/60">
                   <Info className="h-3 w-3" />
@@ -487,9 +513,11 @@ export default function DealDetail() {
                 {deal.expires_at && (
                   <span className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Expires {new Date(deal.expires_at).toLocaleDateString()}</span>
                 )}
-                <span className={`flex items-center gap-1 ${freshnessColor(lastChecked)}`}>
-                  <Clock className="h-3 w-3" /> Checked {timeAgo(lastChecked)}
-                </span>
+                {SHOW_VERIFICATION_FRESHNESS_UI && (
+                  <span className={`flex items-center gap-1 ${freshnessColor(lastChecked)}`}>
+                    <Clock className="h-3 w-3" /> Checked {timeAgo(lastChecked)}
+                  </span>
+                )}
               </div>
             </CardContent>
           </Card>
