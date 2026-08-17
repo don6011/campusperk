@@ -417,7 +417,7 @@ export default function ExploreDeals() {
         {/* Deals grid — LARGER CARDS */}
         {visible.length > 0 ? (
           <>
-            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 lg:grid-cols-2 xl:grid-cols-3">
               {visible.map((deal: any) => {
                 /*
                  * D1-D3: the card is `DealCard`. Everything the old inline card
@@ -450,7 +450,7 @@ export default function ExploreDeals() {
 
                 return (
                   <div key={deal.id} className="relative">
-                    <DealCard deal={deal} className={gate ? "pointer-events-none" : undefined} />
+                    <DealCard deal={deal} gate={gate} className={gate ? "pointer-events-none" : undefined} />
 
                     {/* Favourite. 44px tap target, clear of the title. Hidden on a
                         gated card: it sat above the scrim and stayed clickable. */}
@@ -467,16 +467,15 @@ export default function ExploreDeals() {
 
                     {gate && (
                       /* Flat scrim, not a blur: the system has one elevation. */
+                      /* The gate message is rendered inside the card by
+                         DealCard; this is only the click target for its action. */
                       <button
                         type="button"
                         onClick={gate.onClick}
                         disabled={!gate.onClick}
-                        className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 rounded-card border border-border bg-background px-4 text-center"
-                      >
-                        <Lock className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
-                        <span className="text-small font-medium text-foreground">{gate.label}</span>
-                        <span className="text-caption text-muted-foreground">{gate.hint}</span>
-                      </button>
+                        aria-label={gate.label}
+                        className="absolute inset-0 rounded-card"
+                      />
                     )}
                   </div>
                 );

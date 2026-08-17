@@ -304,7 +304,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Page content */}
-        <main className="flex-1 overflow-y-auto p-4 pb-24 md:p-6 md:pb-6">
+        <main className="flex-1 overflow-y-auto p-4 pb-[calc(6rem+env(safe-area-inset-bottom))] md:p-6 md:pb-6">
           {children}
         </main>
       </div>
@@ -336,7 +336,7 @@ function MobileTabBar({ currentPath }: { currentPath: string }) {
   return (
     <nav
       aria-label="Main"
-      className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background md:hidden"
+      className="fixed bottom-0 left-0 right-0 z-40 border-t border-border bg-background pb-[env(safe-area-inset-bottom)] md:hidden"
     >
       <ul className="flex">
         {MOBILE_TABS.map((tab) => {

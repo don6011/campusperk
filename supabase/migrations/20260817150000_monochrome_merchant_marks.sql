@@ -11,7 +11,7 @@
 --
 -- Coverage is partial, and the gaps are not oversights: simple-icons has removed
 -- a number of brands following trademark requests. Of the merchants that matter
--- here, it has no mark at all for Microsoft, Adobe, Hulu, Peacock or Chegg —
+-- here, it has no mark for Adobe, Hulu, Peacock or Chegg —
 -- checked under every plausible slug.
 --
 -- Those five are set to NULL rather than left pointing at an unusable PNG, so
@@ -41,8 +41,10 @@ FROM (
     ('Notion',      '/logos/notion.svg'),
     ('Spotify',     '/logos/spotify.svg'),
     ('Samsung',     '/logos/samsung.svg'),
+    -- Microsoft is absent from simple-icons but present in Font Awesome's free
+    -- brands set (CC-BY-4.0), extracted to public/logos/microsoft.svg.
+    ('Microsoft',   '/logos/microsoft.svg'),
     -- No mark available; monogram instead of an unusable opaque PNG.
-    ('Microsoft',   NULL),
     ('Adobe',       NULL),
     ('Hulu',        NULL),
     ('Peacock',     NULL),

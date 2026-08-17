@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Lock } from "lucide-react";
 import { MerchantLogo } from "@/components/MerchantLogo";
 import { checkedDateLabel } from "@/lib/deal-utils";
 import { cn } from "@/lib/utils";
@@ -43,9 +43,20 @@ export interface DealCardDeal {
 interface DealCardProps {
   deal: DealCardDeal;
   className?: string;
+  /**
+   * Set when the deal is locked. The merchant and title still render — a
+   * student should know which offer is behind the gate — but the offer detail,
+   * caveat, value and checked date are replaced by this message.
+   *
+   * It renders in normal flow rather than as an overlay. An absolutely
+   * positioned scrim escaped the card box on short cards, and an opaque one
+   * covering the whole card left a blank bordered rectangle that read as a
+   * rendering failure.
+   */
+  gate?: { label: string; hint: string } | null;
 }
 
-export function DealCard({ deal, className }: DealCardProps) {
+export function DealCard({ deal, className, gate }: DealCardProps) {
   const checked = checkedDateLabel(deal.last_checked_at);
   const merchant = deal.stores?.name;
 
@@ -77,28 +88,41 @@ export function DealCard({ deal, className }: DealCardProps) {
           <p className="min-w-0 flex-1 truncate text-body font-medium text-foreground">
             {deal.title}
           </p>
-          {/* Right-aligned value. Absent rather than invented when null. */}
-          {deal.discount_value && (
+          {/* Right-aligned value. Absent rather than invented when null, and
+              never shown on a gated card. */}
+          {!gate && deal.discount_value && (
             <span className="shrink-0 text-body font-medium text-accent">
               {deal.discount_value}
             </span>
           )}
         </div>
 
-        {deal.description && (
-          <p className="mt-1 line-clamp-2 text-small text-muted-foreground">
-            {deal.description}
-          </p>
-        )}
+        {gate ? (
+          <>
+            <p className="mt-1 flex items-center gap-1.5 text-small font-medium text-foreground">
+              <Lock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" aria-hidden="true" />
+              {gate.label}
+            </p>
+            <p className="mt-0.5 text-caption text-muted-foreground">{gate.hint}</p>
+          </>
+        ) : (
+          <>
+            {deal.description && (
+              <p className="mt-1 line-clamp-2 text-small text-muted-foreground">
+                {deal.description}
+              </p>
+            )}
 
-        {deal.watch_out && (
-          <p className="mt-2 flex items-start gap-1.5 text-caption text-caveat">
-            <AlertTriangle className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />
-            <span className="line-clamp-2">{deal.watch_out}</span>
-          </p>
-        )}
+            {deal.watch_out && (
+              <p className="mt-2 flex items-start gap-1.5 text-caption text-caveat">
+                <AlertTriangle className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />
+                <span className="line-clamp-2">{deal.watch_out}</span>
+              </p>
+            )}
 
-        {checked && <p className="mt-2 text-caption text-muted-faint">{checked}</p>}
+            {checked && <p className="mt-2 text-caption text-muted-faint">{checked}</p>}
+          </>
+        )}
       </div>
     </Link>
   );

@@ -110,7 +110,10 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <main>
+          {/* A plain wrapper. This was a <main>, but every page layout renders
+              its own <main>, so each authenticated page had two main landmarks
+              nested inside each other. */}
+          <div>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<HomeRoute />} />
@@ -186,7 +189,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-          </main>
+          </div>
         </BrowserRouter>
       </TooltipProvider>
       </CampusThemeProvider>
