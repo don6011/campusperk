@@ -45,17 +45,20 @@ function percent(current: number, target: number) {
   return Math.max(0, Math.min(100, Math.round((current / target) * 100)));
 }
 
-export function rarityClassName(rarity: BadgeRarity) {
-  switch (rarity) {
-    case "Legendary":
-      return "border-gold/40 bg-gold/15 text-gold";
-    case "Epic":
-      return "border-violet-500/40 bg-violet-500/15 text-violet-400";
-    case "Rare":
-      return "border-sky-500/40 bg-sky-500/15 text-sky-400";
-    default:
-      return "border-emerald-500/40 bg-emerald-500/15 text-emerald-400";
-  }
+/**
+ * Rarity no longer carries a colour.
+ *
+ * This returned four different palettes — gold, violet, sky and emerald — which
+ * put up to four accent hues on one screen and made rarity louder than the deal
+ * beside it. C4 allows the green accent at most twice per screen and neutral
+ * everywhere else, so every tier now renders as the same hairline chip and the
+ * tier name itself carries the meaning.
+ *
+ * The signature is unchanged so callers need no edit, and badges are behind
+ * FEATURE_FLAGS.showBadges anyway.
+ */
+export function rarityClassName(_rarity: BadgeRarity) {
+  return "border-border bg-secondary text-muted-foreground";
 }
 
 export function useBadgeCollection() {
