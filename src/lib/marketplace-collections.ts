@@ -5,6 +5,13 @@ export type MarketplaceCollection = {
   description: string;
   categories: string[];
   keywords: string[];
+  /**
+   * Exact deal titles. When present, membership is this list and nothing else —
+   * category and keyword matching are skipped. Game Day needs four specific
+   * offers and must not sweep in every other Subscriptions & Media deal, which
+   * is what keyword matching on "student" or "TV" would do.
+   */
+  titles?: string[];
 };
 
 export type CollectionDealLike = {
@@ -47,6 +54,20 @@ export const MARKETPLACE_COLLECTIONS: MarketplaceCollection[] = [
     keywords: ["course", "learn", "education", "book", "tutor", "study", "career", "resume", "certification"],
   },
   {
+    slug: "game-day",
+    title: "Game Day",
+    eyebrow: "College football season",
+    description: "The streaming offers that actually carry college and NFL football, with the renewal traps spelled out.",
+    categories: [],
+    keywords: [],
+    titles: [
+      "Sling TV Student — $10 off",
+      "Peacock Premium — Student / Young Adult",
+      "Paramount+ Student",
+      "NFL Sunday Ticket — Student",
+    ],
+  },
+  {
     slug: "new-this-week",
     title: "New This Week",
     eyebrow: "Freshly added",
@@ -59,6 +80,10 @@ export const MARKETPLACE_COLLECTIONS: MarketplaceCollection[] = [
 const normalize = (value?: string | null) => (value || "").toLowerCase().trim();
 
 export function dealMatchesCollection(deal: CollectionDealLike, collection: MarketplaceCollection) {
+  if (collection.titles) {
+    return collection.titles.some((title) => normalize(title) === normalize(deal.title));
+  }
+
   if (collection.slug === "new-this-week") return true;
 
   const category = normalize(deal.category);
