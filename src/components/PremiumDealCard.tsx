@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Crown, Lock, ExternalLink, ShoppingBag, Zap } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { MerchantLogo } from "@/components/MerchantLogo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
@@ -92,13 +93,13 @@ export function PremiumDealCard({ deal, isPremium, onUpgrade }: PremiumDealCardP
             )}
           </div>
 
-          <div className="logo-banner flex h-20 items-center justify-center rounded-xl overflow-hidden p-0">
-            {deal.stores?.logo_url ? (
-              <img src={deal.stores.logo_url} alt={storeName} className="merchant-logo-panel--cover" />
-            ) : (
-              <ShoppingBag className="h-9 w-9 text-muted-foreground" />
-            )}
-          </div>
+          <MerchantLogo
+            name={storeName}
+            logoUrl={deal.stores?.logo_url}
+            fallbackName={deal.title}
+            className="logo-banner h-20 w-full rounded-xl p-2"
+            monogramClassName="text-2xl"
+          />
 
           <div className="min-w-0">
             <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{deal.title}</div>

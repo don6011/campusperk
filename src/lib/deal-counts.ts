@@ -42,13 +42,32 @@ export function isCountedDeal(deal: { status?: string | null; is_test_fixture?: 
   return deal.status === ACTIVE_DEAL_STATUS && !isTestFixtureDeal(deal);
 }
 
-/** Count deals using the shared filter. Returns 0 rather than throwing. */
+/**
+ * Count deals using the shared filter.
+ *
+ * This used to be `.select("id", { count: "exact", head: true })` with
+ * `if (error) return 0; return count ?? 0`. Both exits reported "0 deals" for a
+ * catalogue of seven, and neither left any trace: a failure and a genuinely
+ * empty catalogue produced identical output, which is why the wrong number
+ * survived several passes.
+ *
+ * The HTTP layer was never at fault — a HEAD with `Prefer: count=exact` returns
+ * `content-range: 0-6/7` for both the anon and authenticated roles, and CORS
+ * exposes Content-Range — so `count` was arriving null in the browser and being
+ * silently floored. Rather than keep depending on a header, this reads the rows
+ * and counts them, and throws on error so a caller can distinguish "failed"
+ * from "none".
+ *
+ * Prefer deriving totals from data already on screen where possible; see
+ * ExploreDeals, which counts its own grid rather than issuing this second query
+ * that could disagree with it.
+ */
 export async function fetchActiveDealCount(): Promise<number> {
-  const { count, error } = await supabase
+  const { data, error } = await supabase
     .from("deals")
-    .select("id", { count: "exact", head: true })
+    .select("id")
     .eq("status", ACTIVE_DEAL_STATUS)
     .eq(TEST_FIXTURE_COLUMN, false);
-  if (error) return 0;
-  return count ?? 0;
+  if (error) throw error;
+  return data?.length ?? 0;
 }

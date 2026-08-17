@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
@@ -10,6 +10,7 @@ import {
   Star, Timer, Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MerchantLogo } from "@/components/MerchantLogo";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -30,7 +31,7 @@ import { checkedDateLabel, daysUntil, urgencyColor } from "@/lib/deal-utils";
 import { useDealClaimCounts, useClaimDeal } from "@/hooks/use-deal-claims";
 import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
 import { getDealDisplayTitle, getStoredOrComputedQualityScore } from "@/lib/deal-quality";
-import { fetchActiveDealCount } from "@/lib/deal-counts";
+import { isCountedDeal } from "@/lib/deal-counts";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 interface DealWithStore {
@@ -140,13 +141,13 @@ export default function ExploreDeals() {
   const [premiumOnly, setPremiumOnly] = useState(false);
   const [freshnessDays, setFreshnessDays] = useState<number | null>(null);
   const [verifiedRecently, setVerifiedRecently] = useState(false);
-  const [filtersOpen, setFiltersOpen] = useState(true);
+  // A3: collapsed by default — expanded it pushed the first deal ~300px down.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const queryClient = useQueryClient();
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [verifyOpen, setVerifyOpen] = useState(false);
   const { isStudentVerified, isPremium, isCampusVerified, campusRole, user } = useAuth();
-  const carouselRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
   const claimDeal = useClaimDeal();
 
@@ -230,28 +231,19 @@ export default function ExploreDeals() {
 
   // Platform total comes from the shared helper so Explore, Categories and
   // Account Settings can never disagree about how many deals CampusPerk has.
-  const { data: activeDealTotal = 0 } = useQuery({
-    queryKey: ["active-deal-count"],
-    queryFn: fetchActiveDealCount,
-  });
+  // A1: the header counts the rows the grid actually has.
+  //
+  // It previously ran a separate `fetchActiveDealCount` query whose result was
+  // floored to 0 on any failure, so the page read "0 deals available" above
+  // nine rendered cards. Two sources of truth for one number, and the quieter
+  // one won. Deriving from `deals` makes disagreement impossible.
+  const activeDealTotal = useMemo(() => deals.filter(isCountedDeal).length, [deals]);
 
-  const trendingDeals = useMemo(() => {
-    return [...deals]
-      .filter((d) => d.status === "active" && (d.featured || d.sponsored || (claimCountsMap?.get(d.id)?.total ?? 0) > 0))
-      // Trending is engagement, then recency as the tiebreak. Quality score was
-      // the tiebreak here too, which meant deals with logos edged out deals with
-      // more claims whenever engagement tied — and engagement ties constantly at
-      // these volumes.
-      .sort((a, b) =>
-        engagementScore(b, claimCountsMap) - engagementScore(a, claimCountsMap) ||
-        compareDescNullsLast(timeKey(a.created_at), timeKey(b.created_at)))
-      .slice(0, 8);
-  }, [deals, claimCountsMap]);
+  // A2: the Trending carousel is gone. With seven deals it listed the same
+  // items as the grid directly beneath it, so a student scrolled past a rail to
+  // reach a duplicate of it. `engagementScore` is retained for the "Most
+  // Popular" sort, which is a choice the student makes rather than a rail.
 
-  const scrollCarousel = (dir: "left" | "right") => {
-    if (!carouselRef.current) return;
-    carouselRef.current.scrollBy({ left: dir === "left" ? -340 : 340, behavior: "smooth" });
-  };
 
   const filtered = useMemo(() => {
     let list = [...deals];
@@ -337,58 +329,7 @@ export default function ExploreDeals() {
           </p>
         </div>
 
-        {/* Trending carousel */}
-        {trendingDeals.length > 0 && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-display text-xl font-bold text-foreground flex items-center gap-2.5">
-                <div className="h-8 w-8 rounded-lg bg-destructive/15 flex items-center justify-center">
-                  <Flame className="h-4.5 w-4.5 text-destructive" />
-                </div>
-                Trending Deals
-              </h2>
-              <div className="flex items-center gap-1">
-                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => scrollCarousel("left")}><ChevronLeft className="h-4 w-4" /></Button>
-                <Button variant="ghost" size="icon" className="h-9 w-9" onClick={() => scrollCarousel("right")}><ChevronRight className="h-4 w-4" /></Button>
-              </div>
-            </div>
-            <div className="brand-carousel-fade -mx-1">
-              <div ref={carouselRef} className="flex gap-[18px] overflow-x-auto scrollbar-hide pb-3 px-3 snap-x snap-mandatory" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
-                {trendingDeals.map((deal, idx) => {
-                  const badge = trendingBadge(deal, idx);
-                  return (
-                    <Link key={deal.id} to={`/deals/${deal.id}`} className="snap-start shrink-0 w-[240px]">
-                      <motion.div whileHover={{ y: -3, transition: { duration: 0.12 } }}>
-                        <Card className="deal-card-premium h-full">
-                          <CardContent className="p-6 space-y-3">
-                            <div className="logo-banner flex h-20 items-center justify-center rounded-xl overflow-hidden p-0">
-                              {deal.stores.logo_url ? (
-                                <img src={deal.stores.logo_url} alt={deal.stores.name} className="merchant-logo-panel--cover" />
-                              ) : (
-                                <ShoppingBag className="h-7 w-7 text-muted-foreground" />
-                              )}
-                            </div>
-                            <div className="min-w-0">
-                              <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{displayDealTitle(deal)}</div>
-                              {/* No discount_value means no verified figure to show; "Special" was inventing one. */}
-                              {deal.discount_value && <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value}</div>}
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <Badge className={`text-[9px] font-bold gap-1 ${badge.className}`}>{badge.icon} {badge.label}</Badge>
-                            </div>
-                            <Button size="sm" className="w-full gap-1.5 h-9 font-bold text-[12px] opacity-90 group-hover:opacity-100">
-                              Get Deal <ExternalLink className="h-2.5 w-2.5" />
-                            </Button>
-                          </CardContent>
-                        </Card>
-                      </motion.div>
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
+        {/* A2: Trending carousel removed — it duplicated the grid below it. */}
 
         {/* Search + Sort */}
         <div className="flex flex-col sm:flex-row gap-3">
@@ -537,13 +478,13 @@ export default function ExploreDeals() {
                         </div>
 
                         {/* Savings — DOMINANT */}
-                        <div className="logo-banner mb-4 flex h-20 w-full items-center justify-center rounded-xl overflow-hidden p-0">
-                          {deal.stores.logo_url ? (
-                            <img src={deal.stores.logo_url} alt={deal.stores.name} className="merchant-logo-panel--cover" />
-                          ) : (
-                            <ShoppingBag className="h-10 w-10 text-muted-foreground" />
-                          )}
-                        </div>
+                        <MerchantLogo
+                          name={deal.stores.name}
+                          logoUrl={deal.stores.logo_url}
+                          fallbackName={deal.title}
+                          className="logo-banner mb-4 h-20 w-full rounded-xl p-2"
+                          monogramClassName="text-2xl"
+                        />
 
                         <div className="mb-3">
                           <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{displayDealTitle(deal)}</div>

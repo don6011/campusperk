@@ -10,6 +10,7 @@ import {
   Bell, CheckCircle, ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MerchantLogo } from "@/components/MerchantLogo";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -501,11 +502,13 @@ export default function CategoryDetail() {
                       <CardContent className="p-5">
                         <div className="flex items-start justify-between gap-3 mb-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            {deal.stores.logo_url ? (
-                              <img src={deal.stores.logo_url} alt={deal.stores.name} className="h-10 w-10 rounded-xl object-contain bg-secondary p-1" />
-                            ) : (
-                              <div className="h-10 w-10 rounded-xl bg-secondary flex items-center justify-center shrink-0"><ShoppingBag className="h-5 w-5 text-muted-foreground" /></div>
-                            )}
+                            <MerchantLogo
+                              name={deal.stores.name}
+                              logoUrl={deal.stores.logo_url}
+                              fallbackName={deal.title}
+                              className="h-10 w-10 rounded-xl bg-secondary p-1"
+                              monogramClassName="text-sm"
+                            />
                             <div className="min-w-0">
                               <div className="text-[11px] text-muted-foreground">{deal.stores.name}</div>
                               <div className="font-medium text-sm text-foreground truncate">{deal.title}</div>
