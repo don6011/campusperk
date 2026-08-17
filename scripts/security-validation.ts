@@ -165,17 +165,56 @@ async function findDeal(query: string): Promise<DealCandidate | null> {
   return body[0] as DealCandidate;
 }
 
-// Fixtures are selected by `deals.is_test_fixture`, the flag the truth-pass-2
-// migration sets on everything owned by `CampusPerk Security Test Store`. The
-// public catalogue filters that same flag out, so these rows stay testable
-// without being counted as inventory or shown to a student. Title is kept as a
-// fallback for databases where the migration has not been applied yet.
+// Fixtures are owned by `CampusPerk Security Test Store` and flagged with
+// `deals.is_test_fixture`. They are no longer readable over REST: the public
+// read policy excludes them outright, so they cannot appear on the site and
+// cannot be listed by an anon client.
+//
+// That means they can no longer be found with a plain select, which is why the
+// `get_security_fixture_deal` RPC exists — a SECURITY DEFINER lookup restricted
+// to fixture rows. Without it both gating checks below fall through to their
+// fallbacks, and those fallbacks find nothing: the only active `premium_only`
+// and `deal_scope = 'local'` deals in this database are the fixtures. The suite
+// would report skip rather than fail, and stay green while asserting nothing.
+//
+// The REST paths are kept as fallbacks for databases where these migrations
+// have not been applied yet.
 async function findFixtureDeal(title: string): Promise<DealCandidate | null> {
+  const { response, body } = await rpc("get_security_fixture_deal", { p_title: title });
+  if (response.ok) {
+    const rows = Array.isArray(body) ? body : [];
+    const row = rows[0] as DealCandidate | undefined;
+    if (row?.id) return row;
+  }
+
   const byFlag = await findDeal(
     `is_test_fixture=eq.true&title=eq.${encodeURIComponent(title)}`,
   );
   if (byFlag) return byFlag;
   return findDeal(`title=eq.${encodeURIComponent(title)}`);
+}
+
+// The read policy is the boundary now, so assert it directly rather than
+// trusting that every page query remembers to filter. Both of these returned
+// rows before `20260817120000_restrict_public_deal_reads.sql`.
+async function testFixturesNotPubliclyReadable(): Promise<ValidationResult> {
+  const name = "anon cannot read test fixtures";
+  const { response, body } = await restGet("deals?select=id,title&is_test_fixture=is.true");
+  if (!response.ok) return pass(name, describeBody(body));
+  const rows = Array.isArray(body) ? body : [];
+  return rows.length > 0
+    ? fail(name, `Read policy exposed ${rows.length} test fixture row(s) to anon`)
+    : pass(name, "Test fixtures are not readable by an anon client");
+}
+
+async function testDraftsNotPubliclyReadable(): Promise<ValidationResult> {
+  const name = "anon cannot read unpublished deals";
+  const { response, body } = await restGet("deals?select=id,title,status&status=in.(draft,archived)");
+  if (!response.ok) return pass(name, describeBody(body));
+  const rows = Array.isArray(body) ? body : [];
+  return rows.length > 0
+    ? fail(name, `Read policy exposed ${rows.length} draft/archived row(s) to anon`)
+    : pass(name, "Draft and archived deals are not readable by an anon client");
 }
 
 async function testRedirectCandidate(name: string, query: string, expectedBlockedReason: string): Promise<ValidationResult> {
@@ -248,6 +287,8 @@ async function main() {
   const now = new Date().toISOString();
   const results: ValidationResult[] = [
     await testPublicUrlColumns(),
+    await testFixturesNotPubliclyReadable(),
+    await testDraftsNotPubliclyReadable(),
     await testRedirectCandidate("unverified user cannot access .edu-only deal", "status=eq.active&requires_edu_email=eq.true", "edu_verification_required"),
     await testFixtureRedirect("non-premium user cannot access premium deal", premiumFixtureTitle, "status=eq.active&premium_only=eq.true", "premium_gated"),
     await testRedirectCandidate("expired deal redirect is blocked", `expires_at=lt.${encodeURIComponent(now)}`, "expired"),
