@@ -26,7 +26,7 @@ import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
-import { timeAgo, freshnessColor, daysUntil, urgencyColor } from "@/lib/deal-utils";
+import { checkedDateLabel, daysUntil, urgencyColor } from "@/lib/deal-utils";
 import { useDealClaimCounts, useClaimDeal } from "@/hooks/use-deal-claims";
 import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
 import { getDealDisplayTitle, getStoredOrComputedQualityScore } from "@/lib/deal-quality";
@@ -57,6 +57,8 @@ const FRESHNESS = [
 ];
 // See FEATURE_FLAGS.showVerificationFreshnessUI for why these controls are hidden.
 const SHOW_VERIFICATION_FRESHNESS_UI = FEATURE_FLAGS.showVerificationFreshnessUI;
+// Claim counts are recorded either way; this only governs display.
+const SHOW_CLAIM_COUNTS = FEATURE_FLAGS.showClaimCounts;
 
 // "Biggest Discount" is gone rather than fixed. It ranked on `discount_value`,
 // which is null on every active deal in the catalogue, so `discountNum` scored
@@ -480,8 +482,11 @@ export default function ExploreDeals() {
                 const roleGated = eligibleRoles && eligibleRoles.length > 0 && isCampusVerified && campusRole && !eligibleRoles.includes(campusRole);
                 const campusGated = deal.requires_campus_verification && !isCampusVerified && !isPremiumDeal;
                 const days = deal.expires_at ? daysUntil(deal.expires_at) : null;
-                const refDate = deal.last_checked_at || deal.updated_at;
-                const isVerified24h = (Date.now() - new Date(refDate).getTime()) < 24 * 60 * 60 * 1000;
+                // `last_checked_at` only — no `updated_at` fallback. See
+                // checkedDateLabel for why the fallback was a falsehood.
+                const checkedLabel = checkedDateLabel(deal.last_checked_at);
+                const isVerified24h = !!deal.last_checked_at &&
+                  (Date.now() - new Date(deal.last_checked_at).getTime()) < 24 * 60 * 60 * 1000;
                 // Logic kept; the badge only renders once last_checked_at reflects a real check.
                 const showVerifiedBadge = SHOW_VERIFICATION_FRESHNESS_UI && isVerified24h;
                 const badge = trendingBadge(deal, i);
@@ -550,6 +555,7 @@ export default function ExploreDeals() {
                         {/* Claim counter */}
                         <div className="mb-2 flex items-center gap-2">
                           {(() => {
+                            if (!SHOW_CLAIM_COUNTS) return null;
                             const counts = claimCountsMap?.get(deal.id);
                             if (!counts?.total) return null;
                             return (
@@ -563,6 +569,7 @@ export default function ExploreDeals() {
 
                         {/* Claim social proof row */}
                         {(() => {
+                          if (!SHOW_CLAIM_COUNTS) return null;
                           const counts = claimCountsMap?.get(deal.id);
                           const todayCount = counts?.today || 0;
                           const campusTrending = counts?.campusTrending || false;
@@ -590,10 +597,17 @@ export default function ExploreDeals() {
 
                         {/* Meta row */}
                         <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-3">
-                          <span className={`flex items-center gap-1 ${showVerifiedBadge ? "text-accent font-medium" : freshnessColor(refDate)}`}>
-                            {showVerifiedBadge ? <Sparkles className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
-                            {showVerifiedBadge ? "Verified today" : timeAgo(refDate)}
-                          </span>
+                          {/* Explicit date, untinted. Nothing when no check is
+                              recorded — see checkedDateLabel. */}
+                          {showVerifiedBadge ? (
+                            <span className="flex items-center gap-1 text-accent font-medium">
+                              <Sparkles className="h-2.5 w-2.5" /> Verified today
+                            </span>
+                          ) : checkedLabel ? (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-2.5 w-2.5" /> {checkedLabel}
+                            </span>
+                          ) : <span />}
                           <div className="flex items-center gap-2">
                             {days !== null && days > 0 && days <= 30 && (
                               <Badge className={`text-[10px] font-semibold gap-1 ${urgencyColor(days)}`}>

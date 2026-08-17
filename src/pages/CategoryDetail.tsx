@@ -29,6 +29,7 @@ import { toast } from "sonner";
 import { logPaywallView, isDealPremium } from "@/lib/paywall";
 import { attachAffiliateSearchFields, filterAndRankDeals } from "@/lib/marketplace-search";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
+import { checkedDateLabel } from "@/lib/deal-utils";
 
 interface DealWithStore {
   id: string;
@@ -110,19 +111,9 @@ function daysUntil(dateStr: string) {
   return Math.ceil((new Date(dateStr).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
 }
 
-function timeAgo(dateStr: string) {
-  const hours = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60));
-  if (hours < 1) return "Just now";
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
-
-function freshnessColor(dateStr: string) {
-  const days = (Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24);
-  if (days <= 1) return "text-accent";
-  if (days <= 7) return "text-gold";
-  return "text-destructive";
-}
+// Local copies of timeAgo/freshnessColor lived here. The card meta row now
+// renders an explicit "Checked <date>" from `checkedDateLabel`, so neither the
+// relative format nor the freshness tint is needed.
 
 function urgencyColor(days: number) {
   if (days < 3) return "bg-destructive/15 text-destructive border-destructive/30";
@@ -479,8 +470,10 @@ export default function CategoryDetail() {
               {visible.map((deal, i) => {
                 const needsVerification = deal.requires_edu_email && !isStudentVerified;
                 const days = deal.expires_at ? daysUntil(deal.expires_at) : null;
-                const refDate = deal.last_checked_at || deal.updated_at;
-                const isVerified24h = (Date.now() - new Date(refDate).getTime()) < 24 * 60 * 60 * 1000;
+                // `last_checked_at` only — no `updated_at` fallback.
+                const checkedLabel = checkedDateLabel(deal.last_checked_at);
+                const isVerified24h = !!deal.last_checked_at &&
+                  (Date.now() - new Date(deal.last_checked_at).getTime()) < 24 * 60 * 60 * 1000;
                 // Logic kept; the badge only renders once last_checked_at reflects a real check.
                 const showVerifiedBadge = SHOW_VERIFICATION_FRESHNESS_UI && isVerified24h;
                 const isPremiumDeal = isDealPremium(deal) && !isPremium;
@@ -551,10 +544,15 @@ export default function CategoryDetail() {
                         )}
 
                         <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-3">
-                          <span className={`flex items-center gap-1 ${showVerifiedBadge ? "text-accent font-medium" : freshnessColor(refDate)}`}>
-                            {showVerifiedBadge ? <Sparkles className="h-2.5 w-2.5" /> : <Clock className="h-2.5 w-2.5" />}
-                            {showVerifiedBadge ? "Verified today" : timeAgo(refDate)}
-                          </span>
+                          {showVerifiedBadge ? (
+                            <span className="flex items-center gap-1 text-accent font-medium">
+                              <Sparkles className="h-2.5 w-2.5" /> Verified today
+                            </span>
+                          ) : checkedLabel ? (
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-2.5 w-2.5" /> {checkedLabel}
+                            </span>
+                          ) : <span />}
                           {deal.requires_edu_email && (
                             <span className="flex items-center gap-1 text-primary"><GraduationCap className="h-3 w-3" /> .edu</span>
                           )}

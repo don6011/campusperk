@@ -22,6 +22,19 @@ export const FEATURE_FLAGS = {
    */
   showVerificationFreshnessUI: false,
 
+  /**
+   * Per-deal claim counts on cards and detail pages ("2 students claimed this
+   * deal", "2 claimed today").
+   *
+   * The events behind these are real — recording continues regardless of this
+   * flag, so turning it back on shows accumulated history rather than starting
+   * from zero. What makes them wrong to display today is scale: the true
+   * numbers are 1, 2 and 3, and a social-proof row reading "1 claimed" is
+   * weaker than no row at all. Flip this on when the counts are large enough
+   * to mean something.
+   */
+  showClaimCounts: false,
+
   /** Badge collection: /badges, the avatar-menu entry, and the Account nudge. */
   showBadges: false,
 
