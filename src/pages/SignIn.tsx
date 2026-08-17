@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { usePageTitle } from "@/hooks/use-page-title";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,16 @@ export default function SignIn() {
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
   const { signIn } = useAuth();
+  const [searchParams] = useSearchParams();
+  /*
+   * Where the visitor was headed before ProtectedRoute intercepted them.
+   * Only same-origin paths are honoured — an absolute URL here would turn the
+   * sign-in page into an open redirect.
+   */
+  const nextParam = searchParams.get("next");
+  const returnTo = nextParam && nextParam.startsWith("/") && !nextParam.startsWith("//")
+    ? nextParam
+    : "/deals";
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -40,7 +50,7 @@ export default function SignIn() {
       toast({ title: "Sign in failed", description: error, variant: "destructive" });
     } else {
       toast({ title: "Welcome back!", description: "Redirecting to your dashboard…" });
-      navigate("/deals", { replace: true });
+      navigate(returnTo, { replace: true });
     }
   };
 
