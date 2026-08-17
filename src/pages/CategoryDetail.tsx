@@ -513,9 +513,12 @@ export default function CategoryDetail() {
                         </div>
 
                         <div className="flex items-center justify-between mb-3">
-                          <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
-                            {deal.discount_value ?? "Special"}
-                          </span>
+                          {/* No discount_value means no verified figure to show; "Special" was inventing one. */}
+                          {deal.discount_value && (
+                            <span className="font-display text-lg font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                              {deal.discount_value}
+                            </span>
+                          )}
                           <div className="flex items-center gap-1.5">
                             {isPremiumDeal && (
                               <Badge className="bg-gold/15 text-gold border-gold/30 text-[10px] gap-1"><Crown className="h-2.5 w-2.5" /> Premium</Badge>

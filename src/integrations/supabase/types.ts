@@ -1263,6 +1263,10 @@ export type Database = {
           affiliate_link_url: string | null
           affiliate_network: string | null
           ai_summary: string | null
+          archived_at: string | null
+          eligibility_note: string | null
+          renewal_cliff: string | null
+          watch_out: string | null
           category: string | null
           commission_rate: number | null
           commission_type: string
@@ -1310,6 +1314,10 @@ export type Database = {
           affiliate_link_url?: string | null
           affiliate_network?: string | null
           ai_summary?: string | null
+          archived_at?: string | null
+          eligibility_note?: string | null
+          renewal_cliff?: string | null
+          watch_out?: string | null
           category?: string | null
           commission_rate?: number | null
           commission_type?: string
@@ -1357,6 +1365,10 @@ export type Database = {
           affiliate_link_url?: string | null
           affiliate_network?: string | null
           ai_summary?: string | null
+          archived_at?: string | null
+          eligibility_note?: string | null
+          renewal_cliff?: string | null
+          watch_out?: string | null
           category?: string | null
           commission_rate?: number | null
           commission_type?: string
@@ -3107,7 +3119,7 @@ export type Database = {
         | "partner_provider"
       conversion_status: "pending" | "confirmed" | "paid"
       deal_scope: "national" | "regional" | "local"
-      deal_status: "active" | "expired" | "coming_soon" | "archived"
+      deal_status: "active" | "expired" | "coming_soon" | "archived" | "draft"
       discount_type: "percentage" | "fixed" | "free_trial" | "bogo" | "other"
       offer_status: "pending" | "active" | "expired"
       partner_status: "lead" | "active" | "paused"
@@ -3262,7 +3274,7 @@ export const Constants = {
       ],
       conversion_status: ["pending", "confirmed", "paid"],
       deal_scope: ["national", "regional", "local"],
-      deal_status: ["active", "expired", "coming_soon", "archived"],
+      deal_status: ["active", "expired", "coming_soon", "archived", "draft"],
       discount_type: ["percentage", "fixed", "free_trial", "bogo", "other"],
       offer_status: ["pending", "active", "expired"],
       partner_status: ["lead", "active", "paused"],

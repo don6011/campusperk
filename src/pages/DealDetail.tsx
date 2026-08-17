@@ -75,7 +75,7 @@ export default function DealDetail() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("deals")
-        .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, ai_summary, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, stores:store_id(name, logo_url, website_url)")
+        .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, ai_summary, watch_out, renewal_cliff, eligibility_note, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, stores:store_id(name, logo_url, website_url)")
         .eq("id", dealId!)
         .eq("is_test_fixture", false)
         .neq("status", "archived")
@@ -324,6 +324,35 @@ export default function DealDetail() {
                     <p className="text-sm text-muted-foreground leading-relaxed">{deal.ai_summary}</p>
                   </div>
                 )}
+
+                {/*
+                  The catches, stated before the student clicks through rather
+                  than after they have signed up. Both fields are filled in by
+                  hand during catalogue verification and left null when there is
+                  genuinely nothing to flag, so an absent panel means "nothing
+                  found", not "not checked".
+                */}
+                {(deal.watch_out || deal.renewal_cliff) && (
+                  <div className="p-4 rounded-lg bg-amber-400/5 border border-amber-400/20">
+                    <div className="text-xs font-semibold text-amber-300 mb-2 flex items-center gap-1.5">
+                      <AlertTriangle className="h-3.5 w-3.5" /> Before you claim
+                    </div>
+                    <ul className="space-y-2">
+                      {deal.watch_out && (
+                        <li className="text-sm text-muted-foreground leading-relaxed flex items-start gap-2">
+                          <span className="mt-1.5 h-1 w-1 rounded-full bg-amber-300/70 shrink-0" />
+                          {deal.watch_out}
+                        </li>
+                      )}
+                      {deal.renewal_cliff && (
+                        <li className="text-sm text-muted-foreground leading-relaxed flex items-start gap-2">
+                          <span className="mt-1.5 h-1 w-1 rounded-full bg-amber-300/70 shrink-0" />
+                          <span><span className="font-medium text-foreground">What it costs later: </span>{deal.renewal_cliff}</span>
+                        </li>
+                      )}
+                    </ul>
+                  </div>
+                )}
               </div>
 
               {/* Eligibility & redemption */}
@@ -332,19 +361,31 @@ export default function DealDetail() {
                   <h4 className="text-xs font-semibold text-foreground mb-3 flex items-center gap-1.5">
                     <CheckCircle2 className="h-3.5 w-3.5 text-accent" /> Eligibility
                   </h4>
+                  {/*
+                    `eligibility_note` is the merchant's actual rule, recorded
+                    during verification. It replaces the generic bullets rather
+                    than sitting alongside them, because the old list asserted
+                    things nobody had checked — every deal claimed "Active
+                    student enrollment", and any deal needing an .edu address
+                    claimed it was "Verified via SheerID", naming a vendor the
+                    catalogue has no record of.
+                  */}
                   <ul className="space-y-2">
                     {deal.requires_edu_email && (
                       <li className="text-xs text-muted-foreground flex items-center gap-2">
                         <GraduationCap className="h-3 w-3 text-primary shrink-0" /> Valid .edu email required
                       </li>
                     )}
-                    <li className="text-xs text-muted-foreground flex items-center gap-2">
-                      <CheckCircle2 className="h-3 w-3 text-accent shrink-0" /> Active student enrollment
-                    </li>
-                    <li className="text-xs text-muted-foreground flex items-center gap-2">
-                      <CheckCircle2 className="h-3 w-3 text-accent shrink-0" />
-                      {deal.requires_edu_email ? "Verified via SheerID or .edu" : "No verification needed"}
-                    </li>
+                    {deal.eligibility_note ? (
+                      <li className="text-xs text-muted-foreground flex items-start gap-2 leading-relaxed">
+                        <CheckCircle2 className="h-3 w-3 text-accent shrink-0 mt-0.5" /> {deal.eligibility_note}
+                      </li>
+                    ) : (
+                      <li className="text-xs text-muted-foreground flex items-start gap-2 leading-relaxed">
+                        <Info className="h-3 w-3 text-muted-foreground shrink-0 mt-0.5" />
+                        Check the merchant's page for current eligibility rules.
+                      </li>
+                    )}
                   </ul>
                 </div>
                 <div className="p-4 rounded-xl bg-secondary/40 border border-border">
@@ -362,7 +403,8 @@ export default function DealDetail() {
                     </li>
                     <li className="text-xs text-muted-foreground flex items-start gap-2">
                       <span className="h-4 w-4 rounded-full bg-primary/15 text-primary flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">3</span>
-                      Discount applied automatically
+                      {/* Not every offer self-applies — several need a code entered at checkout. */}
+                      Follow the merchant's checkout to apply the discount
                     </li>
                   </ol>
                 </div>

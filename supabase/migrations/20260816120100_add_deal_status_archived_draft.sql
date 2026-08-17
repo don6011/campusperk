@@ -12,7 +12,4 @@
 -- Re-runnable: ADD VALUE IF NOT EXISTS.
 
 ALTER TYPE public.deal_status ADD VALUE IF NOT EXISTS 'archived';
--- NOTE: 'archived' is applied in production. 'draft' is NOT yet applied — the
--- call required an approval that was not granted this session, and nothing needs
--- it until offer verification is possible. Applying this file adds both.
 ALTER TYPE public.deal_status ADD VALUE IF NOT EXISTS 'draft';
