@@ -58,11 +58,14 @@ const FRESHNESS = [
 // See FEATURE_FLAGS.showVerificationFreshnessUI for why these controls are hidden.
 const SHOW_VERIFICATION_FRESHNESS_UI = FEATURE_FLAGS.showVerificationFreshnessUI;
 
+// "Biggest Discount" is gone rather than fixed. It ranked on `discount_value`,
+// which is null on every active deal in the catalogue, so `discountNum` scored
+// all of them 0 and the option reordered nothing. A control that cannot move
+// anything is worse than no control: it implies the data exists.
 const ALL_SORT_OPTIONS = [
   { value: "newest", label: "Newest" },
   { value: "popular", label: "Most Popular" },
   { value: "expiring", label: "Ending Soon" },
-  { value: "discount", label: "Biggest Discount" },
   { value: "verified", label: "Recently Verified" },
 ];
 const SORT_OPTIONS = ALL_SORT_OPTIONS.filter(
@@ -70,19 +73,39 @@ const SORT_OPTIONS = ALL_SORT_OPTIONS.filter(
 );
 const PAGE_SIZE = 9;
 
-function discountNum(deal: DealWithStore) {
-  const m = (deal.discount_value ?? "").match(/(\d+)/);
-  return m ? parseInt(m[1]) : 0;
-}
-
+// Engagement is recorded claim events and nothing else.
+//
+// This previously subtracted `recency * 10`, where recency came from
+// `last_checked_at || updated_at`. Two things were wrong with that. It let a
+// row's write timestamp dominate the score — at 10 points per day against 2
+// points per claim, editing a description outranked five real claims — and it
+// sourced that timestamp from `updated_at` when `last_checked_at` was null, so
+// "Most Popular" partly ranked on when the database was last touched.
 function engagementScore(deal: DealWithStore, claimCountsMap?: Map<string, { total: number; today: number; campusTrending: boolean }>) {
   const claimCounts = claimCountsMap?.get(deal.id);
-  const clicks = claimCounts?.total ?? 0;
-  const favs = claimCounts?.today ?? 0;
-  const refDate = deal.last_checked_at || deal.updated_at;
-  const recency = (Date.now() - new Date(refDate).getTime()) / (1000 * 60 * 60 * 24);
-  return clicks * 2 + favs * 3 - recency * 10;
+  const totalClaims = claimCounts?.total ?? 0;
+  const claimsToday = claimCounts?.today ?? 0;
+  return totalClaims * 2 + claimsToday * 3;
 }
+
+// Sort keys that can be absent. Missing values sort last in every comparator
+// rather than being coerced to 0 or Infinity at the call site.
+const timeKey = (value: string | null | undefined) =>
+  value ? new Date(value).getTime() : null;
+
+const compareDescNullsLast = (a: number | null, b: number | null) => {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return b - a;
+};
+
+const compareAscNullsLast = (a: number | null, b: number | null) => {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return a - b;
+};
 
 const displayDealTitle = (deal: DealWithStore) => getDealDisplayTitle(deal);
 const isQualityColumnMissing = (message = "") =>
@@ -213,7 +236,13 @@ export default function ExploreDeals() {
   const trendingDeals = useMemo(() => {
     return [...deals]
       .filter((d) => d.status === "active" && (d.featured || d.sponsored || (claimCountsMap?.get(d.id)?.total ?? 0) > 0))
-      .sort((a, b) => engagementScore(b, claimCountsMap) - engagementScore(a, claimCountsMap) || getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a))
+      // Trending is engagement, then recency as the tiebreak. Quality score was
+      // the tiebreak here too, which meant deals with logos edged out deals with
+      // more claims whenever engagement tied — and engagement ties constantly at
+      // these volumes.
+      .sort((a, b) =>
+        engagementScore(b, claimCountsMap) - engagementScore(a, claimCountsMap) ||
+        compareDescNullsLast(timeKey(a.created_at), timeKey(b.created_at)))
       .slice(0, 8);
   }, [deals, claimCountsMap]);
 
@@ -245,27 +274,31 @@ export default function ExploreDeals() {
       list = list.filter((d) => d.last_checked_at && new Date(d.last_checked_at).getTime() >= cutoff);
     }
 
-    if (search) return filterAndRankDeals(list, search).sort((a, b) => getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a));
+    // Search results keep their relevance ranking. Re-sorting them by quality
+    // score discarded the reason each result matched.
+    if (search) return filterAndRankDeals(list, search);
 
+    // Every comparator ranks on the field its label names, and on nothing else.
+    //
+    // Quality score used to be the PRIMARY key for "newest" and "verified" and
+    // the tiebreak for the rest, so "Newest" returned highest-quality-first and
+    // only broke ties by date. In this catalogue that put six-month-old expired
+    // stock above deals verified the day before, because the older rows carry
+    // logos and scores the new ones do not. No sort references quality now.
     switch (sortBy) {
       case "newest":
-        list.sort((a, b) => getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a) || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        list.sort((a, b) => compareDescNullsLast(timeKey(a.created_at), timeKey(b.created_at)));
         break;
       case "popular":
-        list.sort((a, b) => engagementScore(b, claimCountsMap) - engagementScore(a, claimCountsMap) || getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a));
+        list.sort((a, b) => engagementScore(b, claimCountsMap) - engagementScore(a, claimCountsMap));
         break;
       case "expiring":
-        list.sort((a, b) => {
-          const da = a.expires_at ? new Date(a.expires_at).getTime() : Infinity;
-          const db = b.expires_at ? new Date(b.expires_at).getTime() : Infinity;
-          return da - db || getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a);
-        });
-        break;
-      case "discount":
-        list.sort((a, b) => discountNum(b) - discountNum(a) || getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a));
+        list.sort((a, b) => compareAscNullsLast(timeKey(a.expires_at), timeKey(b.expires_at)));
         break;
       case "verified":
-        list.sort((a, b) => getStoredOrComputedQualityScore(b) - getStoredOrComputedQualityScore(a) || new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        // `last_checked_at` only. The old comparator fell back to `updated_at`,
+        // which reports when the row was written, not when anyone checked it.
+        list.sort((a, b) => compareDescNullsLast(timeKey(a.last_checked_at), timeKey(b.last_checked_at)));
         break;
     }
     return list;

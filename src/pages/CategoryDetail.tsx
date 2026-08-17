@@ -95,7 +95,9 @@ const SHOW_VERIFICATION_FRESHNESS_UI = FEATURE_FLAGS.showVerificationFreshnessUI
 const ALL_SORT_OPTIONS = [
   { value: "sponsored", label: "Recommended" },
   { value: "newest", label: "Newest" },
-  { value: "discount", label: "Highest Discount" },
+  // "Highest Discount" removed for the same reason as Explore's: it ranked on
+  // `discount_value`, which is null on every active deal, so it reordered
+  // nothing while implying the data existed.
   { value: "expiring", label: "Expiring Soon" },
   { value: "verified", label: "Recently Verified" },
 ];
@@ -129,10 +131,24 @@ function urgencyColor(days: number) {
   return "bg-accent/15 text-accent border-accent/30";
 }
 
-function discountNum(deal: DealWithStore) {
-  const m = (deal.discount_value ?? "").match(/(\d+)/);
-  return m ? parseInt(m[1]) : 0;
-}
+// Sort keys that can be absent. Missing values sort last rather than being
+// coerced to 0 or Infinity at the call site.
+const timeKey = (value: string | null | undefined) =>
+  value ? new Date(value).getTime() : null;
+
+const compareDescNullsLast = (a: number | null, b: number | null) => {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return b - a;
+};
+
+const compareAscNullsLast = (a: number | null, b: number | null) => {
+  if (a === null && b === null) return 0;
+  if (a === null) return 1;
+  if (b === null) return -1;
+  return a - b;
+};
 
 const fadeUp = {
   hidden: { opacity: 0, y: 16 },
@@ -287,18 +303,13 @@ export default function CategoryDetail() {
       case "newest":
         list.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
         break;
-      case "discount":
-        list.sort((a, b) => discountNum(b) - discountNum(a));
-        break;
       case "expiring":
-        list.sort((a, b) => {
-          const da = a.expires_at ? new Date(a.expires_at).getTime() : Infinity;
-          const db = b.expires_at ? new Date(b.expires_at).getTime() : Infinity;
-          return da - db;
-        });
+        list.sort((a, b) => compareAscNullsLast(timeKey(a.expires_at), timeKey(b.expires_at)));
         break;
       case "verified":
-        list.sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime());
+        // `last_checked_at` only — `updated_at` reports when the row was
+        // written, not when the offer was checked.
+        list.sort((a, b) => compareDescNullsLast(timeKey(a.last_checked_at), timeKey(b.last_checked_at)));
         break;
     }
     return list;
