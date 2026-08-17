@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -10,23 +10,34 @@ import {
   ShieldCheck,
   ArrowRight,
   CheckCircle2,
-  Flame,
   Link2,
   ShieldOff,
   Mail,
   UserCheck,
   Unlock,
+  ShoppingBag,
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const BRAND_TILES = [
-  { name: "Apple", logo: "/logos/apple.png", caption: "Save up to $300" },
-  { name: "Spotify", logo: "/logos/spotify.png", caption: "Student plan $5.99" },
-  { name: "Amazon Prime", logo: "/logos/amazon.png", caption: "6 months free" },
-  { name: "Nike", logo: "/logos/nike.png", caption: "Up to 20% off" },
-  { name: "Adobe", logo: "/logos/adobe.png", caption: "60% off Creative Cloud" },
-  { name: "DoorDash", logo: "/logos/doordash.png", caption: "Free DashPass" },
-];
+// The brand strip used to be six hardcoded tiles. Every one of them was wrong.
+//
+//   Amazon Prime "6 months free"      not in the catalogue at all
+//   Nike         "Up to 20% off"      not in the catalogue at all
+//   DoorDash     "Free DashPass"      not in the catalogue at all
+//   Adobe        "60% off"            catalogue says 71% off year one
+//   Spotify      "Student plan $5.99" catalogue says $6.99/mo
+//   Apple        "Save up to $300"    catalogue says roughly $100-$200
+//
+// The tiles were not links to those deals either — clicking one opened the
+// verification modal regardless. This is the first screen a new student sees,
+// so it now shows deals that exist, read from the same table as everything
+// else, and renders nothing at all when the query returns nothing.
+
+interface SplashDeal {
+  id: string;
+  title: string;
+  stores: { name: string | null; logo_url: string | null } | null;
+}
 
 const TRUST_CHIPS = [
   { icon: ShieldCheck, label: "Verified access" },
@@ -44,6 +55,20 @@ export default function Splash() {
   const { user, isStudentVerified, profile, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const [verifyOpen, setVerifyOpen] = useState(false);
+  const [splashDeals, setSplashDeals] = useState<SplashDeal[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    supabase
+      .from("deals")
+      .select("id, title, stores:store_id(name, logo_url)")
+      .eq("status", "active")
+      .eq("is_test_fixture", false)
+      .order("created_at", { ascending: false })
+      .limit(6)
+      .then(({ data }) => { if (!cancelled) setSplashDeals((data || []) as unknown as SplashDeal[]); });
+    return () => { cancelled = true; };
+  }, []);
 
   const markSeen = async () => {
     if (user) {
@@ -112,8 +137,9 @@ export default function Splash() {
           <h1 className="font-display text-3xl sm:text-4xl font-bold tracking-tight text-foreground leading-tight">
             Unlock real student discounts.
           </h1>
+          {/* "updated weekly" removed: nothing updates on a weekly cadence. */}
           <p className="text-muted-foreground text-sm sm:text-base max-w-md leading-relaxed">
-            Verified students get access to the best deals from top brands—updated weekly.
+            Student offers from brands you already use, with the catches written down.
           </p>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <Button size="lg" className="gap-2 text-sm" onClick={handlePrimaryCta}>
@@ -127,40 +153,46 @@ export default function Splash() {
         </motion.section>
 
         {/* 3) Deal Teaser Row */}
-        <motion.section
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2 }}
-        >
-          <h2 className="font-display text-lg font-semibold text-foreground mb-4">
-            Top Brands Students Use
-          </h2>
-          <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-            {BRAND_TILES.map((brand) => (
-              <button
-                key={brand.name}
-                onClick={() => {
-                  if (!verified) setVerifyOpen(true);
-                  else navigate("/deals");
-                }}
-                className="flex-shrink-0 w-[140px] rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-[var(--shadow-glow)] transition-all duration-200 p-4 flex flex-col items-center gap-3 group cursor-pointer"
-              >
-                <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center overflow-hidden">
-                  <img
-                    src={brand.logo}
-                    alt={brand.name}
-                    className="w-10 h-10 object-contain"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).style.display = "none";
-                    }}
-                  />
-                </div>
-                <span className="text-xs font-semibold text-foreground">{brand.name}</span>
-                <span className="text-[11px] font-bold text-accent">{brand.caption}</span>
-              </button>
-            ))}
-          </div>
-        </motion.section>
+        {splashDeals.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h2 className="font-display text-lg font-semibold text-foreground mb-4">
+              In the catalogue right now
+            </h2>
+            <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
+              {splashDeals.map((deal) => (
+                <button
+                  key={deal.id}
+                  onClick={() => {
+                    if (!verified) setVerifyOpen(true);
+                    else navigate(`/deals/${deal.id}`);
+                  }}
+                  className="flex-shrink-0 w-[140px] rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-[var(--shadow-glow)] transition-all duration-200 p-4 flex flex-col items-center gap-3 group cursor-pointer"
+                >
+                  <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center overflow-hidden">
+                    {deal.stores?.logo_url ? (
+                      <img
+                        src={deal.stores.logo_url}
+                        alt={deal.stores.name || deal.title}
+                        className="w-10 h-10 object-contain"
+                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+                      />
+                    ) : (
+                      <ShoppingBag className="h-6 w-6 text-muted-foreground" />
+                    )}
+                  </div>
+                  <span className="text-xs font-semibold text-foreground">{deal.stores?.name || " "}</span>
+                  {/* The deal's own title. No invented discount figure:
+                      `discount_value` is null across the catalogue. */}
+                  <span className="text-[11px] text-muted-foreground line-clamp-2 leading-snug">{deal.title}</span>
+                </button>
+              ))}
+            </div>
+          </motion.section>
+        )}
 
         {/* 4) Trust + Proof Strip */}
         <motion.section
@@ -180,10 +212,13 @@ export default function Splash() {
               </div>
             ))}
           </div>
-          <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-            <Flame className="h-3.5 w-3.5 text-orange-400" />
-            <span>🔥 27 students clicked Nike today</span>
-          </div>
+          {/*
+            "🔥 27 students clicked Nike today" was here — a hardcoded number
+            beside a <Flame> icon, which is where the doubled flame came from.
+            Nothing counted 27, nobody clicked, and Nike is not in the
+            catalogue. There is no honest replacement at this traffic level, so
+            the row is gone rather than swapped for a real count of 2.
+          */}
         </motion.section>
 
         {/* 5) Bottom Progress Card */}
