@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { logPaywallView } from "@/lib/paywall";
 import { useRecordRedemption } from "@/hooks/use-record-redemption";
 import { DealStackCalculator } from "@/components/DealStackCalculator";
+import { MerchantLogo } from "@/components/MerchantLogo";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ExternalLink, Shield, Clock, Crown, Info, GraduationCap,
@@ -242,13 +243,13 @@ export default function DealDetail() {
               {/* Store + badges row */}
               <div className="flex items-start justify-between gap-4">
                 <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 rounded-2xl bg-secondary flex items-center justify-center shrink-0">
-                    {deal.stores?.logo_url ? (
-                      <img src={deal.stores.logo_url} alt={storeName} className="h-10 w-10 rounded-xl object-contain" />
-                    ) : (
-                      <ShoppingBag className="h-7 w-7 text-muted-foreground" />
-                    )}
-                  </div>
+                  <MerchantLogo
+                    name={storeName}
+                    logoUrl={deal.stores?.logo_url}
+                    fallbackName={deal.title}
+                    className="h-14 w-14 rounded-2xl bg-secondary p-2"
+                    monogramClassName="text-lg"
+                  />
                   <div>
                     <div className="text-sm text-muted-foreground">{storeName}</div>
                     <h1 className="font-display text-xl sm:text-2xl font-bold text-foreground mt-0.5">{deal.title}</h1>
@@ -558,15 +559,13 @@ export default function DealDetail() {
                         The container now sizes and clips; the image is
                         constrained by `.merchant-logo-img`.
                       */}
-                      <div className="logo-banner h-16 w-24 shrink-0 rounded-lg overflow-hidden flex items-center justify-center p-2">
-                        {related.stores?.logo_url ? (
-                          <img src={related.stores.logo_url} alt={related.stores?.name ?? related.title} className="merchant-logo-img" />
-                        ) : (
-                          <span className="merchant-logo-monogram text-sm" aria-hidden="true">
-                            {(related.stores?.name ?? related.title).trim().charAt(0).toUpperCase()}
-                          </span>
-                        )}
-                      </div>
+                      <MerchantLogo
+                        name={related.stores?.name}
+                        logoUrl={related.stores?.logo_url}
+                        fallbackName={related.title}
+                        className="logo-banner h-16 w-24 rounded-lg p-2"
+                        monogramClassName="text-sm"
+                      />
                       <div className="min-w-0">
                         <div className="text-[11px] text-muted-foreground truncate">{related.stores?.name ?? "Merchant"}</div>
                         <div className="font-medium text-sm text-foreground truncate">{related.title}</div>

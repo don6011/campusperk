@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowLeft, Heart, ShoppingBag, Sparkles, Tag } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { MerchantLogo } from "@/components/MerchantLogo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -131,12 +132,14 @@ export default function CollectionDetail() {
               <motion.div key={deal.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.03 }}>
                 <Card className="deal-card-premium h-full">
                   <CardContent className="p-5 h-full flex flex-col gap-4">
-                    <Link to={`/deals/${deal.id}`} className="logo-banner h-24 rounded-lg overflow-hidden flex items-center justify-center p-3">
-                      {deal.stores?.logo_url ? (
-                        <img src={deal.stores.logo_url} alt={deal.stores.name || deal.title} className="merchant-logo-img" />
-                      ) : (
-                        <ShoppingBag className="h-9 w-9 text-muted-foreground" />
-                      )}
+                    <Link to={`/deals/${deal.id}`} className="block">
+                      <MerchantLogo
+                        name={deal.stores?.name}
+                        logoUrl={deal.stores?.logo_url}
+                        fallbackName={deal.title}
+                        className="logo-banner h-24 w-full rounded-lg p-3"
+                        monogramClassName="text-2xl"
+                      />
                     </Link>
                     <div className="flex-1">
                       <Link to={`/merchants/${deal.store_id}`} className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors">

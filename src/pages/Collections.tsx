@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ArrowRight, Boxes, Compass, ShoppingBag } from "lucide-react";
 import DashboardLayout from "@/components/dashboard/DashboardLayout";
+import { MerchantLogo } from "@/components/MerchantLogo";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -75,13 +76,13 @@ export default function Collections() {
                       <CardContent className="p-5 h-full flex flex-col gap-5">
                         <div className="grid grid-cols-4 gap-2 min-h-20">
                           {previews.length > 0 ? previews.map((deal) => (
-                            <div key={deal.id} className="logo-banner h-20 rounded-lg overflow-hidden flex items-center justify-center p-2">
-                              {deal.stores?.logo_url ? (
-                                <img src={deal.stores.logo_url} alt={deal.stores.name || deal.title} className="merchant-logo-img" />
-                              ) : (
-                                <ShoppingBag className="h-6 w-6 text-muted-foreground" />
-                              )}
-                            </div>
+                            <MerchantLogo
+                              key={deal.id}
+                              name={deal.stores?.name}
+                              logoUrl={deal.stores?.logo_url}
+                              fallbackName={deal.title}
+                              className="logo-banner h-20 rounded-lg p-2"
+                            />
                           )) : (
                             <div className="col-span-4 rounded-xl border border-dashed border-white/15 bg-white/[0.03] h-20 flex items-center justify-center text-sm text-muted-foreground">
                               More verified deals arriving soon

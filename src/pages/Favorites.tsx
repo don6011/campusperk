@@ -6,6 +6,7 @@ import {
   GraduationCap, AlertTriangle, SortAsc,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { MerchantLogo } from "@/components/MerchantLogo";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -209,13 +210,13 @@ export default function Favorites() {
                       </Tooltip>
 
                       <div className="flex items-center gap-2.5 pr-8">
-                        <div className="h-10 w-10 rounded-lg bg-secondary flex items-center justify-center shrink-0">
-                          {deal.stores?.logo_url ? (
-                            <img src={deal.stores.logo_url} alt={storeName} className="h-7 w-7 rounded-md object-contain" />
-                          ) : (
-                            <ShoppingBag className="h-5 w-5 text-muted-foreground" />
-                          )}
-                        </div>
+                        <MerchantLogo
+                          name={storeName}
+                          logoUrl={deal.stores?.logo_url}
+                          fallbackName={deal.title}
+                          className="h-10 w-10 rounded-lg bg-secondary p-1.5"
+                          monogramClassName="text-sm"
+                        />
                         <div className="min-w-0">
                           <div className="text-[11px] text-muted-foreground">{storeName}</div>
                           <div className="font-medium text-sm text-foreground truncate">{deal.title}</div>

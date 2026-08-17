@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
+import { MerchantLogo } from "@/components/MerchantLogo";
 import { VerifyModal } from "@/components/VerifyModal";
 import { Progress } from "@/components/ui/progress";
 import campusLogo from "@/assets/campusperk-logo.png";
@@ -172,18 +173,13 @@ export default function Splash() {
                   }}
                   className="flex-shrink-0 w-[140px] rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-[var(--shadow-glow)] transition-all duration-200 p-4 flex flex-col items-center gap-3 group cursor-pointer"
                 >
-                  <div className="w-14 h-14 rounded-xl bg-secondary flex items-center justify-center overflow-hidden">
-                    {deal.stores?.logo_url ? (
-                      <img
-                        src={deal.stores.logo_url}
-                        alt={deal.stores.name || deal.title}
-                        className="w-10 h-10 object-contain"
-                        onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
-                      />
-                    ) : (
-                      <ShoppingBag className="h-6 w-6 text-muted-foreground" />
-                    )}
-                  </div>
+                  <MerchantLogo
+                    name={deal.stores?.name}
+                    logoUrl={deal.stores?.logo_url}
+                    fallbackName={deal.title}
+                    className="w-14 h-14 rounded-xl bg-secondary p-2"
+                    monogramClassName="text-lg"
+                  />
                   <span className="text-xs font-semibold text-foreground">{deal.stores?.name || " "}</span>
                   {/* The deal's own title. No invented discount figure:
                       `discount_value` is null across the catalogue. */}

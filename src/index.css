@@ -1,72 +1,119 @@
-@import url('https://api.fontshare.com/v2/css?f[]=satoshi@300,400,500,600,700,800,900&f[]=cabinet-grotesk@400,500,600,700,800&display=swap');
+/*
+ * Self-hosted via npm rather than a font CDN.
+ *
+ * The previous @import pulled Satoshi and Cabinet Grotesk from
+ * api.fontshare.com on every page load: a third-party request in the critical
+ * path, a flash of unstyled text, and a hard dependency on a host nobody here
+ * controls. @fontsource ships the same woff2 files through the bundler, so
+ * type is available immediately and offline.
+ *
+ * Only the two weights the type scale uses are imported — 400 for body, 500
+ * for headings. There is deliberately no 600 or 700.
+ */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/instrument-sans/400.css';
+@import '@fontsource/instrument-sans/500.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
+  /*
+   * Light surface.
+   *
+   * The app was dark navy, which fought the content: merchant logos are drawn
+   * for white backgrounds, so GitHub, Adobe and Apple all rendered as black
+   * marks on near-black tiles and had to be boxed in grey panels to be visible
+   * at all. On white they need no treatment.
+   *
+   * Values are the specified hex converted to HSL triples, because every
+   * consumer is `hsl(var(--token))`:
+   *   #FFFFFF #FAFAF9 #E7E5E4 #1C1917 #57534E #A8A29E #16A34A #B45309 #FFFBEB
+   */
   :root {
-    --background: 220 40% 8%;
-    --foreground: 210 40% 96%;
+    --background: 0 0% 100%;              /* #FFFFFF */
+    --foreground: 24 10% 10%;             /* #1C1917 text primary */
 
-    --card: 220 33% 10%;
-    --card-foreground: 210 40% 96%;
+    --card: 0 0% 100%;
+    --card-foreground: 24 10% 10%;
 
-    --popover: 220 33% 10%;
-    --popover-foreground: 210 40% 96%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 24 10% 10%;
 
-    --primary: 217 91% 60%;
+    /* Neutral, not blue: primary is text-coloured so it cannot become a second
+       accent. The green accent is rationed — see --accent. */
+    --primary: 24 10% 10%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 220 33% 14%;
-    --secondary-foreground: 210 40% 96%;
+    --secondary: 60 9% 98%;               /* #FAFAF9 subtle surface */
+    --secondary-foreground: 24 10% 10%;
 
-    --muted: 220 25% 14%;
-    --muted-foreground: 215 20% 55%;
+    --muted: 60 9% 98%;
+    --muted-foreground: 33 5% 32%;        /* #57534E text secondary */
 
-    --accent: 142 71% 45%;
+    /* Deliberately scarce: at most twice per screen. */
+    --accent: 142 76% 36%;                /* #16A34A */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 220 25% 16%;
-    --input: 220 25% 16%;
-    --ring: 217 91% 60%;
+    --border: 20 6% 90%;                  /* #E7E5E4 hairline */
+    --input: 20 6% 90%;
+    --ring: 142 76% 36%;
 
-    --radius: 0.75rem;
+    --radius: 0.75rem;                    /* 12px cards */
+    --radius-inner: 0.5rem;               /* 8px inner tiles */
 
-    --gold: 45 93% 56%;
+    /* Caveats — the one place a warning colour is allowed. */
+    --caveat: 26 90% 37%;                 /* #B45309 */
+    --caveat-surface: 48 100% 96%;        /* #FFFBEB */
+
+    /* Third neutral step, for timestamps and de-emphasised meta. */
+    --muted-faint: 24 6% 64%;             /* #A8A29E text muted */
 
     /* Campus theming — overridden at runtime when a campus has colors */
     --campus-primary: var(--primary);
     --campus-secondary: var(--accent);
 
-    --sidebar-background: 220 40% 9%;
-    --sidebar-foreground: 210 40% 96%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 24 10% 10%;
+    --sidebar-primary: 24 10% 10%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 220 33% 14%;
-    --sidebar-accent-foreground: 210 40% 96%;
-    --sidebar-border: 220 25% 16%;
-    --sidebar-ring: 217 91% 60%;
+    --sidebar-accent: 60 9% 98%;
+    --sidebar-accent-foreground: 24 10% 10%;
+    --sidebar-border: 20 6% 90%;
+    --sidebar-ring: 142 76% 36%;
 
-    /* Custom tokens */
-    --gradient-primary: linear-gradient(135deg, hsl(217 91% 60%), hsl(199 89% 48%));
-    --gradient-accent: linear-gradient(135deg, hsl(142 71% 45%), hsl(160 84% 39%));
-    --gradient-gold: linear-gradient(135deg, hsl(45 93% 56%), hsl(38 92% 50%));
-    --gradient-card: linear-gradient(135deg, hsl(220 33% 11%), hsl(220 33% 9%));
-    --shadow-glow: 0 16px 40px rgba(0,0,0,.45), 0 0 20px rgba(59,130,246,.15);
-    --shadow-card: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04) inset;
+    /*
+     * One elevation level: a hairline border. No shadows, no gradients.
+     * These names are kept because ~40 components reference them; they now
+     * resolve to nothing rather than being deleted out from under those
+     * call sites, which would leave `box-shadow: var(--undefined)`.
+     */
+    --gradient-primary: none;
+    --gradient-accent: none;
+    --gradient-gold: none;
+    --gradient-card: none;
+    --shadow-glow: none;
+    --shadow-card: none;
 
-    /* Glass tokens */
-    --glass-bg: rgba(12,18,38,0.55);
-    --glass-border: rgba(255,255,255,0.12);
-    --glass-highlight: hsl(210 40% 96% / 0.04);
+    /* Glass was a dark-theme device. Flat surfaces on light. */
+    --glass-bg: hsl(0 0% 100%);
+    --glass-border: hsl(20 6% 90%);
+    --glass-highlight: transparent;
   }
 
+  /*
+   * No dark theme. `darkMode: ["class"]` remains configured and this block
+   * stays empty because nothing in the product toggles it — there is no
+   * switch in any menu or settings screen. Building one was explicitly out
+   * of scope; adding tokens for a theme nobody can reach would be dead code.
+   */
   .dark {
-    /* Already dark by default */
+    /* intentionally empty: see above */
   }
 }
 
@@ -77,68 +124,62 @@
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Satoshi', sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Cabinet Grotesk', sans-serif;
+    font-family: 'Instrument Sans', system-ui, sans-serif;
+    font-weight: 500;
   }
 }
 
 @layer utilities {
-  /* Glass-morphism utility */
-  .glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
-    box-shadow: var(--shadow-card);
-  }
-
-  .glass-strong {
-    background: rgba(12,18,38,0.72);
-    backdrop-filter: blur(26px);
-    -webkit-backdrop-filter: blur(26px);
-    border: 1px solid rgba(255,255,255,0.14);
-    box-shadow: var(--shadow-card);
-  }
-
-  .premium-glass-card {
-    background: rgba(12,18,38,0.55);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04) inset;
-  }
-
-  .premium-hover {
-    transition: all .25s ease;
-  }
-
-  .premium-hover:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 16px 40px rgba(0,0,0,.45), 0 0 20px rgba(59,130,246,.15);
-  }
-
+  /*
+   * ONE ELEVATION LEVEL.
+   *
+   * Every class below used to combine a translucent dark fill, a 20px backdrop
+   * blur, an inset highlight and two box-shadows — then lift 6px on hover. On a
+   * white surface none of that reads as depth; it reads as smudge.
+   *
+   * The class NAMES are kept and redefined rather than deleted. About forty
+   * components reference them, and deleting the definitions would leave those
+   * `className` strings silently matching nothing — the same failure mode as the
+   * undefined `.merchant-logo-img` that let logos render unconstrained for five
+   * sessions. Redefining means one edit here changes every call site honestly.
+   *
+   * A surface is: white background, 1px hairline border, 12px radius. That is
+   * the whole vocabulary.
+   */
+  .glass,
+  .glass-strong,
+  .premium-glass-card,
   .deal-card-premium {
-    background: rgba(12,18,38,0.55);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,0.12);
-    box-shadow: 0 8px 32px rgba(0,0,0,0.35), 0 0 0 1px rgba(255,255,255,0.04) inset;
-    transition: all .25s ease;
+    background: hsl(var(--background));
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius);
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
   }
 
+  /* Hover changes the border, never the elevation or position. */
+  .premium-hover,
+  .deal-card-premium {
+    transition: border-color .15s ease;
+  }
+
+  .premium-hover:hover,
   .deal-card-premium:hover {
-    transform: translateY(-6px);
-    border-color: hsl(var(--primary) / 0.45);
-    box-shadow: 0 16px 40px rgba(0,0,0,.45), 0 0 20px rgba(59,130,246,.15);
+    transform: none;
+    border-color: hsl(var(--foreground) / 0.2);
+    box-shadow: none;
   }
 
+  /* Logo tiles sit on the subtle surface, not a gradient. */
   .logo-banner {
-    background: linear-gradient(135deg, rgba(255,255,255,0.12), rgba(255,255,255,0.04));
-    border: 1px solid rgba(255,255,255,0.1);
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08);
+    background: hsl(var(--secondary));
+    border: 1px solid hsl(var(--border));
+    box-shadow: none;
   }
 
   .merchant-logo-tile {
@@ -155,6 +196,34 @@
     object-fit: contain;
     object-position: center;
     display: block;
+  }
+
+  /*
+   * Monochrome brand mark, drawn by masking the SVG with currentColor.
+   *
+   * The old assets were opaque RGB PNGs with the brand's own background baked
+   * in — checked, and none of them carries an alpha channel — which is why
+   * GitHub, Adobe and Apple rendered as solid black squares once the surface
+   * went white. They cannot be recoloured or masked; the background is pixels.
+   *
+   * simple-icons ships single-path marks with no fill, so masking gives a
+   * uniform-weight silhouette that takes the tile's text colour. Every logo on
+   * the site is now either one of these or a monogram, which is the point: one
+   * weight reads as designed, mixed full-colour PNGs read as scraped.
+   */
+  .merchant-logo-mark {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background-color: currentColor;
+    -webkit-mask-image: var(--mark);
+    mask-image: var(--mark);
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
   }
 
   .merchant-logo-panel {
@@ -210,10 +279,10 @@
     justify-content: center;
     width: 100%;
     height: 100%;
-    font-weight: 700;
+    font-weight: 500;
     letter-spacing: 0.02em;
     color: hsl(var(--muted-foreground));
-    background: linear-gradient(135deg, rgba(255,255,255,0.10), rgba(255,255,255,0.03));
+    background: hsl(var(--secondary));
   }
 
   .brand-carousel-fade {
@@ -242,59 +311,24 @@
     background: linear-gradient(270deg, hsl(var(--background)) 0%, hsl(var(--background) / 0.78) 38%, transparent 100%);
   }
 
-  .glow-verified {
-    box-shadow: 0 0 22px hsl(142 71% 45% / 0.22);
-  }
+  .glow-verified { box-shadow: none; }
 
-  .glow-premium {
-    box-shadow: 0 0 24px hsl(var(--gold) / 0.25);
-  }
+  .glow-premium { box-shadow: none; }
 
-  .glow-featured {
-    box-shadow: 0 0 24px hsl(var(--primary) / 0.22);
-  }
+  .glow-featured { box-shadow: none; }
 
-  .glow-ambassador {
-    box-shadow: 0 0 24px hsl(265 89% 70% / 0.22);
-  }
+  .glow-ambassador { box-shadow: none; }
 
-  .glow-sponsored {
-    box-shadow: 0 0 24px hsl(38 92% 50% / 0.22);
-  }
+  .glow-sponsored { box-shadow: none; }
 
-  .hero-ambient-glow {
-    background-size: 180% 180%;
-    animation: gradient-shift 8s ease infinite;
-  }
+  .hero-ambient-glow { background: none; }
 
   /* Noise texture overlay */
-  .noise-overlay::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    opacity: 0.03;
-    pointer-events: none;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
-    background-repeat: repeat;
-    z-index: 0;
-  }
+  .noise-overlay::before { content: none; }
 
   /* Gradient border utility */
-  .gradient-border {
-    position: relative;
-  }
-  .gradient-border::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    background: linear-gradient(135deg, hsl(217 91% 60% / 0.4), hsl(142 71% 45% / 0.2), hsl(217 91% 60% / 0.1));
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-  }
+  .gradient-border { border: 1px solid hsl(var(--border)); border-radius: var(--radius); }
+  .gradient-border::before { content: none; }
 
   /* Animated gradient border */
   @keyframes gradient-rotate {
@@ -302,44 +336,12 @@
     100% { --gradient-angle: 360deg; }
   }
 
-  .animated-gradient-border {
-    position: relative;
-  }
-  .animated-gradient-border::before {
-    content: '';
-    position: absolute;
-    inset: -1px;
-    border-radius: inherit;
-    padding: 1.5px;
-    background: conic-gradient(
-      from var(--gradient-angle, 0deg),
-      hsl(217 91% 60% / 0.6),
-      hsl(142 71% 45% / 0.3),
-      hsl(45 93% 56% / 0.2),
-      hsl(217 91% 60% / 0.6)
-    );
-    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-    -webkit-mask-composite: xor;
-    mask-composite: exclude;
-    pointer-events: none;
-    animation: gradient-rotate 4s linear infinite;
-  }
+  .animated-gradient-border { border: 1px solid hsl(var(--border)); border-radius: var(--radius); }
+  .animated-gradient-border::before { content: none; }
 
   /* Gradient section divider */
-  .gradient-divider {
-    height: 1px;
-    background: linear-gradient(
-      90deg,
-      transparent,
-      hsl(217 91% 60% / 0.2) 20%,
-      hsl(142 71% 45% / 0.15) 50%,
-      hsl(217 91% 60% / 0.2) 80%,
-      transparent
-    );
-  }
+  .gradient-divider { height: 1px; background: hsl(var(--border)); }
 
   /* Inner glow for premium elements */
-  .inner-glow {
-    box-shadow: inset 0 1px 0 0 hsl(210 40% 96% / 0.06);
-  }
+  .inner-glow { box-shadow: none; }
 }

@@ -15,8 +15,41 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Satoshi", "sans-serif"],
-        display: ["Cabinet Grotesk", "sans-serif"],
+        sans: ["Inter", "system-ui", "sans-serif"],
+        display: ["Instrument Sans", "system-ui", "sans-serif"],
+      },
+      /*
+       * THE TYPE SCALE. Six steps, each with its line-height baked in, so a
+       * size cannot be used without its leading. Anything not on this list is
+       * an arbitrary size and should not appear in new work.
+       *
+       * Tailwind's default text-* scale is intentionally left in place: it is
+       * still referenced by hundreds of utilities across screens this commit
+       * must not rewrite, and removing those keys would make them silently
+       * match nothing rather than fail loudly.
+       */
+      fontSize: {
+        display: ["32px", { lineHeight: "1.15", fontWeight: "500" }],
+        h1: ["24px", { lineHeight: "1.25", fontWeight: "500" }],
+        h2: ["18px", { lineHeight: "1.35", fontWeight: "500" }],
+        body: ["15px", { lineHeight: "1.5", fontWeight: "400" }],
+        small: ["13px", { lineHeight: "1.5", fontWeight: "400" }],
+        caption: ["12px", { lineHeight: "1.4", fontWeight: "400" }],
+      },
+      /*
+       * The 4px spacing scale, as named steps. Same reasoning as fontSize:
+       * these are the values new work uses; Tailwind's numeric scale stays so
+       * existing p-5 / gap-2.5 utilities keep resolving until the screens that
+       * use them are rewritten.
+       */
+      spacing: {
+        s1: "4px",
+        s2: "8px",
+        s3: "12px",
+        s4: "16px",
+        s6: "24px",
+        s8: "32px",
+        s12: "48px",
       },
         colors: {
           border: "hsl(var(--border))",
@@ -44,9 +77,26 @@ export default {
             DEFAULT: "hsl(var(--accent))",
             foreground: "hsl(var(--accent-foreground))",
           },
+          /*
+           * `gold` is aliased to the secondary text neutral, not deleted.
+           *
+           * C4 removes the gold Premium treatment, but 214 utilities across the
+           * app still say text-gold / bg-gold/15 / border-gold/40. Dropping the
+           * key would make every one of them resolve to nothing — silently, and
+           * in screens this commit is not allowed to rewrite. Aliasing kills the
+           * treatment (gold now reads as ordinary secondary text) while keeping
+           * each call site meaningful, and leaves one line to change when those
+           * screens are swept.
+           */
           gold: {
-            DEFAULT: "hsl(var(--gold))",
+            DEFAULT: "hsl(var(--muted-foreground))",
           },
+          // The only warning colour in the system, for recorded caveats.
+          caveat: {
+            DEFAULT: "hsl(var(--caveat))",
+            surface: "hsl(var(--caveat-surface))",
+          },
+          "muted-faint": "hsl(var(--muted-faint))",
           campus: {
             DEFAULT: "hsl(var(--campus-primary))",
             secondary: "hsl(var(--campus-secondary))",
@@ -71,9 +121,12 @@ export default {
           },
         },
       borderRadius: {
+        // 12px cards, 8px inner tiles. Two values, nothing between.
         lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
+        md: "var(--radius-inner)",
+        sm: "var(--radius-inner)",
+        card: "var(--radius)",
+        tile: "var(--radius-inner)",
       },
       keyframes: {
         "accordion-down": {
@@ -91,10 +144,6 @@ export default {
         "pulse-glow": {
           "0%, 100%": { opacity: "0.4" },
           "50%": { opacity: "0.8" },
-        },
-        "gold-glow": {
-          "0%, 100%": { boxShadow: "0 0 3px 1px hsl(var(--gold) / 0.3)" },
-          "50%": { boxShadow: "0 0 8px 3px hsl(var(--gold) / 0.6)" },
         },
         "marquee": {
           "0%": { transform: "translateX(0)" },
@@ -114,7 +163,6 @@ export default {
         "accordion-up": "accordion-up 0.2s ease-out",
         "float": "float 6s ease-in-out infinite",
         "pulse-glow": "pulse-glow 3s ease-in-out infinite",
-        "gold-glow": "gold-glow 2s ease-in-out infinite",
         "marquee": "marquee 30s linear infinite",
         "shimmer": "shimmer 3s ease-in-out infinite",
         "gradient-shift": "gradient-shift 6s ease infinite",
