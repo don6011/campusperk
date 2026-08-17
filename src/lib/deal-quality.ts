@@ -217,8 +217,8 @@ export function getStoredOrComputedQualityScore(deal: QualityDeal) {
     : computeDealQuality(deal, deal.affiliateSearch?.[0]).score;
 }
 
-export function isHomepageQualityEligible(deal: QualityDeal) {
-  const score = getStoredOrComputedQualityScore(deal);
-  const hasLogo = hasText(deal.stores?.logo_url || deal.affiliateSearch?.[0]?.merchant_logo);
-  return deal.status === "active" && hasLogo && score >= 70;
-}
+// `isHomepageQualityEligible` lived here. It gated the homepage on a store logo
+// plus a score of 70+, which suited a 224-row imported catalogue and actively
+// harmed a hand-verified one — it hid every deal on the front page. Its only
+// caller is gone, so the function goes with it rather than lingering as an
+// unused export that invites a future reader to reapply it.

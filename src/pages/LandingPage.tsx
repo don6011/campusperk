@@ -15,7 +15,7 @@ import WaitlistModal from "@/components/WaitlistModal";
 import LegalFooter from "@/components/LegalFooter";
 import PartnerInquiryModal from "@/components/PartnerInquiryModal";
 import SEO from "@/components/SEO";
-import { getDealDisplayTitle, getStoredOrComputedQualityScore, isHomepageQualityEligible } from "@/lib/deal-quality";
+import { getDealDisplayTitle, getStoredOrComputedQualityScore } from "@/lib/deal-quality";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 30 },
@@ -186,11 +186,16 @@ const LandingPage = () => {
           .eq("is_test_fixture", false)
           .order("created_at", { ascending: false })
           .limit(120);
-        setHomepageDeals(((fallback.data || []) as any[]).filter(isHomepageQualityEligible));
+        setHomepageDeals((fallback.data || []) as any[]);
         return;
       }
 
-      setHomepageDeals(((first.data || []) as any[]).filter(isHomepageQualityEligible));
+      // No quality filter. `isHomepageQualityEligible` required a store logo
+      // AND a score of 70+, which was a reasonable way to suppress noise in a
+      // 224-row imported catalogue. Against seven hand-verified deals there is
+      // no noise to suppress, and the threshold was hiding the entire product:
+      // an anonymous load of this page rendered zero cards.
+      setHomepageDeals((first.data || []) as any[]);
     };
 
     loadHomepageDeals();
