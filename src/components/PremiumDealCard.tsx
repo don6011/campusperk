@@ -102,7 +102,8 @@ export function PremiumDealCard({ deal, isPremium, onUpgrade }: PremiumDealCardP
 
           <div className="min-w-0">
             <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{deal.title}</div>
-            <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value ?? "Special"}</div>
+            {/* No discount_value means no verified figure to show; "Special" was inventing one. */}
+            {deal.discount_value && <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value}</div>}
           </div>
 
           <Button

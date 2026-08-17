@@ -335,7 +335,8 @@ export default function ExploreDeals() {
                             </div>
                             <div className="min-w-0">
                               <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{displayDealTitle(deal)}</div>
-                              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value ?? "Special"}</div>
+                              {/* No discount_value means no verified figure to show; "Special" was inventing one. */}
+                              {deal.discount_value && <div className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value}</div>}
                             </div>
                             <div className="flex items-center justify-between">
                               <Badge className={`text-[9px] font-bold gap-1 ${badge.className}`}>{badge.icon} {badge.label}</Badge>
@@ -510,7 +511,8 @@ export default function ExploreDeals() {
                           <div className="min-h-[3rem] font-display text-lg font-bold leading-snug text-foreground line-clamp-2">{displayDealTitle(deal)}</div>
                         </div>
 
-                        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value ?? "Special"}</div>
+                        {/* No discount_value means no verified figure to show; "Special" was inventing one. */}
+                        {deal.discount_value && <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-emerald-400/25 bg-emerald-400/10 px-3 py-1 text-sm font-bold text-emerald-300">{deal.discount_value}</div>}
 
                         {/* Claim counter */}
                         <div className="mb-2 flex items-center gap-2">
