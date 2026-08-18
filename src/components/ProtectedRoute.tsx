@@ -5,8 +5,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LockKeyhole, Sparkles } from "lucide-react";
 
-// Pre-launch lockdown: set to true to allow all authenticated users through
-const IS_LAUNCHED = false;
+/**
+ * Launched. Any authenticated user reaches the app.
+ *
+ * This was a second gate on top of a gate: signup already requires a school
+ * email, and the deals carry their own eligibility rules. All this added was a
+ * wall between a student and the catalogue — "Your CampusPerk access is
+ * pending" — which is the opposite of the problem a product with no users has.
+ *
+ * The per-user paths below (`profiles.beta_access`, `is_founding_member`, admin
+ * role, active ambassador) are left intact and are simply not consulted while
+ * this is true. Flipping it back re-closes the beta with those still working,
+ * so throttling signups later costs one line rather than a rebuild.
+ *
+ * Note on `setIsAdmin(IS_LAUNCHED ? true : false)` below: that value is local
+ * state, read only by the loading guard and by a condition this flag
+ * short-circuits. It is never passed to children or context, so it grants no
+ * admin access — DashboardLayout runs its own role query for the admin nav.
+ */
+const IS_LAUNCHED = true;
 
 function BetaAccessScreen() {
   const { signOut } = useAuth();
@@ -93,7 +110,20 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }
 
   if (!isLoggedIn) {
-    return <Navigate to="/" replace />;
+    /*
+     * Send them to sign-in, remembering where they were going.
+     *
+     * This used to be `<Navigate to="/" replace />`: a logged-out visitor who
+     * tapped a deal was silently returned to the homepage, with `replace` so
+     * there was not even a back-button trace — no sign-in prompt, no
+     * explanation, nothing to act on. It read as a broken link.
+     *
+     * The homepage now lists all seven deals with their caveats, so it
+     * actively invites that tap, and every one of them dead-ended on the page
+     * the visitor was already looking at.
+     */
+    const next = `${location.pathname}${location.search}`;
+    return <Navigate to={`/sign-in?next=${encodeURIComponent(next)}`} replace />;
   }
 
   const hasBetaAccess = !!profile?.beta_access || !!profile?.is_founding_member;
