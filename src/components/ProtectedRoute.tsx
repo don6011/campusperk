@@ -5,8 +5,25 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, LockKeyhole, Sparkles } from "lucide-react";
 
-// Pre-launch lockdown: set to true to allow all authenticated users through
-const IS_LAUNCHED = false;
+/**
+ * Launched. Any authenticated user reaches the app.
+ *
+ * This was a second gate on top of a gate: signup already requires a school
+ * email, and the deals carry their own eligibility rules. All this added was a
+ * wall between a student and the catalogue — "Your CampusPerk access is
+ * pending" — which is the opposite of the problem a product with no users has.
+ *
+ * The per-user paths below (`profiles.beta_access`, `is_founding_member`, admin
+ * role, active ambassador) are left intact and are simply not consulted while
+ * this is true. Flipping it back re-closes the beta with those still working,
+ * so throttling signups later costs one line rather than a rebuild.
+ *
+ * Note on `setIsAdmin(IS_LAUNCHED ? true : false)` below: that value is local
+ * state, read only by the loading guard and by a condition this flag
+ * short-circuits. It is never passed to children or context, so it grants no
+ * admin access — DashboardLayout runs its own role query for the admin nav.
+ */
+const IS_LAUNCHED = true;
 
 function BetaAccessScreen() {
   const { signOut } = useAuth();
