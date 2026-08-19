@@ -28,6 +28,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { usePageTitle } from "@/hooks/use-page-title";
 import { useDealClaimCounts, useClaimDeal } from "@/hooks/use-deal-claims";
 import { checkedDateLabel, daysUntil } from "@/lib/deal-utils";
+import { PUBLIC_DEAL_STATUSES } from "@/lib/deal-counts";
 import { FEATURE_FLAGS } from "@/lib/feature-flags";
 
 // Same guard Explore and CategoryDetail use. It was missing here, so the
@@ -89,7 +90,10 @@ export default function DealDetail() {
         .select("id, store_id, title, description, discount_type, discount_value, requires_edu_email, status, sponsored, featured, category, expires_at, created_at, updated_at, last_checked_at, ai_summary, watch_out, renewal_cliff, eligibility_note, visibility, premium_only, is_affiliate, deal_scope, eligible_campuses, eligible_cities, eligible_regions, eligible_roles, requires_campus_verification, requires_role_verification, stores:store_id(name, logo_url, website_url)")
         .eq("id", dealId!)
         .eq("is_test_fixture", false)
-        .neq("status", "archived")
+        // Allowlist, matching the RLS policy. A draft is no longer reachable
+        // by direct URL even for an admin — drafts are previewed in the admin
+        // portal, not on the student-facing page.
+        .in("status", PUBLIC_DEAL_STATUSES)
         .maybeSingle();
       if (error) throw error;
       return data;
