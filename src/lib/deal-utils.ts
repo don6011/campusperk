@@ -39,7 +39,24 @@ export function checkedDateLabel(lastCheckedAt: string | null | undefined) {
   if (!lastCheckedAt) return null;
   const d = new Date(lastCheckedAt);
   if (Number.isNaN(d.getTime())) return null;
-  return `Checked ${d.toLocaleDateString(undefined, { month: "short", day: "numeric" })}`;
+  /*
+   * Rendered in UTC, deliberately.
+   *
+   * `last_checked_at` records the DAY someone checked an offer; the import
+   * stores midnight UTC because there is no meaningful time of day attached to
+   * it. Formatting that in the viewer's zone moves it: midnight UTC on the 16th
+   * is 8pm on the 15th in New York, so every US viewer read "Checked Aug 15"
+   * for a check recorded on the 16th.
+   *
+   * This sandbox runs UTC, which is why it rendered correctly here and wrong
+   * for the entire intended audience. A stored date should display as the date
+   * it is, not shift by the reader's longitude.
+   */
+  return `Checked ${d.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    timeZone: "UTC",
+  })}`;
 }
 
 export function urgencyColor(days: number) {

@@ -17,6 +17,28 @@ import { supabase } from "@/integrations/supabase/client";
 export const ACTIVE_DEAL_STATUS = "active" as const;
 
 /**
+ * The statuses a public deal listing may show. This list mirrors, exactly, the
+ * `Public deals are readable` RLS policy:
+ *
+ *   status = ANY (ARRAY['active', 'expired', 'coming_soon'])
+ *
+ * Keep the two in step. If they drift, the drift is invisible to anyone whose
+ * RLS returns the smaller set — which is every student — and shows up only for
+ * whoever can read more.
+ *
+ * That is exactly how drafts reached Explore. The page filtered with
+ * `.neq("status", "archived")`, a denylist that admits any status nobody
+ * thought to exclude, including `draft` when it was added later. Students never
+ * saw them because the RLS policy stopped the rows at the database; the single
+ * admin account did, because its policy returns everything, and the page then
+ * sorted eleven drafts ahead of the seven real deals.
+ *
+ * An allowlist cannot fail that way: a new status is invisible until someone
+ * adds it here, deliberately, next to the policy it has to match.
+ */
+export const PUBLIC_DEAL_STATUSES = ["active", "expired", "coming_soon"] as const;
+
+/**
  * Flag set by 20260813180000_truth_pass_2_test_fixtures.sql on deals owned by
  * `CampusPerk Security Test Store`. Those rows are status = 'active' and
  * visibility = 'public' because `npm run test:security` has to resolve them, but
