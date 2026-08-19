@@ -98,5 +98,12 @@ harness rather than the app:
   `trap 'git checkout -- <file>' EXIT` when editing that same file — it restores
   the whole file and silently discards the edit. That produced a passing
   verification against source that no longer existed.
-- Gates: `npx tsc --noEmit`, `npm run build`, `npx vitest run`, `npx eslint .`
-  Baseline is 0 errors and ~324 pre-existing warnings.
+- Gates: `npx tsc -p tsconfig.app.json --noEmit`, `npm run build`, `npx vitest
+  run`, `npx eslint .` Baseline is 0 errors and ~324 pre-existing warnings.
+- **`npx tsc --noEmit` type-checks nothing.** The root `tsconfig.json` is
+  `"files": []` plus two project references, and plain `tsc` does not follow
+  references — only `tsc -b` does. It exits 0 on a file that references an
+  undefined identifier, which is how four `Cannot find name 'Wordmark'` errors
+  passed the gate. Use `-p tsconfig.app.json`. It is the failing-open filter
+  again, this time in the toolchain: a check that reports success by checking
+  nothing.

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Wordmark } from "@/components/Wordmark";
 import { Link, useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Award, Rocket, Lightbulb, Gift, ArrowRight, Check, Sparkles } from "lucide-react";
@@ -11,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 
 const TOTAL_SLOTS = 1000;
 
@@ -86,7 +86,7 @@ export default function FoundingMembers() {
       <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="Campus Perk" className="h-12 w-auto" />
+            <Wordmark />
           </Link>
           <Link to="/sign-up">
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">Join Now</Button>

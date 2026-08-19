@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import campusperkLogo from "@/assets/campusperk-logo.png";
+import { Wordmark } from "@/components/Wordmark";
 
 export default function LegalFooter() {
   return (
@@ -8,7 +8,7 @@ export default function LegalFooter() {
       <div className="container mx-auto px-4 py-10">
         <div className="flex flex-col md:flex-row items-center justify-between gap-6">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-14 w-auto" />
+            <Wordmark size="md" />
           </Link>
           <div className="flex items-center gap-6 text-sm text-muted-foreground">
             <Link to="/about" className="hover:text-foreground transition-colors duration-300">About</Link>

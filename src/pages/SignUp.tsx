@@ -13,8 +13,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 import SEO from "@/components/SEO";
+import { Wordmark } from "@/components/Wordmark";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -136,13 +136,9 @@ export default function SignUp() {
           animate="visible"
         >
           <Link to="/">
-            <motion.img
-              src={campusperkLogo}
-              alt="CampusPerk"
-              className="h-28 w-auto mx-auto mb-8"
-              variants={fadeUp}
-              custom={0}
-            />
+            <motion.div variants={fadeUp} custom={0} className="mb-8">
+              <Wordmark size="lg" />
+            </motion.div>
           </Link>
           <motion.h2 variants={fadeUp} custom={1} className="font-display text-3xl font-bold text-foreground">
             Start saving{" "}
@@ -175,7 +171,7 @@ export default function SignUp() {
           <motion.div className="w-full max-w-md" initial="hidden" animate="visible">
             <motion.div variants={fadeUp} custom={0} className="lg:hidden flex justify-center mb-8">
               <Link to="/">
-                <img src={campusperkLogo} alt="CampusPerk" className="h-24 w-auto" />
+                <Wordmark size="lg" />
               </Link>
             </motion.div>
 
@@ -303,14 +299,14 @@ export default function SignUp() {
 
               <p className="text-[11px] text-muted-foreground text-center leading-relaxed">
                 By signing up, you agree to our{" "}
-                <Link to="/terms" className="text-primary hover:underline">Terms</Link> and{" "}
-                <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+                <Link to="/terms" className="text-brand hover:underline">Terms</Link> and{" "}
+                <Link to="/privacy" className="text-brand hover:underline">Privacy Policy</Link>.
               </p>
             </motion.form>
 
             <motion.p variants={fadeUp} custom={4} className="mt-6 text-center text-sm text-muted-foreground">
               Already have an account?{" "}
-              <Link to="/sign-in" className="text-primary hover:underline font-medium">
+              <Link to="/sign-in" className="text-brand hover:underline font-medium">
                 Sign in
               </Link>
             </motion.p>
@@ -363,7 +359,7 @@ export default function SignUp() {
                 Wrong email?{" "}
                 <button
                   onClick={() => setStep("form")}
-                  className="text-primary hover:underline font-medium"
+                  className="text-brand hover:underline font-medium"
                 >
                   Go back
                 </button>

@@ -1,9 +1,9 @@
 import { useLocation, Link } from "react-router-dom";
+import { Wordmark } from "@/components/Wordmark";
 import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { ArrowLeft, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 import SEO from "@/components/SEO";
 
 const NotFound = () => {
@@ -31,7 +31,7 @@ const NotFound = () => {
         transition={{ duration: 0.5 }}
       >
         <Link to="/" className="inline-block mb-8">
-          <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto mx-auto" />
+          <Wordmark size="md" />
         </Link>
 
         <div className="mx-auto h-16 w-16 rounded-2xl glass inner-glow flex items-center justify-center mb-6">

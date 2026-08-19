@@ -9,8 +9,8 @@ import { Label } from "@/components/ui/label";
 
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 import SEO from "@/components/SEO";
+import { Wordmark } from "@/components/Wordmark";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 20 },
@@ -72,13 +72,9 @@ export default function SignIn() {
           animate="visible"
         >
           <Link to="/">
-            <motion.img
-              src={campusperkLogo}
-              alt="CampusPerk"
-              className="h-14 w-auto mx-auto mb-8"
-              variants={fadeUp}
-              custom={0}
-            />
+            <motion.div variants={fadeUp} custom={0} className="mb-8">
+              <Wordmark size="md" />
+            </motion.div>
           </Link>
           <motion.h2 variants={fadeUp} custom={1} className="font-display text-3xl font-bold text-foreground">
             Every Student Discount.{" "}
@@ -102,7 +98,7 @@ export default function SignIn() {
           {/* Mobile logo */}
           <motion.div variants={fadeUp} custom={0} className="lg:hidden flex justify-center mb-8">
             <Link to="/">
-              <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
+              <Wordmark size="md" />
             </Link>
           </motion.div>
 
@@ -133,7 +129,7 @@ export default function SignIn() {
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label htmlFor="password" className="text-sm text-foreground">Password</Label>
-                <Link to="/forgot-password" className="text-xs text-primary hover:underline">
+                <Link to="/forgot-password" className="text-xs text-brand hover:underline">
                   Forgot password?
                 </Link>
               </div>
@@ -170,7 +166,7 @@ export default function SignIn() {
 
           <motion.p variants={fadeUp} custom={4} className="mt-6 text-center text-sm text-muted-foreground">
             Don't have an account?{" "}
-            <Link to="/sign-up" className="text-primary hover:underline font-medium">
+            <Link to="/sign-up" className="text-brand hover:underline font-medium">
               Sign up free
             </Link>
           </motion.p>

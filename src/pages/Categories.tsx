@@ -147,6 +147,15 @@ export default function Categories() {
     return { ...cat, count, brands, isSubscribed };
   });
 
+  /*
+   * Categories with nothing in them are not shown.
+   *
+   * "Everyday" rendered a card reading "0 deals" above "Deals coming soon" —
+   * a tile whose only content was its own emptiness, and a promise nothing
+   * guarantees. A category earns a place on this page by having a deal in it.
+   */
+  const visibleCategories = categoryStats.filter((cat) => cat.count > 0);
+
   // Shared helper — same filter Explore and Account Settings report against.
   const { data: totalDeals = 0 } = useQuery({
     queryKey: ["active-deal-count"],
@@ -180,7 +189,10 @@ export default function Categories() {
                   <Tag className="h-3 w-3" /> {totalDeals} Active Deals
                 </Badge>
                 <Badge variant="outline" className="border-accent/30 text-accent bg-accent/10 text-xs gap-1.5 py-1 px-3">
-                  <CheckCircle className="h-3 w-3" /> {CATEGORIES.length} Categories
+                  {/* What is on the page, not what is in the constant. Hiding
+                      the empty categories without changing this left the badge
+                      claiming 5 above 4 cards. */}
+                  <CheckCircle className="h-3 w-3" /> {visibleCategories.length} Categories
                 </Badge>
               </div>
             </div>
@@ -196,7 +208,7 @@ export default function Categories() {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categoryStats.map((cat, i) => (
+            {visibleCategories.map((cat, i) => (
               <motion.div
                 key={cat.slug}
                 initial="hidden"
@@ -205,13 +217,9 @@ export default function Categories() {
                 custom={i + 1}
                 whileHover={{ y: -4, transition: { duration: 0.2 } }}
               >
-                {cat.count > 0 ? (
-                  <Link to={`/categories/${cat.slug}`}>
-                    <CategoryCard cat={cat} onSubscribe={subscribeToCategoryAlert} subscribingSlug={subscribingSlug} />
-                  </Link>
-                ) : (
-                  <CategoryCard cat={cat} onSubscribe={subscribeToCategoryAlert} subscribingSlug={subscribingSlug} isEmpty />
-                )}
+                <Link to={`/categories/${cat.slug}`}>
+                  <CategoryCard cat={cat} onSubscribe={subscribeToCategoryAlert} subscribingSlug={subscribingSlug} />
+                </Link>
               </motion.div>
             ))}
           </div>

@@ -506,7 +506,7 @@ export default function PartnersManager() {
                       {typeBadge(selectedPartner.partner_type)}
                       {statusBadge(selectedPartner.status)}
                       {selectedPartner.website_url && (
-                        <a href={selectedPartner.website_url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">{selectedPartner.website_url}</a>
+                        <a href={selectedPartner.website_url} target="_blank" rel="noopener noreferrer" className="text-xs text-brand hover:underline">{selectedPartner.website_url}</a>
                       )}
                     </div>
                   </div>
@@ -677,7 +677,7 @@ export default function PartnersManager() {
                   </button>
                 </div>
               )}
-              <label className="flex items-center gap-2 cursor-pointer text-sm text-primary hover:underline">
+              <label className="flex items-center gap-2 cursor-pointer text-sm text-brand hover:underline">
                 <Upload className="h-4 w-4" />
                 {partnerLogoPreview ? "Change image" : "Upload image"}
                 <input

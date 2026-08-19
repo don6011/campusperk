@@ -290,7 +290,7 @@ export default function VerificationQueue() {
                         href={url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-2 text-sm text-primary hover:underline"
+                        className="flex items-center gap-2 text-sm text-brand hover:underline"
                       >
                         <FileText className="h-3.5 w-3.5" />
                         View File {i + 1}

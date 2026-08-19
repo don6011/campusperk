@@ -1,7 +1,7 @@
 import { ReactNode, useState } from "react";
+import { Wordmark } from "@/components/Wordmark";
 import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 import {
   LayoutDashboard,
   Tag,
@@ -58,7 +58,7 @@ export const AdminLayout = ({ children }: { children: ReactNode }) => {
       >
         <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-9 w-auto" />
+            <Wordmark />
           </Link>
           <Button variant="ghost" size="icon" className="lg:hidden" onClick={() => setSidebarOpen(false)}>
             <X className="h-5 w-5" />

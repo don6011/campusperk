@@ -393,7 +393,7 @@ export default function SubmitDeal() {
                       <div key={d.id} className="flex items-center gap-2 text-xs">
                         <Badge variant="outline" className="text-[10px] bg-secondary border-border">{d.stores?.name}</Badge>
                         <span className="text-muted-foreground truncate">{d.title}</span>
-                        <Link to={`/deals/${d.id}`} className="shrink-0 text-primary hover:underline flex items-center gap-0.5">
+                        <Link to={`/deals/${d.id}`} className="shrink-0 text-brand hover:underline flex items-center gap-0.5">
                           View <ExternalLink className="h-3 w-3" />
                         </Link>
                       </div>

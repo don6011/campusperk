@@ -94,7 +94,7 @@ export default function NotificationBell() {
         <div className="flex items-center justify-between border-b border-border px-4 py-3">
           <h3 className="text-sm font-semibold text-foreground">Notifications</h3>
           {unreadCount > 0 && (
-            <button onClick={markAllRead} className="text-xs text-primary hover:underline flex items-center gap-1">
+            <button onClick={markAllRead} className="text-xs text-brand hover:underline flex items-center gap-1">
               <Check className="h-3 w-3" /> Mark all read
             </button>
           )}
@@ -132,7 +132,7 @@ export default function NotificationBell() {
         <div className="border-t border-border px-4 py-2">
           <button
             onClick={() => { navigate("/alerts"); setOpen(false); }}
-            className="text-xs text-primary hover:underline w-full text-center"
+            className="text-xs text-brand hover:underline w-full text-center"
           >
             Manage alerts →
           </button>

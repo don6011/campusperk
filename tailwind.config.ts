@@ -91,6 +91,16 @@ export default {
           gold: {
             DEFAULT: "hsl(var(--muted-foreground))",
           },
+          /*
+           * Brand. Mapped from the four tokens in index.css — no hex here
+           * either, so the palette has exactly one definition site.
+           */
+          brand: {
+            DEFAULT: "hsl(var(--brand))",
+            hover: "hsl(var(--brand-hover))",
+            wash: "hsl(var(--brand-wash))",
+            border: "hsl(var(--brand-border))",
+          },
           // The only warning colour in the system, for recorded caveats.
           caveat: {
             DEFAULT: "hsl(var(--caveat))",

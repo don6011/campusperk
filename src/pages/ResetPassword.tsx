@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Wordmark } from "@/components/Wordmark";
 import { useNavigate, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Lock, Eye, EyeOff, ArrowRight, CheckCircle2 } from "lucide-react";
@@ -7,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 import SEO from "@/components/SEO";
 
 const fadeUp = {
@@ -73,11 +73,11 @@ export default function ResetPassword() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center px-4">
         <motion.div className="text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-          <Link to="/"><img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto mx-auto mb-6" /></Link>
+          <Link to="/"><Wordmark size="md" className="mb-6" /></Link>
           <h1 className="font-display text-xl font-bold text-foreground">Invalid Reset Link</h1>
           <p className="mt-2 text-sm text-muted-foreground">
             This link is invalid or has expired.{" "}
-            <button onClick={() => navigate("/forgot-password")} className="text-primary hover:underline font-medium">
+            <button onClick={() => navigate("/forgot-password")} className="text-brand hover:underline font-medium">
               Request a new one
             </button>.
           </p>
@@ -95,7 +95,7 @@ export default function ResetPassword() {
       />
       <motion.div className="w-full max-w-md" initial="hidden" animate="visible">
         <motion.div variants={fadeUp} custom={0} className="flex justify-center mb-8">
-          <Link to="/"><img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" /></Link>
+          <Link to="/"><Wordmark size="md" /></Link>
         </motion.div>
 
         {!success ? (

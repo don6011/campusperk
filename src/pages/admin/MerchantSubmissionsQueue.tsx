@@ -278,7 +278,7 @@ export default function MerchantSubmissionsQueue() {
                 <div>
                   <p className="text-xs text-muted-foreground">Website</p>
                   {selected.website_url ? (
-                    <a className="text-primary hover:underline break-all" href={selected.website_url} target="_blank" rel="noreferrer">
+                    <a className="text-brand hover:underline break-all" href={selected.website_url} target="_blank" rel="noreferrer">
                       {selected.website_url}
                     </a>
                   ) : (
@@ -288,7 +288,7 @@ export default function MerchantSubmissionsQueue() {
                 <div>
                   <p className="text-xs text-muted-foreground">Proof / Menu / Offer URL</p>
                   {selected.proof_url ? (
-                    <a className="text-primary hover:underline break-all" href={selected.proof_url} target="_blank" rel="noreferrer">
+                    <a className="text-brand hover:underline break-all" href={selected.proof_url} target="_blank" rel="noreferrer">
                       {selected.proof_url}
                     </a>
                   ) : (

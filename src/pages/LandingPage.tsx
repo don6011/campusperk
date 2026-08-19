@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react";
+import { Wordmark } from "@/components/Wordmark";
 import { motion } from "framer-motion";
 import { Link, useSearchParams } from "react-router-dom";
 import { ArrowRight, GraduationCap, ShieldCheck, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 import WaitlistModal from "@/components/WaitlistModal";
 import LegalFooter from "@/components/LegalFooter";
 import PartnerInquiryModal from "@/components/PartnerInquiryModal";
 import SEO from "@/components/SEO";
 import { MerchantLogo } from "@/components/MerchantLogo";
+import { TheCatch } from "@/components/TheCatch";
 import { checkedDateLabel } from "@/lib/deal-utils";
 
 /**
@@ -122,7 +123,7 @@ const LandingPage = () => {
       <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/95 backdrop-blur">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-10 w-auto" />
+            <Wordmark />
           </Link>
           {/* Only the sections that still exist. */}
           <div className="hidden md:flex items-center gap-8">
@@ -134,12 +135,12 @@ const LandingPage = () => {
                 key={link.href}
                 href={link.href}
                 onClick={(e) => { e.preventDefault(); document.querySelector(link.href)?.scrollIntoView({ behavior: "smooth" }); }}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                className="text-sm text-muted-foreground transition-colors hover:text-brand"
               >
                 {link.label}
               </a>
             ))}
-            <Link to="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">About</Link>
+            <Link to="/about" className="text-sm text-muted-foreground transition-colors hover:text-brand">About</Link>
           </div>
           <div className="flex items-center gap-3">
             <Button variant="outline" size="sm" onClick={openPartner} className="hidden sm:inline-flex">
@@ -198,7 +199,7 @@ const LandingPage = () => {
                         name={deal.stores?.name}
                         logoUrl={deal.stores?.logo_url}
                         fallbackName={deal.title}
-                        className="h-12 w-12 rounded-lg border border-border bg-secondary/40 p-2"
+                        className="h-12 w-12 rounded-lg border border-brand-border bg-brand-wash p-2"
                         monogramClassName="text-base"
                       />
                       <div className="min-w-0 flex-1">
@@ -210,12 +211,7 @@ const LandingPage = () => {
                           </p>
                         )}
                         {/* The differentiator, on the list rather than two clicks in. */}
-                        {deal.watch_out && (
-                          <p className="mt-2 flex items-start gap-1.5 text-xs leading-relaxed text-amber-300">
-                            <AlertTriangle className="mt-0.5 h-3 w-3 shrink-0" />
-                            <span className="line-clamp-2">{deal.watch_out}</span>
-                          </p>
-                        )}
+                        {deal.watch_out && <TheCatch clamp className="mt-2">{deal.watch_out}</TheCatch>}
                         {checked && <p className="mt-2 text-xs text-muted-foreground/70">{checked}</p>}
                       </div>
                     </Link>

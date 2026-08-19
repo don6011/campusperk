@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Wordmark } from "@/components/Wordmark";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { ExternalLink, ArrowLeft, Loader2, AlertTriangle, Crown } from "lucide-react";
@@ -6,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { StatusBadge } from "@/components/StatusBadge";
 import { UpgradeModal } from "@/components/UpgradeModal";
 import { supabase } from "@/integrations/supabase/client";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 
 interface DealRedirectData {
   id: string;
@@ -155,7 +155,7 @@ const OutboundRedirect = () => {
         animate={{ opacity: 1, y: 0 }}
         className="max-w-md w-full rounded-2xl border border-border bg-card p-8 text-center"
       >
-        <img src={campusperkLogo} alt="CampusPerk" className="h-14 mx-auto mb-6" />
+        <Wordmark size="md" className="mb-6" />
 
         <div className="flex items-center justify-center gap-2 mb-4">
           <StatusBadge status={deal.status} />
