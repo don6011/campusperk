@@ -327,7 +327,7 @@ const SubmissionsQueue = () => {
                 <p><span className="text-muted-foreground">Deal:</span> {reviewSub.deal_title || reviewSub.deal_info}</p>
                 {reviewSub.deal_url && (
                   <p><span className="text-muted-foreground">URL:</span>{" "}
-                    <a href={reviewSub.deal_url} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                    <a href={reviewSub.deal_url} target="_blank" rel="noopener noreferrer" className="text-brand hover:underline">
                       {reviewSub.deal_url}
                     </a>
                   </p>

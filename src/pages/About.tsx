@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
+import { Wordmark } from "@/components/Wordmark";
 import { Link } from "react-router-dom";
 import { GraduationCap, Briefcase, Building2, Users, Target, ShieldCheck, Globe, Handshake, ArrowRight, Laptop, ShoppingBag, Plane, Utensils, Code } from "lucide-react";
 import { usePageTitle } from "@/hooks/use-page-title";
 import LegalFooter from "@/components/LegalFooter";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 import SEO from "@/components/SEO";
 
 const stagger = {
@@ -47,7 +47,7 @@ export default function About() {
       <nav className="glass-strong sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
+            <Wordmark size="md" />
           </Link>
           <div className="flex items-center gap-4">
             <Link to="/waitlist" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors">

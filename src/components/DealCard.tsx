@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
-import { AlertTriangle, Lock } from "lucide-react";
+import { Lock } from "lucide-react";
 import { MerchantLogo } from "@/components/MerchantLogo";
+import { TheCatch } from "@/components/TheCatch";
 import { checkedDateLabel } from "@/lib/deal-utils";
 import { cn } from "@/lib/utils";
 
@@ -76,8 +77,8 @@ export function DealCard({ deal, className, gate }: DealCardProps) {
         name={merchant}
         logoUrl={deal.stores?.logo_url}
         fallbackName={deal.title}
-        // 48px tile, 8px radius, subtle surface, hairline border.
-        className="h-12 w-12 rounded-tile border border-border bg-secondary p-2 text-foreground"
+        // 48px tile, 8px radius, on the brand wash rather than the neutral.
+        className="h-12 w-12 rounded-tile border border-brand-border bg-brand-wash p-2 text-foreground"
         monogramClassName="text-body"
       />
 
@@ -113,12 +114,7 @@ export function DealCard({ deal, className, gate }: DealCardProps) {
               </p>
             )}
 
-            {deal.watch_out && (
-              <p className="mt-2 flex items-start gap-1.5 text-caption text-caveat">
-                <AlertTriangle className="mt-px h-3 w-3 shrink-0" aria-hidden="true" />
-                <span className="line-clamp-2">{deal.watch_out}</span>
-              </p>
-            )}
+            {deal.watch_out && <TheCatch clamp className="mt-2">{deal.watch_out}</TheCatch>}
 
             {checked && <p className="mt-2 text-caption text-muted-faint">{checked}</p>}
           </>

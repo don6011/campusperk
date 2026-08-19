@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Wordmark } from "@/components/Wordmark";
 import { motion } from "framer-motion";
 import { Link, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
@@ -35,7 +36,6 @@ import {
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
@@ -229,7 +229,7 @@ export default function AmbassadorApply() {
       <nav className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-xl">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-14 w-auto" />
+            <Wordmark size="md" />
           </Link>
           <div className="flex items-center gap-2">
             <Button asChild size="sm" variant="ghost" className="hidden sm:inline-flex">

@@ -1,4 +1,5 @@
 import { Link, useParams } from "react-router-dom";
+import { Wordmark } from "@/components/Wordmark";
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { motion } from "framer-motion";
@@ -23,7 +24,6 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BadgeEngine } from "@/components/BadgeEngine";
 import { supabase } from "@/integrations/supabase/client";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 import { useAuth } from "@/contexts/AuthContext";
 
 type CampusProfile = {
@@ -335,7 +335,7 @@ export default function CampusHub() {
       <nav className="sticky top-0 z-50 border-b border-border/30 glass-strong">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-14 w-auto" />
+            <Wordmark size="md" />
           </Link>
           <div className="flex items-center gap-2">
             <Button asChild size="sm" variant="ghost" className="hidden sm:inline-flex">

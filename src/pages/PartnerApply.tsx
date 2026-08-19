@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Wordmark } from "@/components/Wordmark";
 import { motion } from "framer-motion";
 import { Link, useSearchParams } from "react-router-dom";
 import { Building2, CheckCircle2, Loader2 } from "lucide-react";
@@ -11,7 +12,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Checkbox } from "@/components/ui/checkbox";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 
 const CATEGORIES = ["Food & Dining", "Fitness & Wellness", "Housing", "Transit", "Retail", "Entertainment", "Services", "Other"];
 
@@ -101,7 +101,7 @@ export default function PartnerApply() {
     <div className="min-h-screen bg-background">
       <div className="max-w-xl mx-auto px-4 py-12 space-y-8">
         <Link to="/" className="flex justify-center mb-4">
-          <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
+          <Wordmark size="md" />
         </Link>
         <motion.div initial="hidden" animate="visible" variants={fadeUp} custom={0} className="text-center">
           <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center mx-auto mb-4">

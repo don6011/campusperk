@@ -5,10 +5,11 @@ import { logPaywallView } from "@/lib/paywall";
 import { useRecordRedemption } from "@/hooks/use-record-redemption";
 import { DealStackCalculator } from "@/components/DealStackCalculator";
 import { MerchantLogo } from "@/components/MerchantLogo";
+import { TheCatch } from "@/components/TheCatch";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, ExternalLink, Shield, Clock, Crown, Info, GraduationCap,
-  CheckCircle2, Tag, Calendar, ShoppingBag, AlertTriangle, Heart,
+  CheckCircle2, Tag, Calendar, ShoppingBag, Heart,
   Share2, Copy, Flame, TrendingUp, Bell, BellOff,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -251,7 +252,7 @@ export default function DealDetail() {
                     name={storeName}
                     logoUrl={deal.stores?.logo_url}
                     fallbackName={deal.title}
-                    className="h-14 w-14 rounded-2xl bg-secondary p-2"
+                    className="h-14 w-14 rounded-2xl border border-brand-border bg-brand-wash p-2"
                     monogramClassName="text-lg"
                   />
                   <div>
@@ -368,26 +369,22 @@ export default function DealDetail() {
                   genuinely nothing to flag, so an absent panel means "nothing
                   found", not "not checked".
                 */}
+                {/*
+                  Same labelled block as the card and the homepage, from the
+                  same component — no amber panel, no triangle. The detail page
+                  does not clamp, and adds the renewal line beneath.
+                */}
                 {(deal.watch_out || deal.renewal_cliff) && (
-                  <div className="p-4 rounded-lg bg-amber-400/5 border border-amber-400/20">
-                    <div className="text-xs font-semibold text-amber-300 mb-2 flex items-center gap-1.5">
-                      <AlertTriangle className="h-3.5 w-3.5" /> Before you claim
-                    </div>
-                    <ul className="space-y-2">
-                      {deal.watch_out && (
-                        <li className="text-sm text-muted-foreground leading-relaxed flex items-start gap-2">
-                          <span className="mt-1.5 h-1 w-1 rounded-full bg-amber-300/70 shrink-0" />
-                          {deal.watch_out}
-                        </li>
-                      )}
-                      {deal.renewal_cliff && (
-                        <li className="text-sm text-muted-foreground leading-relaxed flex items-start gap-2">
-                          <span className="mt-1.5 h-1 w-1 rounded-full bg-amber-300/70 shrink-0" />
-                          <span><span className="font-medium text-foreground">What it costs later: </span>{deal.renewal_cliff}</span>
-                        </li>
-                      )}
-                    </ul>
-                  </div>
+                  <TheCatch>
+                    {deal.watch_out}
+                    {deal.watch_out && deal.renewal_cliff && " "}
+                    {deal.renewal_cliff && (
+                      <span className="mt-1 block">
+                        <span className="font-medium text-foreground">What it costs later: </span>
+                        {deal.renewal_cliff}
+                      </span>
+                    )}
+                  </TheCatch>
                 )}
               </div>
 
@@ -567,7 +564,7 @@ export default function DealDetail() {
                         name={related.stores?.name}
                         logoUrl={related.stores?.logo_url}
                         fallbackName={related.title}
-                        className="logo-banner h-16 w-24 rounded-lg p-2"
+                        className="h-16 w-24 rounded-lg border border-brand-border bg-brand-wash p-2"
                         monogramClassName="text-sm"
                       />
                       <div className="min-w-0">

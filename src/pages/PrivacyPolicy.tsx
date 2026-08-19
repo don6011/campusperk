@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
+import { Wordmark } from "@/components/Wordmark";
 import { ArrowLeft } from "lucide-react";
 import { motion } from "framer-motion";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 import LegalFooter from "@/components/LegalFooter";
 import SEO from "@/components/SEO";
 
@@ -27,7 +27,7 @@ export default function PrivacyPolicy() {
       <nav className="sticky top-0 z-50 glass-strong">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-20 w-auto" />
+            <Wordmark size="lg" />
           </Link>
           <Link to="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4" /> Back to Home
@@ -91,7 +91,7 @@ export default function PrivacyPolicy() {
 
             <Section title="Contact">
               <p>For privacy-related questions, contact:</p>
-              <a href="mailto:Business@campusperk.com" className="text-primary hover:underline mt-1 inline-block">Business@campusperk.com</a>
+              <a href="mailto:Business@campusperk.com" className="text-brand hover:underline mt-1 inline-block">Business@campusperk.com</a>
             </Section>
           </div>
         </motion.div>

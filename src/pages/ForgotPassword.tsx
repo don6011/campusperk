@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Wordmark } from "@/components/Wordmark";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Mail, ArrowLeft, ArrowRight } from "lucide-react";
@@ -8,7 +9,6 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 import SEO from "@/components/SEO";
 
 const fadeUp = {
@@ -54,7 +54,7 @@ export default function ForgotPassword() {
       <motion.div className="w-full max-w-md relative z-10" initial="hidden" animate="visible">
         <motion.div variants={fadeUp} custom={0} className="flex justify-center mb-8">
           <Link to="/">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-16 w-auto" />
+            <Wordmark size="md" />
           </Link>
         </motion.div>
 
@@ -110,7 +110,7 @@ export default function ForgotPassword() {
                 Didn't receive the email? Check your spam folder or{" "}
                 <button
                   onClick={() => setSent(false)}
-                  className="text-primary hover:underline font-medium"
+                  className="text-brand hover:underline font-medium"
                 >
                   try again
                 </button>.
@@ -120,7 +120,7 @@ export default function ForgotPassword() {
         )}
 
         <motion.p variants={fadeUp} custom={3} className="mt-6 text-center text-sm text-muted-foreground">
-          <Link to="/sign-in" className="text-primary hover:underline font-medium inline-flex items-center gap-1">
+          <Link to="/sign-in" className="text-brand hover:underline font-medium inline-flex items-center gap-1">
             <ArrowLeft className="h-3 w-3" /> Back to sign in
           </Link>
         </motion.p>

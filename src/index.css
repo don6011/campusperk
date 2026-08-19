@@ -67,6 +67,24 @@
     --radius: 0.75rem;                    /* 12px cards */
     --radius-inner: 0.5rem;               /* 8px inner tiles */
 
+    /*
+     * BRAND. Four values, and the whole palette swaps by editing them.
+     *
+     * Nothing outside this block hardcodes a brand hex — every use site reads
+     * `hsl(var(--brand))` or a Tailwind colour mapped to it, so changing the
+     * palette is a four-line edit rather than a search across 25 files.
+     *
+     * Stored as HSL triples because every consumer is `hsl(var(--token))`. The
+     * decimals are not fussiness: rounding these to whole numbers shifts every
+     * one of them off the specified hex — #9A3412 becomes #9B3412, #FED7AA
+     * becomes #FED6A9 — so the comment beside each value would be a claim the
+     * rendered pixel does not honour. Round-tripped and checked.
+     */
+    --brand: 15 79.1% 33.7%;              /* #9A3412 */
+    --brand-hover: 17.5 88.3% 40.4%;      /* #C2410C */
+    --brand-wash: 33.3 100% 96.5%;        /* #FFF7ED */
+    --brand-border: 32.1 97.7% 83.1%;     /* #FED7AA */
+
     /* Caveats — the one place a warning colour is allowed. */
     --caveat: 26 90% 37%;                 /* #B45309 */
     --caveat-surface: 48 100% 96%;        /* #FFFBEB */
@@ -281,8 +299,8 @@
     height: 100%;
     font-weight: 500;
     letter-spacing: 0.02em;
-    color: hsl(var(--muted-foreground));
-    background: hsl(var(--secondary));
+    color: hsl(var(--brand));
+    background: hsl(var(--brand-wash));
   }
 
   .brand-carousel-fade {

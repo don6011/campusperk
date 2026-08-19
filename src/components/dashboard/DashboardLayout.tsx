@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Wordmark } from "@/components/Wordmark";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -32,7 +33,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 import { CampusRoleBadge } from "@/components/CampusRoleBadge";
 import { AmbassadorBadge } from "@/components/AmbassadorBadge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
@@ -116,12 +116,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           sidebarOpen ? "w-60" : "w-16"
         }`}
       >
-        {/* Logo */}
-        <Link to="/" className="flex h-16 items-center gap-2 border-b border-border/30 px-4">
-          <img src={campusperkLogo} alt="CampusPerk" className="h-14 w-auto shrink-0" />
-          {sidebarOpen && (
-            <span className="font-display font-semibold text-foreground text-sm truncate">CampusPerk</span>
-          )}
+        {/*
+          Only when the rail is open. The wordmark is 95px of type and the
+          collapsed rail is 64px wide with 32px of padding, so anything shown
+          here while collapsed either overflows or has to be abbreviated into a
+          mark the brand does not have. The link stays, so the whole bar is
+          still a route home either way.
+
+          This previously rendered the wordmark twice — the logo image and then
+          the word "CampusPerk" beside it — which was invisible as a bug only
+          because half of that image was white on white.
+        */}
+        <Link to="/" className="flex h-16 items-center border-b border-border/30 px-4">
+          {sidebarOpen && <Wordmark size="md" />}
         </Link>
 
         {/* Nav */}

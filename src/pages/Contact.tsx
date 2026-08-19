@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Wordmark } from "@/components/Wordmark";
 import { Link } from "react-router-dom";
 import { ArrowLeft, Mail, Handshake, Send, CheckCircle } from "lucide-react";
 import { motion } from "framer-motion";
@@ -8,7 +9,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 import LegalFooter from "@/components/LegalFooter";
 import SEO from "@/components/SEO";
 
@@ -73,7 +73,7 @@ export default function Contact() {
       <nav className="sticky top-0 z-50 glass-strong">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="CampusPerk" className="h-20 w-auto" />
+            <Wordmark size="lg" />
           </Link>
           <Link to="/" className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors duration-300">
             <ArrowLeft className="h-4 w-4" /> Back to Home
@@ -96,7 +96,7 @@ export default function Contact() {
               </div>
               <div>
                 <h3 className="font-display text-sm font-semibold text-foreground mb-1">General Inquiries</h3>
-                <a href="mailto:Business@campusperk.com" className="text-sm text-primary hover:underline">Business@campusperk.com</a>
+                <a href="mailto:Business@campusperk.com" className="text-sm text-brand hover:underline">Business@campusperk.com</a>
               </div>
             </div>
             <div className="rounded-xl glass inner-glow gradient-border p-6 flex items-start gap-4">
@@ -105,7 +105,7 @@ export default function Contact() {
               </div>
               <div>
                 <h3 className="font-display text-sm font-semibold text-foreground mb-1">Partnerships / Affiliates</h3>
-                <a href="mailto:partners@campusperk.com" className="text-sm text-primary hover:underline">partners@campusperk.com</a>
+                <a href="mailto:partners@campusperk.com" className="text-sm text-brand hover:underline">partners@campusperk.com</a>
               </div>
             </div>
           </div>

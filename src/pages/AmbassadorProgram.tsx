@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Wordmark } from "@/components/Wordmark";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import {
@@ -14,7 +15,6 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import SEO from "@/components/SEO";
-import campusperkLogo from "@/assets/campusperk-logo.png";
 
 const fade = {
   hidden: { opacity: 0, y: 18 },
@@ -131,7 +131,7 @@ export default function AmbassadorProgram() {
       <nav className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-50">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
-            <img src={campusperkLogo} alt="Campus Perk" className="h-12 w-auto" />
+            <Wordmark />
           </Link>
           <a href="#apply">
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white">Apply Now</Button>

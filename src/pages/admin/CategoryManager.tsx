@@ -407,7 +407,7 @@ export default function CategoryManager() {
                 )}
                 <label className="cursor-pointer">
                   <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
-                  <div className="flex items-center gap-2 text-sm text-primary hover:underline">
+                  <div className="flex items-center gap-2 text-sm text-brand hover:underline">
                     <Upload className="h-4 w-4" />
                     {iconPreview ? "Change icon" : "Upload icon"}
                   </div>
